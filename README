@@ -1,0 +1,97 @@
+INSTALLATION
+============
+
+To install this module type the following:
+
+    perl Makefile.PL
+    make
+    make test
+    make install
+
+NAME
+    Sys::Command - run system commands from Perl
+
+VERSION
+    0.01. Development release.
+
+SYNOPSIS
+        use Sys::Command qw/run spawn/;
+        use strict;
+
+        # Run and give me all the output, raise exception on error:
+        my $output = run('git','status');
+
+        # Give me individual lines instead
+        my @output = run('git','status');
+
+        # Manually set working directory, environment and input
+        $output = run(qw/git commit -F -/, {
+            input => 'text',
+            env   => { GIT_DIR => '/some/path/.git' },
+            dir   => '/some/path/',
+        });
+
+        # Set defaults for a command you call many times:
+        my $git = Sys::Command->new(
+            cmd => ['git'],
+            env   => { GIT_DIR => '/some/path/.git' },
+            dir   => '/some/path/',
+        );
+
+        # Exactly same as third run above
+        $output = $git->run(qw/commit -f -/, {input => 'text'})
+
+        # Low-level access to the underlying process
+        my $process = spawn('other','command');
+        my $stdout  = $process->stdout;
+
+        print "text" $process->input;
+        my @lines = <$stdout>;
+
+        $process->close;
+        print "Process exited with value: ". $process->exit;
+
+DESCRIPTION
+    Sys::Command allows you to call out to external commands from Perl.
+    run() and spawn() are exported on demand.
+
+    run(@cmd) -> $output
+        This method is a convenience wrapper around new() for those who
+        prefer DBI-style construction.
+
+    spawn(@cmd) -> Sys::Command::Process
+        Dependencies removed, etc. The API changed enough to almost give
+        this
+
+ALTERNATIVES
+    Sys::Cmd
+
+SEE ALSO
+    Sys::Command::Process
+
+SUPPORT
+    Bug Reporting
+            https://rt.cpan.org/Public/Bug/Report.html?Queue=IPC-Command
+
+    Source Code
+            git clone git://github.com/mlawren/ipc-command.git
+
+AUTHOR
+    Sys::Command Mark Lawrence <nomad@null.net>, leaning heavily on BOOKs
+    Git::Repository::Command module.
+
+COPYRIGHT AND LICENSE
+    Sys::Command
+
+        Copyright (C) 2011 Mark Lawrence <nomad@null.net>
+
+    Sys::Command::Process
+
+        Copyright (C) 20XX BOOK
+        Copyright (C) 2011 Mark Lawrence <nomad@null.net>
+
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the
+    Free Software Foundation; either version 3 of the License, or (at your
+    option) any later version.
+

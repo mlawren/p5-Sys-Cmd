@@ -1,0 +1,170 @@
+
+=head1 NAME
+
+Sys::Command::Process - objects that represent a command process
+
+=head1 VERSION
+
+0.01 Development release.
+
+=head1 SYNOPSIS
+
+    use Sys::Command::Process;
+
+    # start a system process and return an object
+    my $cmd = Sys::Command::Process->new(@cmd);
+
+    # options can be passed as a hashref
+    $cmd = Sys::Command::Process->new( @cmd, \%options );
+
+    # Interact with the command via its STDIN, STDERR etc.
+    if ($cmd->pid) {
+        while (my $line = $cmd->stdout) {
+            $cmd->stdin->print("next input");
+        }
+    }
+    my @errors = $cmd->stderr->getlines;
+
+    # done!
+    $cmd->close();
+
+    # exit information
+    $cmd->exit();      # exit status
+    $cmd->signal();    # signal
+    $cmd->core();      # core dumped? (boolean)
+
+=head1 DESCRIPTION
+
+C<Sys::Command::Process> lets you run a system command and interact
+with it through its C<STDIN>, C<STDOUT>, and C<STDERR> file handles.
+
+This module is intended to be invoked through C<Sys::Command>.
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item new(%args) => Sys::Command::Process
+
+Spawns a process based on %args. %args must contain at least a 'cmd'
+value, and optionally 'encoding', 'env', 'dir' and 'input' values as
+defined as attributes below.
+
+=back
+
+=head1 ATTRIBUTES
+
+=over 4
+
+=item cmd
+
+An array ref containing the command and its arguments.
+
+=item encoding
+
+An string value identifying the encoding of the input/output
+file-handles. Defaults to 'utf8'.
+
+=item env
+
+A hashref containing the run-time environment key/values.
+
+=item dir
+
+The working directory the command will be run in.
+
+=item input
+
+A string which is fed to the command via its standard input, which is
+then closed. This is a shortcut for printing to, and closing the
+commands stdin file-handle. An empty string will close the command's
+standard input without writing to it. On some systems, some commands
+may close standard input on startup, which will cause a SIGPIPE when
+trying to write to it. This will raise an exception.
+
+=item pid
+
+The command's process ID.
+
+=item stdin
+
+The command's C<STDIN> file handle, based on L<IO::Handle> so you can
+call getline(), print() etc on it.
+
+=item stdout
+
+The command's C<STDOUT> file handle, based on L<IO::Handle> so you can
+call getline(), print() etc on it.
+
+=item stderr
+
+The command's C<STDERR> file handle, based on L<IO::Handle> so you can
+call getline(), print() etc on it.
+
+=item exit
+
+The command's exit value, shifted by 8 (see "perldoc -f system"). Set
+only after the close() method has been called.
+
+=item signal
+
+The signal (if any) that terminated the command, bitwise-added with 127
+(see "perldoc -f system"). Set only after the close() method has been
+called.
+
+=item signal
+
+The signal number (if any) that terminated the command, bitwise-added
+with 127 (see "perldoc -f system"). Set only after the close() method
+has been called.
+
+=item core
+
+A boolean indicating the process core was dumped. Set only after the
+close() method has been called.
+
+=back
+
+=head1 METHODS
+
+=over 4
+
+=item cmd_line => @list
+
+Returns a list of the command and its arguments.
+
+=item cmdline => $str
+
+Returns a string of the command and its arguments separated by spaces.
+
+=item close()
+
+Close all pipes to the child process, and collects exit status, etc.
+and defines a number of attributes (see above).
+
+Note that C<close()> is automatically called when the
+C<Sys::Command::Process> object is destroyed. Annoyingly, this means
+that in the following example C<$fh> will be closed when you tried to
+use it:
+
+    my $fh = Sys::Command::Process->new( %args )->stdout;
+
+So you have to keep track of the Sys::Command::Process object manually.
+
+=back
+
+=head1 AUTHOR
+
+Mark Lawrence C<< <nomad@null.net> >>, based heavily on
+L<Git::Repository::Command> by Philippe Bruhat (BooK), C<< <book at
+cpan.org> >>
+
+=head1 COPYRIGHT
+
+Copyright 2011 Mark Lawrence
+
+=head1 LICENSE
+
+This program is free software; you can redistribute it and/or modify it
+under the same terms as Perl itself.
+

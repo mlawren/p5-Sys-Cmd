@@ -1,0 +1,150 @@
+
+=head1 NAME
+
+Sys::Command - run system commands from Perl
+
+=head1 VERSION
+
+0.01. Development release.
+
+=head1 SYNOPSIS
+
+    use Sys::Command qw/run spawn/;
+
+    # Run and give me all the output, raise exception on error:
+    my $output = run('git','status');
+
+    # Give me separate lines instead
+    my @output = run('git','status');
+
+    # Set working directory, environment, encoding and input
+    $output = run(qw/git commit -F -/, {
+        input    => 'text',
+        env      => { GIT_DIR => '/some/path/.git' },
+        dir      => '/some/path/',
+        encoding => 'iso-8859-7',
+    });
+
+    # Set defaults for a command you call many times:
+    my $git = Sys::Command->new(
+        cmd => ['git'],
+        env   => { GIT_DIR => '/some/path/.git' },
+        dir   => '/some/path/',
+        encoding => 'iso-8859-7',
+    );
+
+    # Exactly same as third run above
+    $output = $git->run(qw/commit -f -/, {input => 'text'})
+
+    # Low-level access to the underlying process
+    my $process = spawn('other','command');
+    $process->input->print("stuff");
+    $process->close;
+    print "Process exited with value: ". $process->exit;
+
+
+=head1 DESCRIPTION
+
+B<Sys::Command> allows you to call run external (system) commands from
+Perl. It is intended as a more powerful version of the C<system>
+built-in, but at the same time be a simpler version of L<IPC::Open3>,
+L<IPC::Run> and L<IPC::Cmd>.
+
+B<Sys::Command> uses L<File::Which> internally to discover the location
+of the binary you are trying to run.
+
+=head2 Functional Interface
+
+Three functions are exported from this module on demand. They all take
+an optional \%opts hashref, which modifies the way the command will be
+run. See the 'encoding', 'env', 'dir', and 'input' attributes of the
+Object interface below for details.
+
+=over 4
+
+=item run($cmd, [@args], [\%opts]) => $output
+
+run() will simply run the $cmd and @args provided, returning the output
+as a string (in scalar context) or as a list (in list-context). It will
+raise an exception on error. An optional \%opts hashref may be given to
+control how (directory, environment, input etc) the command will be
+called.
+
+=item runa($cmd, [@args], [\%opts]) => $out/errput
+
+runa() is the same as run() except the command's error output is
+appeneded to the normal output.
+
+=item spawn($cmd, [@args], [\%opts]) => Sys::Command::Process
+
+spawn() will run the $cmd and @args with \%opts and return a object
+which can be manipulated to interact with the command. See
+L<Sys::Command::Process> for details.
+
+=back
+
+=head2 Object Interface
+
+The Object interface is useful if you are calling out to a program like
+Git where you need to manually set the same environment or encoding
+each time. You can instead create a B<Sys::Command> object which holds
+those values as a kind of template. The B<Sys::Command> constructor
+takes the same arguments as B<Sys::Command::Process> with the exception
+of 'input':
+
+=over 4
+
+=item cmd
+
+An array ref containing the command and its arguments.
+
+=item encoding
+
+An string value identifying the encoding of the input/output
+file-handles. Defaults to 'utf8'.
+
+=item env
+
+A hashref containing the run-time environment key/values.
+
+=item dir
+
+The working directory the command will be run in.
+
+=back
+
+An actual process will not be created until you call one of the run(),
+runa() or spawn() _methods_ on your object.
+
+
+=head1 SEE ALSO
+
+L<Sys::Command::Process>, L<IPC::Open3>, L<IPC::Run>, L<IPC::Cmd>.
+
+=head1 SUPPORT
+
+=over
+
+=item Bug Reporting
+
+    https://rt.cpan.org/Public/Bug/Report.html?Queue=Sys-Command
+
+=item Source Code
+
+    git clone git://github.com/mlawren/sys-command.git
+
+=back
+
+=head1 AUTHOR
+
+Mark Lawrence E<lt>nomad@null.netE<gt>.
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2011 Mark Lawrence <nomad@null.net>
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 3 of the License, or (at your
+option) any later version.
+

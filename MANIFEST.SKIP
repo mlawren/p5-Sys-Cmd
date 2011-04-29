@@ -1,0 +1,5 @@
+build-stamp
+install-stamp
+Makefile$
+MANIFEST.bak
+.git
