@@ -12,26 +12,27 @@ Sys::Command::Process - objects that represent a command process
     use Sys::Command::Process;
 
     # start a system process and return an object
-    my $cmd = Sys::Command::Process->new(@cmd);
-
-    # options can be passed as a hashref
-    $cmd = Sys::Command::Process->new( @cmd, \%options );
+    my $proc = Sys::Command::Process->new(
+        cmd => \@cmd,
+        env => { SOME => 'VALUE' },
+        dir => 'here',
+    );
 
     # Interact with the command via its STDIN, STDERR etc.
-    if ($cmd->pid) {
-        while (my $line = $cmd->stdout) {
-            $cmd->stdin->print("next input");
+    if ($proc->pid) {
+        while (my $line = $proc->stdout) {
+            $proc->stdin->print("next input");
         }
     }
-    my @errors = $cmd->stderr->getlines;
+    my @errors = $proc->stderr->getlines;
 
     # done!
-    $cmd->close();
+    $proc->close();
 
     # exit information
-    $cmd->exit();      # exit status
-    $cmd->signal();    # signal
-    $cmd->core();      # core dumped? (boolean)
+    $proc->exit();      # exit status
+    $proc->signal();    # signal
+    $proc->core();      # core dumped? (boolean)
 
 =head1 DESCRIPTION
 
