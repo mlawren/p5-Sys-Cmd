@@ -14,7 +14,7 @@ requires 'Log::Any'   => 0;
 
 build_requires 'Test::More' => 0;
 
-repository 'http://github.com/mlawren/ipc-command.git/';
+repository 'http://github.com/mlawren/sys-command.git/';
 
 auto_install;
 
