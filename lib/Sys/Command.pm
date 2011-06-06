@@ -10,7 +10,7 @@ use File::Which;
 use Sys::Command::Process;
 use Log::Any qw/$log/;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 our $CONFESS;
 
 has 'cmd' => (
