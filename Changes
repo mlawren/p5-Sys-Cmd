@@ -1,4 +1,4 @@
-0.02 (2011-04-20)
+0.03 (2011-06-07)
 
     API Changes:
         - N/A
@@ -10,8 +10,23 @@
         - N/A
 
     Bug Fixes:
+        - Make Makefile.PL (and META.yml) point to correct repository.
+        - Add missing Sub::Exporter dependency
+
+0.02 (2011-06-06)
+
+    API Changes:
         - N/A
 
-0.01 (2011-04-20)
+    New Features:
+        - N/A
+
+    Enhancements:
+        - N/A
+
+    Bug Fixes:
+        - Fixed README and Sys::Command::Process Documentation errors.
+
+0.01 (2011-06-06)
 
     Initial Release

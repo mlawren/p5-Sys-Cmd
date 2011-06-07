@@ -5,7 +5,7 @@ Sys::Command::Process - objects that represent a command process
 
 =head1 VERSION
 
-0.01 Development release.
+0.03 Development release.
 
 =head1 SYNOPSIS
 
