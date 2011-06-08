@@ -9,7 +9,7 @@ use IO::Handle;
 use IPC::Open3 qw( open3 );
 use Log::Any qw/$log/;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 # MSWin32 support
 use constant MSWin32 => $^O eq 'MSWin32';
