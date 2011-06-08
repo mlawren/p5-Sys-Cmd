@@ -3,9 +3,9 @@ use warnings;
 use Test::More;
 use Sys::Command qw/run spawn/;
 
-ok run( 'perl', '-v' ) =~ m/perl -V/, 'run scalar context';
+ok run( $^X, '-v' ) =~ m/perl -V/, 'run scalar context';
 
-my $perl = Sys::Command->new( cmd => ['perl'], );
+my $perl = Sys::Command->new( cmd => [$^X], );
 
 my $txt = $perl->run('-v');
 ok $txt =~ m/perl -V/, 'obj run scalar context';
