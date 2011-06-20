@@ -1,120 +1,64 @@
-INSTALLATION
-============
-
-To install this module type the following:
-
-    perl Makefile.PL
-    make
-    make test
-    make install
-
-
 NAME
-    Sys::Command - run system commands from Perl
-
-VERSION
-    0.01. Development release.
+    Sys::Cmd - run a system command or spawn a system processes
 
 SYNOPSIS
-        use Sys::Command qw/run spawn/;
+        use Sys::Cmd qw/run spawn/;
 
-        # Run and give me all the output, raise exception on error:
-        my $output = run('git','status');
+        # Get command output, raise exception on failure:
+        $output = run(@cmd);
 
-        # Give me separate lines instead
-        my @output = run('git','status');
+        # Feed command some input, get output as lines,
+        # raise exception on failure:
+        @output = run(@cmd, { input => 'feedme' });
 
-        # Set working directory, environment, encoding and input
-        $output = run(qw/git commit -F -/, {
-            input    => 'text',
-            env      => { GIT_DIR => '/some/path/.git' },
-            dir      => '/some/path/',
-            encoding => 'iso-8859-7',
-        });
+        # Spawn and interact with a process with special environment:
+        $proc = spawn( @cmd, { dir => '/' , encoding => 'iso-8859-3'} );
 
-        # Set defaults for a command you call many times:
-        my $git = Sys::Command->new(
-            cmd => ['git'],
-            env   => { GIT_DIR => '/some/path/.git' },
-            dir   => '/some/path/',
-            encoding => 'iso-8859-7',
-        );
+        while (my $line = $proc->stdout->getline) {
+            $proc->stdin->print("thanks");
+        }
 
-        # Exactly same as third run above
-        $output = $git->run(qw/commit -f -/, {input => 'text'})
+        my @errors = $proc->stderr->getlines;
+        $proc->close();     # Done!
 
-        # Low-level access to the underlying process
-        my $process = spawn('other','command');
-        $process->input->print("stuff");
-        $process->close;
-        print "Process exited with value: ". $process->exit;
+        # read exit information
+        $proc->exit();      # exit status
+        $proc->signal();    # signal
+        $proc->core();      # core dumped? (boolean)
 
 DESCRIPTION
-    Sys::Command allows you to call run external (system) commands from
-    Perl. It is intended as a more powerful version of the "system"
-    built-in, but at the same time be a simpler version of IPC::Open3,
-    IPC::Run and IPC::Cmd.
+    Sys::Cmd lets you run system commands and capture their output, or spawn
+    and interact with a system process through its "STDIN", "STDOUT", and
+    "STDERR" file handles.
 
-    Sys::Command uses File::Which internally to discover the location of the
-    binary you are trying to run.
+INSTALLATION
 
-  Functional Interface
-    Three functions are exported from this module on demand. They all take
-    an optional \%opts hashref, which modifies the way the command will be
-    run. See the 'encoding', 'env', 'dir', and 'input' attributes of the
-    Object interface below for details.
+    To install this module type the following:
 
-    run($cmd, [@args], [\%opts]) => $output
-        run() will simply run the $cmd and @args provided, returning the
-        output as a string (in scalar context) or as a list (in
-        list-context). It will raise an exception on error. An optional
-        \%opts hashref may be given to control how (directory, environment,
-        input etc) the command will be called.
-
-    runa($cmd, [@args], [\%opts]) => $out/errput
-        runa() is the same as run() except the command's error output is
-        appeneded to the normal output.
-
-    spawn($cmd, [@args], [\%opts]) => Sys::Command::Process
-        spawn() will run the $cmd and @args with \%opts and return a object
-        which can be manipulated to interact with the command. See
-        Sys::Command::Process for details.
-
-  Object Interface
-    The Object interface is useful if you are calling out to a program like
-    Git where you need to manually set the same environment or encoding each
-    time. You can instead create a Sys::Command object which holds those
-    values as a kind of template. The Sys::Command constructor takes the
-    same arguments as Sys::Command::Process with the exception of 'input':
-
-    cmd An array ref containing the command and its arguments.
-
-    encoding
-        An string value identifying the encoding of the input/output
-        file-handles. Defaults to 'utf8'.
-
-    env A hashref containing the run-time environment key/values.
-
-    dir The working directory the command will be run in.
-
-    An actual process will not be created until you call one of the run(),
-    runa() or spawn() _methods_ on your object.
+        perl Makefile.PL
+        make
+        make test
+        make install
 
 SEE ALSO
-    Sys::Command::Process, IPC::Open3, IPC::Run, IPC::Cmd.
+    Sys::Cmd::Template
+
+ALTERNATIVES
+    System::Command, Proc::Spawn, IPC::Run, IPC::Cmd, Spawn::Safe
 
 SUPPORT
     Bug Reporting
-            https://rt.cpan.org/Public/Bug/Report.html?Queue=Sys-Command
+            https://rt.cpan.org/Public/Bug/Report.html?Queue=Sys-Cmd
 
     Source Code
-            git clone git://github.com/mlawren/sys-command.git
+            git clone git://github.com/mlawren/sys-cmd.git
 
 AUTHOR
-    Mark Lawrence <nomad@null.net>.
+    Mark Lawrence <nomad@null.net>, based heavily on
+    Git::Repository::Command by Philippe Bruhat (BooK).
 
 COPYRIGHT AND LICENSE
-    Copyright (C) 2011 Mark Lawrence <nomad@null.net>
+    Copyright 2011 Mark Lawrence <nomad@null.net>
 
     This program is free software; you can redistribute it and/or modify it
     under the terms of the GNU General Public License as published by the
