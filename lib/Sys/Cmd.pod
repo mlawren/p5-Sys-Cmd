@@ -1,0 +1,257 @@
+
+=head1 NAME
+
+Sys::Cmd - run a system command or spawn a system processes
+
+=head1 VERSION
+
+0.98_1 Development release.
+
+=head1 SYNOPSIS
+
+    use Sys::Cmd qw/run spawn/;
+
+    # Get command output, raise exception on failure:
+    $output = run(@cmd);
+
+    # Feed command some input, get output as lines,
+    # raise exception on failure:
+    @output = run(@cmd, { input => 'feedme' });
+
+    # Spawn and interact with a process with special environment:
+    $proc = spawn( @cmd, { dir => '/' , encoding => 'iso-8859-3'} );
+
+    while (my $line = $proc->stdout->getline) {
+        $proc->stdin->print("thanks");
+    }
+
+    my @errors = $proc->stderr->getlines;
+    $proc->close();     # Done!
+
+    # read exit information
+    $proc->exit();      # exit status
+    $proc->signal();    # signal
+    $proc->core();      # core dumped? (boolean)
+
+=head1 DESCRIPTION
+
+B<Sys::Cmd> lets you run system commands and capture their output, or
+spawn and interact with a system process through its C<STDIN>,
+C<STDOUT>, and C<STDERR> file handles. The following functions are
+exported on demand:
+
+=over 4
+
+=item run( @cmd, [\%opt] ) => $output | @output
+
+Execute C<@cmd> and return what the command sent to its C<STDOUT>,
+raising an exception in the event of error. In array context returns a
+list instead of a plain string.
+
+The first element of C<@cmd> will be looked up using L<File::Which> if
+it is not found as a relative file name. The command input and
+environment can be modified with an optional hashref containing the
+following key/values:
+
+=over 4
+
+=item dir
+
+The working directory the command will be run in.
+
+=item encoding
+
+An string value identifying the encoding of the input/output
+file-handles. Defaults to 'utf8'.
+
+=item env
+
+A hashref containing key/values to be added to the current environment
+at run-time. If a key has an undefined value then the key is removed
+from the environment altogether.
+
+=item input
+
+A string which is fed to the command via its standard input, which is
+then closed.
+
+=back
+
+=item runx( @cmd, [\%opt] ) => $outerrput | @outerrput
+
+The same as the C<run> function but with the command's C<STDERR> output
+appended to the C<STDOUT> output.
+
+=item spawn( @cmd, [\%opt] ) => Sys::Cmd
+
+Return a B<Sys::Cmd> object (documented below) representing the process
+running @cmd, with attributes set according to the optional \%opt
+hashref.  The first element of the C<@cmd> array is looked up using
+L<File::Which> if it is not found in the file-system as a relative file
+name.
+
+=back
+
+B<Sys::Cmd> objects can of course be created using the standard C<new>
+constructor if you prefer that to the C<spawn> function:
+
+    $proc = Sys::Cmd->new(
+        cmd => \@cmd,
+        dir => '/',
+        env => { SOME => 'VALUE' },
+        enc => 'iso-8859-3',
+        input => 'feedme',
+    );
+
+Note that B<Sys::Cmd> objects created this way will not lookup the
+command using L<File::Which> the way the C<run>, C<runx> and C<spawn>
+functions do.
+
+B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes.
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item new(%args) => Sys::Cmd
+
+Spawns a process based on %args. %args must contain at least a C<cmd>
+value, and optionally C<encoding>, C<env>, C<dir> and C<input> values
+as defined as attributes below.
+
+=back
+
+=head1 ATTRIBUTES
+
+All attributes are read-only.
+
+=over 4
+
+=item cmd
+
+An array ref containing the command and its arguments.
+
+=item dir
+
+The working directory the command will be run in.
+
+=item encoding
+
+An string value identifying the encoding of the input/output
+file-handles. Defaults to 'utf8'.
+
+=item env
+
+A hashref containing key/values to be added to the current environment
+at run-time. If a key has an undefined value then the key is removed
+from the environment altogether.
+
+=item input
+
+A string which is fed to the command via its standard input, which is
+then closed. This is a shortcut for printing to, and closing the
+commands stdin file-handle. An empty string will close the command's
+standard input without writing to it. On some systems, some commands
+may close standard input on startup, which will cause a SIGPIPE when
+trying to write to it. This will raise an exception.
+
+=item pid
+
+The command's process ID.
+
+=item stdin
+
+The command's C<STDIN> file handle, based on L<IO::Handle> so you can
+call print() etc methods on it. Autoflush is automatically enabled on
+this handle.
+
+=item stdout
+
+The command's C<STDOUT> file handle, based on L<IO::Handle> so you can
+call getline() etc methods on it.
+
+=item stderr
+
+The command's C<STDERR> file handle, based on L<IO::Handle> so you can
+call getline() etc methods on it.
+
+=item exit
+
+The command's exit value, shifted by 8 (see "perldoc -f system"). Set
+only after the close() method has been called.
+
+=item signal
+
+The signal number (if any) that terminated the command, bitwise-added
+with 127 (see "perldoc -f system"). Set only after the close() method
+has been called.
+
+=item core
+
+A boolean indicating the process core was dumped. Set only after the
+close() method has been called.
+
+=back
+
+=head1 METHODS
+
+=over 4
+
+=item cmdline => @list | $str
+
+In array context returns a list of the command and its arguments.  In
+scalar context returns a string of the command and its arguments joined
+together by spaces.
+
+=item close()
+
+Close all pipes to the child process, and collects exit status, etc.
+and defines a number of attributes (see above).
+
+Note that C<close()> is automatically called when the C<Sys::Cmd>
+object is destroyed. Annoyingly, this means that in the following
+example C<$fh> will be closed when you tried to use it:
+
+    my $fh = Sys::Cmd->new( %args )->stdout;
+
+So you have to keep track of the Sys::Cmd object manually.
+
+=back
+
+=head1 SEE ALSO
+
+L<Sys::Cmd::Template>
+
+=head1 ALTERNATIVES
+
+L<System::Command>, L<Proc::Spawn>, L<IPC::Run>, L<IPC::Cmd>,
+L<Spawn::Safe>
+
+=head1 SUPPORT
+
+=over
+
+=item Bug Reporting
+
+    https://rt.cpan.org/Public/Bug/Report.html?Queue=Sys-Cmd
+
+=item Source Code
+
+    git clone git://github.com/mlawren/sys-cmd.git
+
+=back
+
+=head1 AUTHOR
+
+Mark Lawrence E<lt>nomad@null.netE<gt>, based heavily on
+L<Git::Repository::Command> by Philippe Bruhat (BooK).
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright 2011 Mark Lawrence <nomad@null.net>
+
+This program is free software; you can redistribute it and/or modify it
+under the terms of the GNU General Public License as published by the
+Free Software Foundation; either version 3 of the License, or (at your
+option) any later version.
+

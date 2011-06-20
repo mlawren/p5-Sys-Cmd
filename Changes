@@ -1,3 +1,20 @@
+0.98_1 (2011-06-20)
+
+    API Changes:
+        - Renamed from Sys::Command to Sys::Cmd.
+        - In doing the above rename the following functionality changes
+          also took place: "Sys::Command::Process" became "Sys::Cmd".
+          "Sys::Command" became "Sys::Cmd::Template".
+
+    New Features:
+        - N/A
+
+    Enhancements:
+        - Stole some of Sys::Commands tests.
+
+    Bug Fixes:
+        - N/A
+
 0.04 (2011-06-09)
 
     API Changes:

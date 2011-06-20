@@ -1,15 +1,18 @@
-package Sys::Command::Process;
+package Sys::Cmd;
 use strict;
 use warnings;
 use 5.006;
 use Moo;
 use Carp qw/carp confess croak/;
-use Cwd qw( cwd );
+use Cwd qw/cwd/;
+use Sub::Exporter -setup => { exports => [qw/spawn run runx/], };
 use IO::Handle;
-use IPC::Open3 qw( open3 );
+use IPC::Open3 qw/open3/;
+use File::Which qw/which/;
 use Log::Any qw/$log/;
 
-our $VERSION = '0.04';
+our $VERSION = '0.98_1';
+our $CONFESS;
 
 # MSWin32 support
 use constant MSWin32 => $^O eq 'MSWin32';
@@ -28,57 +31,133 @@ BEGIN {
     open $REAL_STDERR, ">>&=" . fileno(*STDERR);
 }
 
+sub run {
+    my $proc = spawn(@_);
+    my @out = $proc->stdout->getlines;
+    my @err = $proc->stderr->getlines;
+
+    $proc->close;
+
+    if ( $proc->exit != 0 ) {
+        confess( join( '', @err ) . 'Command exited with value ' .
+        $proc->exit )
+          if $CONFESS;
+        croak( join( '', @err ) . 'Command exited with value ' . $proc->exit );
+    }
+
+    if (wantarray) {
+        return @out;
+    }
+    else {
+        return join( '', @out );
+    }
+}
+
+sub runx {
+    my $proc = spawn(@_);
+    my @out = $proc->stdout->getlines;
+    my @err = $proc->stderr->getlines;
+
+    $proc->close;
+
+    if ( $proc->exit != 0 ) {
+        confess( join( '', @err ) . 'Command exited with value ' .
+        $proc->exit )
+          if $CONFESS;
+        croak( join( '', @err ) . 'Command exited with value ' . $proc->exit );
+    }
+
+    if (wantarray) {
+        return @out, @err;
+    }
+    else {
+        return join( '', @out, @err );
+    }
+}
+
+sub spawn {
+    my @cmd = grep { ref $_ ne 'HASH' } @_;
+
+    my $bin = $cmd[0];
+    defined $bin || confess '$cmd must be defined';
+
+    if ( !-f $bin and splitdir($bin) < 2 ) {
+        $cmd[0] = which($bin);
+    }
+
+    my @opts = grep { ref $_ eq 'HASH' } @_;
+    if (@opts > 2) {
+        confess __PACKAGE__ .": only a single hashref allowed";
+    }
+
+    my %args = @opts ? %{$opts[0]} : ();
+    $args{cmd} = \@cmd;
+
+    return Sys::Cmd->new( %args );
+}
+
 has 'cmd' => (
-    is  => 'rw',
+    is  => 'ro',
     isa => sub {
         ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF";
         @{ $_[0] } || confess "Missing cmd elements";
     },
     required => 1,
 );
+
 has 'encoding' => (
-    is      => 'rw',
+    is      => 'ro',
     default => sub { 'utf8' },
 );
+
 has 'env' => (
-    is  => 'rw',
+    is  => 'ro',
     isa => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
-    default   => sub { {} },
+#    default   => sub { {} },
     predicate => 'have_env',
 );
+
 has 'dir' => (
-    is      => 'rw',
+    is      => 'ro',
     default => sub { cwd },
 );
+
 has 'input' => (
-    is        => 'rw',
+    is        => 'ro',
     predicate => 'have_input',
 );
+
 has 'pid' => (
     is       => 'rw',
     init_arg => undef,
 );
+
 has 'stdin' => (
     is       => 'rw',
     init_arg => undef,
 );
+
 has 'stdout' => (
     is       => 'rw',
     init_arg => undef,
 );
+
 has 'stderr' => (
     is       => 'rw',
     init_arg => undef,
 );
+
 has 'exit' => (
     is        => 'rw',
     init_arg  => undef,
     predicate => 'have_exit',
 );
+
 has 'signal' => (
     is       => 'rw',
     init_arg => undef,
 );
+
 has 'core' => (
     is       => 'rw',
     init_arg => undef,
@@ -98,59 +177,24 @@ sub BUILD {
     # keep changes to the environment local
     local %ENV = %ENV;
 
-    # chdir to the expected directory
-    my $orig = cwd;
-    if ( $self->dir ne $orig ) {
-        chdir $self->dir or confess "Can't chdir to " . $self->dir . ": $!";
+    if ( $self->have_env ) {
+        while (my ($key,$val) = each %{ $self->env } ) {
+            if ( defined $val ) {
+                $ENV{$key} = $val;
+            }
+            else {
+                delete $ENV{$key};
+            }
+        }
     }
 
-    # turn us into a dumb terminal
-    delete $ENV{TERM};
-
-    # update the environment
-    if ( $self->have_env ) {
-        @ENV{ keys %{ $self->env } } = values %{ $self->env };
+    my $orig = cwd;
+    if ( $self->dir ne $orig ) {
+        (chdir $self->dir) || confess "Can't chdir to " . $self->dir . ": $!";
     }
 
     # spawn the command
-    $log->debug( $self->cmd_line );
-    $self->_spawn;
-
-    # some input was provided
-    if ( $self->have_input ) {
-        local $SIG{PIPE} =
-          sub { croak "Broken pipe when writing to:" . $self->cmdline };
-
-        print { $self->stdin } $self->input if length $self->input;
-
-        if (MSWin32) {
-            $self->stdin->flush;
-            shutdown( $self->stdin, 2 );
-        }
-        else {
-            $self->stdin->close;
-        }
-    }
-
-    # chdir back to origin
-    if ( $self->dir ne $orig ) {
-        chdir $orig or croak "Can't chdir back to $orig: $!";
-    }
-    return;
-}
-
-sub cmd_line {
-    my $self = shift;
-    return @{ $self->cmd };
-}
-
-sub cmdline {
-    my $self = shift;
-    return join( ' ', @{ $self->cmd } );
-}
-
-sub _spawn {
-    my $self = shift;
+    $log->debug( scalar $self->cmdline );
 
     my ( $pid, $in, $out, $err );
 
@@ -171,7 +215,7 @@ sub _spawn {
         _pipe( *ERR_R, *ERR_W ) or croak "errput pipe error: $^E";
 
         $pid =
-          eval { open3( '>&IN_R', '<&OUT_W', '<&ERR_W', $self->cmd_line ) };
+          eval { open3( '>&IN_R', '<&OUT_W', '<&ERR_W', $self->cmdline ) };
 
         # FIXME - better check open3 error conditions
         croak $@ if !defined $pid;
@@ -180,12 +224,13 @@ sub _spawn {
     }
     else {
         $err = Symbol::gensym;
-        $pid = eval { open3( $in, $out, $err, $self->cmd_line ); };
+        $pid = eval { open3( $in, $out, $err, $self->cmdline ); };
 
         # FIXME - better check open3 error conditions
         croak $@ if !defined $pid;
     }
 
+    $in->autoflush(1);
     binmode $in,  ':encoding(' . $self->encoding . ')';
     binmode $out, ':encoding(' . $self->encoding . ')';
     binmode $err, ':encoding(' . $self->encoding . ')';
@@ -194,7 +239,38 @@ sub _spawn {
     $self->stdin($in);
     $self->stdout($out);
     $self->stderr($err);
+
+    # some input was provided
+    if ( $self->have_input ) {
+        local $SIG{PIPE} =
+          sub { croak "Broken pipe when writing to:" . $self->cmdline };
+
+        print { $self->stdin } $self->input if length $self->input;
+
+        if (MSWin32) {
+            $self->stdin->flush;
+            shutdown( $self->stdin, 2 );
+        }
+        else {
+            $self->stdin->close;
+        }
+    }
+
+    # chdir back to origin
+    if ( $self->dir ne $orig ) {
+        (chdir $orig) || croak "Can't chdir back to $orig: $!";
+    }
     return;
+}
+
+sub cmdline {
+    my $self = shift;
+    if (wantarray) {
+        return @{ $self->cmd };
+    }
+    else {
+        return join( ' ', @{ $self->cmd } );
+    }
 }
 
 sub close {
@@ -217,10 +293,14 @@ sub close {
     }
 
     # and wait for the child
-    waitpid $self->pid, 0;
-
+    my $pid = waitpid $self->pid, 0;
     # check $?
     my $ret = $?;
+
+    if ( $pid != $self->pid ) {
+        croak "Child process already reaped, check for a SIGCHLD handler";
+    }
+
     $self->exit( $ret >> 8 );
     $self->signal( $ret & 127 );
     $self->core( $ret & 128 );
@@ -234,3 +314,6 @@ sub DESTROY {
 }
 
 1;
+
+
+
