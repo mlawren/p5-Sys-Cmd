@@ -18,13 +18,11 @@ Sys::Cmd - run a system command or spawn a system processes
     # raise exception on failure:
     @output = run(@cmd, { input => 'feedme' });
 
-    # Spawn and interact with a process with special environment:
+    # Spawn and interact with a process somewhere else:
     $proc = spawn( @cmd, { dir => '/' , encoding => 'iso-8859-3'} );
-
     while (my $line = $proc->stdout->getline) {
         $proc->stdin->print("thanks");
     }
-
     my @errors = $proc->stderr->getlines;
     $proc->close();     # Done!
 
