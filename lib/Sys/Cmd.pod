@@ -5,7 +5,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.98_1 Development release.
+0.98_2 Development release.
 
 =head1 SYNOPSIS
 
@@ -36,7 +36,7 @@ Sys::Cmd - run a system command or spawn a system processes
 B<Sys::Cmd> lets you run system commands and capture their output, or
 spawn and interact with a system process through its C<STDIN>,
 C<STDOUT>, and C<STDERR> file handles. The following functions are
-exported on demand:
+exported on demand by this module:
 
 =over 4
 

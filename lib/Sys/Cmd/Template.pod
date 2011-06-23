@@ -5,7 +5,7 @@ Sys::Cmd::Template - command/process templates for Sys::Cmd
 
 =head1 VERSION
 
-0.98_1. Development release.
+0.98_2. Development release.
 
 =head1 SYNOPSIS
 
@@ -45,11 +45,12 @@ This is useful when you need to make repeated calls to an external
 binary with the same options or environment settings. "git" and "gpg"
 are good examples of such commands.
 
-A B<Sys::Cmd::Template> object represents the elements environment of
-your external command calls. B<Sys::Cmd::Template> methods will
-over-write or merge their arguments and options with the common
-elements and execute the result with L<Sys::Cmd>. The following
-function is exported on demand:
+A B<Sys::Cmd::Template> object should represent the common elements of
+the calls to your external command. The C<run>, C<runx> and C<spawn>
+methods then merge their arguments and options with these common
+elements and execute the result with L<Sys::Cmd>.
+
+A single function is exported on demand by this module:
 
 =over 4
 
@@ -117,9 +118,8 @@ as attributes below.
 
 =head1 ATTRIBUTES
 
-In contrast with L<Sys::Cmd> the C<cmd>, C<dir>, C<encoding>, C<env>
-and C<input> attributes here can be modified, and the new values will
-be used on subsequent method calls.
+In contrast with L<Sys::Cmd> the attributes defined here can be
+modified, and the new values will be used on subsequent method calls.
 
 =over 4
 
