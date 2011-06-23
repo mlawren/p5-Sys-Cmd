@@ -11,7 +11,7 @@ use IPC::Open3 qw/open3/;
 use File::Which qw/which/;
 use Log::Any qw/$log/;
 
-our $VERSION = '0.98_1';
+our $VERSION = '0.98_2';
 our $CONFESS;
 
 # MSWin32 support
@@ -33,14 +33,13 @@ BEGIN {
 
 sub run {
     my $proc = spawn(@_);
-    my @out = $proc->stdout->getlines;
-    my @err = $proc->stderr->getlines;
+    my @out  = $proc->stdout->getlines;
+    my @err  = $proc->stderr->getlines;
 
     $proc->close;
 
     if ( $proc->exit != 0 ) {
-        confess( join( '', @err ) . 'Command exited with value ' .
-        $proc->exit )
+        confess( join( '', @err ) . 'Command exited with value ' . $proc->exit )
           if $CONFESS;
         croak( join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
@@ -55,14 +54,13 @@ sub run {
 
 sub runx {
     my $proc = spawn(@_);
-    my @out = $proc->stdout->getlines;
-    my @err = $proc->stderr->getlines;
+    my @out  = $proc->stdout->getlines;
+    my @err  = $proc->stderr->getlines;
 
     $proc->close;
 
     if ( $proc->exit != 0 ) {
-        confess( join( '', @err ) . 'Command exited with value ' .
-        $proc->exit )
+        confess( join( '', @err ) . 'Command exited with value ' . $proc->exit )
           if $CONFESS;
         croak( join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
@@ -86,14 +84,14 @@ sub spawn {
     }
 
     my @opts = grep { ref $_ eq 'HASH' } @_;
-    if (@opts > 2) {
-        confess __PACKAGE__ .": only a single hashref allowed";
+    if ( @opts > 2 ) {
+        confess __PACKAGE__ . ": only a single hashref allowed";
     }
 
-    my %args = @opts ? %{$opts[0]} : ();
+    my %args = @opts ? %{ $opts[0] } : ();
     $args{cmd} = \@cmd;
 
-    return Sys::Cmd->new( %args );
+    return Sys::Cmd->new(%args);
 }
 
 has 'cmd' => (
@@ -113,7 +111,8 @@ has 'encoding' => (
 has 'env' => (
     is  => 'ro',
     isa => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
-#    default   => sub { {} },
+
+    #    default   => sub { {} },
     predicate => 'have_env',
 );
 
@@ -178,7 +177,7 @@ sub BUILD {
     local %ENV = %ENV;
 
     if ( $self->have_env ) {
-        while (my ($key,$val) = each %{ $self->env } ) {
+        while ( my ( $key, $val ) = each %{ $self->env } ) {
             if ( defined $val ) {
                 $ENV{$key} = $val;
             }
@@ -190,7 +189,7 @@ sub BUILD {
 
     my $orig = cwd;
     if ( $self->dir ne $orig ) {
-        (chdir $self->dir) || confess "Can't chdir to " . $self->dir . ": $!";
+        ( chdir $self->dir ) || confess "Can't chdir to " . $self->dir . ": $!";
     }
 
     # spawn the command
@@ -214,8 +213,7 @@ sub BUILD {
         _pipe( *OUT_R, *OUT_W ) or croak "output pipe error: $^E";
         _pipe( *ERR_R, *ERR_W ) or croak "errput pipe error: $^E";
 
-        $pid =
-          eval { open3( '>&IN_R', '<&OUT_W', '<&ERR_W', $self->cmdline ) };
+        $pid = eval { open3( '>&IN_R', '<&OUT_W', '<&ERR_W', $self->cmdline ) };
 
         # FIXME - better check open3 error conditions
         croak $@ if !defined $pid;
@@ -258,7 +256,7 @@ sub BUILD {
 
     # chdir back to origin
     if ( $self->dir ne $orig ) {
-        (chdir $orig) || croak "Can't chdir back to $orig: $!";
+        ( chdir $orig ) || croak "Can't chdir back to $orig: $!";
     }
     return;
 }
@@ -294,6 +292,7 @@ sub close {
 
     # and wait for the child
     my $pid = waitpid $self->pid, 0;
+
     # check $?
     my $ret = $?;
 
@@ -314,6 +313,4 @@ sub DESTROY {
 }
 
 1;
-
-
 

@@ -1,4 +1,4 @@
-0.98_1 (2011-06-20)
+0.98_2 (2011-06-23)
 
     API Changes:
         - Renamed from Sys::Command to Sys::Cmd.
@@ -10,10 +10,10 @@
         - N/A
 
     Enhancements:
-        - Stole some of Sys::Commands tests.
+        - Borrowed some tests from System::Command.
 
     Bug Fixes:
-        - N/A
+        - Add missing dependency on File::Which.
 
 0.04 (2011-06-09)
 
