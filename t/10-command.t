@@ -8,6 +8,8 @@ use File::Temp qw( tempdir );
 use Cwd qw( cwd abs_path );
 use Sys::Cmd qw/spawn run/;
 
+use constant MSWin32 => $^O eq 'MSWin32';
+
 $ENV{TO_BE_DELETED} = 'LATER';
 my $dir   = abs_path( tempdir( CLEANUP => 1 ) );
 my $cwd   = cwd;
@@ -102,7 +104,12 @@ for my $t ( @tests, @fail ) {
 
     # test the handles
     for my $handle (qw( stdin stdout stderr )) {
-        isa_ok( $cmd->$handle, 'GLOB' );
+        if (MSWin32) {
+            isa_ok( $cmd->$handle, 'IO::File' );
+        }
+        else {
+            isa_ok( $cmd->$handle, 'GLOB' );
+        }
         if ( $handle eq 'stdin' ) {
             my $opened = !exists $t->{options}{input};
             is( $cmd->$handle->opened, $opened,
