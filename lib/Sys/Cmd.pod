@@ -222,8 +222,10 @@ L<Sys::Cmd::Template>
 
 =head1 ALTERNATIVES
 
-L<System::Command>, L<Proc::Spawn>, L<IPC::Run>, L<IPC::Run3>,
-L<IPC::Cmd>, L<Spawn::Safe>
+L<IPC::Open3>, L<IPC::Open3::Simple>, L<IPC::Run>, L<IPC::Run3>,
+L<IPC::Cmd>, L<IPC::Capture>, L<IPC::Exe>, L<Spawn::Safe>,
+L<Proc::Spawn>, L<IPC::ShellCmd>, L<System::Command>, L<Forks::Super>,
+L<IPC::RunSession::Simple>
 
 =head1 SUPPORT
 
