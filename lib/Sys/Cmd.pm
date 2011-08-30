@@ -10,6 +10,7 @@ use IO::Handle;
 use IPC::Open3 qw/open3/;
 use File::Which qw/which/;
 use Log::Any qw/$log/;
+use File::Spec::Functions qw/splitdir/;
 
 our $VERSION = '0.98_3';
 our $CONFESS;
