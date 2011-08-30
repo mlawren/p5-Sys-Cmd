@@ -1,4 +1,4 @@
-0.98_2 (2011-06-23)
+0.98_4 (2011-06-23)
 
     API Changes:
         - Renamed from Sys::Command to Sys::Cmd.
