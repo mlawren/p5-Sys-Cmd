@@ -242,7 +242,7 @@ sub BUILD {
     # some input was provided
     if ( $self->have_input ) {
         local $SIG{PIPE} =
-          sub { croak "Broken pipe when writing to:" . $self->cmdline };
+          sub { warn "Broken pipe when writing to:" . $self->cmdline };
 
         print { $self->stdin } $self->input if length $self->input;
 
