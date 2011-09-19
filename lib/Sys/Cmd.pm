@@ -81,7 +81,7 @@ sub spawn {
     defined $bin || confess '$cmd must be defined';
 
     if ( !-f $bin and splitdir($bin) < 2 ) {
-        $cmd[0] = which($bin);
+        $cmd[0] = which($bin) || confess 'command not found: ' . $bin;
     }
 
     my @opts = grep { ref $_ eq 'HASH' } @_;
@@ -100,6 +100,9 @@ has 'cmd' => (
     isa => sub {
         ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF";
         @{ $_[0] } || confess "Missing cmd elements";
+        if ( grep { !defined $_ } @{ $_[0] } ) {
+            confess 'cmd array cannot contain undef elements';
+        }
     },
     required => 1,
 );
