@@ -9,7 +9,7 @@ use File::Spec::Functions qw/splitdir/;
 use File::Which;
 use Sys::Cmd;
 
-our $VERSION = '0.98_4';
+our $VERSION = '0.05';
 our $CONFESS;
 
 sub cmd_template {

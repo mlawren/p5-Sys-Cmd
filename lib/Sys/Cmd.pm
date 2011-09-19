@@ -12,7 +12,7 @@ use File::Which qw/which/;
 use Log::Any qw/$log/;
 use File::Spec::Functions qw/splitdir/;
 
-our $VERSION = '0.98_4';
+our $VERSION = '0.05';
 our $CONFESS;
 
 # MSWin32 support

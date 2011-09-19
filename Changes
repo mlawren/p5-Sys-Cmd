@@ -1,4 +1,4 @@
-0.98_4 (2011-06-23)
+0.05 (2011-09-20)
 
     API Changes:
         - Renamed from Sys::Command to Sys::Cmd.
@@ -11,9 +11,11 @@
 
     Enhancements:
         - Borrowed some tests from System::Command.
+        - Confess on command not found.
 
     Bug Fixes:
-        - Add missing dependency on File::Which.
+        - Add missing dependency on File::Which plus various
+          test_requires modules.
 
 0.04 (2011-06-09)
 
