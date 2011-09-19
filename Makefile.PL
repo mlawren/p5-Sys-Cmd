@@ -14,7 +14,11 @@ requires 'Log::Any'      => 0;
 requires 'Sub::Exporter' => 0;
 requires 'File::Which'   => 0;
 
-build_requires 'Test::More' => 0;
+test_requires 'Test::More'   => 0;
+test_requires 'File::Temp'   => 0;
+test_requires 'File::Spec'   => 0;
+test_requires 'Cwd'          => 0;
+test_requires 'Data::Dumper' => 0;
 
 repository 'http://github.com/mlawren/sys-cmd.git/';
 
