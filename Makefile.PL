@@ -20,7 +20,7 @@ test_requires 'File::Spec'   => 0;
 test_requires 'Cwd'          => 0;
 test_requires 'Data::Dumper' => 0;
 
-repository 'http://github.com/mlawren/sys-cmd.git/';
+repository 'http://github.com/mlawren/sys-cmd';
 
 auto_install;
 
