@@ -13,6 +13,7 @@ requires 'IPC::Open3'    => 0;
 requires 'Log::Any'      => 0;
 requires 'Sub::Exporter' => 0;
 requires 'File::Which'   => 0;
+requires 'File::chdir'   => '0.08';
 
 test_requires 'Test::More'   => 0;
 test_requires 'File::Temp'   => 0;

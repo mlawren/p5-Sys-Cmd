@@ -5,22 +5,15 @@ use 5.006;
 use Moo;
 use Carp qw/carp confess croak/;
 use Cwd qw/cwd/;
-use Sub::Exporter -setup => { exports => [qw/spawn run runx/], };
 use IO::Handle;
-use IPC::Open3 qw/open3/;
+use File::chdir;
 use File::Which qw/which/;
 use Log::Any qw/$log/;
 use File::Spec::Functions qw/splitdir/;
+use Sub::Exporter -setup => { exports => [qw/spawn run runx/], };
 
-our $VERSION = '0.05';
+our $VERSION = '0.07_2';
 our $CONFESS;
-
-# MSWin32 support
-use constant MSWin32 => $^O eq 'MSWin32';
-if (MSWin32) {
-    require Socket;
-    Socket->import(qw( AF_UNIX SOCK_STREAM PF_UNSPEC ));
-}
 
 # Trap the real STDIN/ERR/OUT file handles in case someone
 # *COUGH* Catalyst *COUGH* screws with them which breaks open3
@@ -113,10 +106,8 @@ has 'encoding' => (
 );
 
 has 'env' => (
-    is  => 'ro',
-    isa => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
-
-    #    default   => sub { {} },
+    is        => 'ro',
+    isa       => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
     predicate => 'have_env',
 );
 
@@ -166,102 +157,85 @@ has 'core' => (
     init_arg => undef,
 );
 
-sub _pipe {
-    socketpair( $_[0], $_[1], AF_UNIX(), SOCK_STREAM(), PF_UNSPEC() )
-      or return undef;
-    shutdown( $_[0], 1 );    # No more writing for reader
-    shutdown( $_[1], 0 );    # No more reading for writer
-    return 1;
-}
-
 sub BUILD {
     my $self = shift;
+    local $CWD = $self->dir;
 
-    # keep changes to the environment local
-    local %ENV = %ENV;
+    my $r_in  = IO::Handle->new;
+    my $r_out = IO::Handle->new;
+    my $r_err = IO::Handle->new;
+    my $w_in  = IO::Handle->new;
+    my $w_out = IO::Handle->new;
+    my $w_err = IO::Handle->new;
 
-    if ( $self->have_env ) {
-        while ( my ( $key, $val ) = each %{ $self->env } ) {
-            if ( defined $val ) {
-                $ENV{$key} = $val;
-            }
-            else {
-                delete $ENV{$key};
-            }
-        }
-    }
+    $w_in->autoflush(1);
+    $w_out->autoflush(1);
+    $w_err->autoflush(1);
 
-    my $orig = cwd;
-    if ( $self->dir ne $orig ) {
-        ( chdir $self->dir ) || confess "Can't chdir to " . $self->dir . ": $!";
-    }
+    pipe( $r_in,  $w_in )  || die "pipe: $!";
+    pipe( $r_out, $w_out ) || die "pipe: $!";
+    pipe( $r_err, $w_err ) || die "pipe: $!";
 
     # spawn the command
     $log->debug( scalar $self->cmdline );
 
-    my ( $pid, $in, $out, $err );
+    my $pid = fork();
+    die "fork: $!" unless defined $pid;
 
-    # save standard handles
-    local *STDIN  = $REAL_STDIN;
-    local *STDOUT = $REAL_STDOUT;
-    local *STDERR = $REAL_STDERR;
+    if ( $pid == 0 ) {    # Child
+        if ( !open $REAL_STDERR, '>&=', fileno($w_err) ) {
+            print $w_err "open: $! at ", caller, "\n";
+            die "open: $!";
+        }
+        open $REAL_STDIN,  '<&=', fileno($r_in)  || die "open: $!";
+        open $REAL_STDOUT, '>&=', fileno($w_out) || die "open: $!";
 
-    if (MSWin32) {
+        close $r_out;
+        close $r_err;
+        close $r_in;
+        close $w_in;
+        close $w_out;
+        close $w_err;
 
-        # code from: http://www.perlmonks.org/?node_id=811650
-        # discussion at: http://www.perlmonks.org/?node_id=811057
-        local ( *IN_R,  *IN_W );
-        local ( *OUT_R, *OUT_W );
-        local ( *ERR_R, *ERR_W );
-        _pipe( *IN_R,  *IN_W )  or croak "input pipe error: $^E";
-        _pipe( *OUT_R, *OUT_W ) or croak "output pipe error: $^E";
-        _pipe( *ERR_R, *ERR_W ) or croak "errput pipe error: $^E";
+        if ( $self->have_env ) {
+            while ( my ( $key, $val ) = each %{ $self->env } ) {
+                if ( defined $val ) {
+                    $ENV{$key} = $val;
+                }
+                else {
+                    delete $ENV{$key};
+                }
+            }
+        }
 
-        $pid = eval { open3( '>&IN_R', '<&OUT_W', '<&ERR_W', $self->cmdline ) };
-
-        # FIXME - better check open3 error conditions
-        croak $@ if !defined $pid;
-
-        ( $in, $out, $err ) = ( *IN_W{IO}, *OUT_R{IO}, *ERR_R{IO} );
+        exec( $self->cmdline );
     }
-    else {
-        $err = Symbol::gensym;
-        $pid = eval { open3( $in, $out, $err, $self->cmdline ); };
 
-        # FIXME - better check open3 error conditions
-        croak $@ if !defined $pid;
-    }
+    # Parent continues from here
+    close $r_in;
+    close $w_out;
+    close $w_err;
 
-    $in->autoflush(1);
-    binmode $in,  ':encoding(' . $self->encoding . ')';
-    binmode $out, ':encoding(' . $self->encoding . ')';
-    binmode $err, ':encoding(' . $self->encoding . ')';
+    my $enc = ':encoding(' . $self->encoding . ')';
 
-    $self->pid($pid);
-    $self->stdin($in);
-    $self->stdout($out);
-    $self->stderr($err);
+    binmode $w_in,  $enc;
+    binmode $r_out, $enc;
+    binmode $r_err, $enc;
 
     # some input was provided
     if ( $self->have_input ) {
         local $SIG{PIPE} =
           sub { warn "Broken pipe when writing to:" . $self->cmdline };
 
-        print { $self->stdin } $self->input if length $self->input;
+        print {$w_in} $self->input if length $self->input;
 
-        if (MSWin32) {
-            $self->stdin->flush;
-            shutdown( $self->stdin, 2 );
-        }
-        else {
-            $self->stdin->close;
-        }
+        $w_in->close;
     }
 
-    # chdir back to origin
-    if ( $self->dir ne $orig ) {
-        ( chdir $orig ) || croak "Can't chdir back to $orig: $!";
-    }
+    $self->pid($pid);
+    $self->stdin($w_in);
+    $self->stdout($r_out);
+    $self->stderr($r_err);
     return;
 }
 
@@ -283,16 +257,9 @@ sub close {
     my $out = $self->stdout;
     my $err = $self->stderr;
 
-    if (MSWin32) {
-        $in->opened  and shutdown( $in,  2 ) || carp "error closing stdin: $!";
-        $out->opened and shutdown( $out, 2 ) || carp "error closing stdout: $!";
-        $err->opened and shutdown( $err, 2 ) || carp "error closing stderr: $!";
-    }
-    else {
-        $in->opened  and $in->close  || carp "error closing stdin: $!";
-        $out->opened and $out->close || carp "error closing stdout: $!";
-        $err->opened and $err->close || carp "error closing stderr: $!";
-    }
+    $in->opened  and $in->close  || carp "error closing stdin: $!";
+    $out->opened and $out->close || carp "error closing stdout: $!";
+    $err->opened and $err->close || carp "error closing stderr: $!";
 
     # and wait for the child
     my $pid = waitpid $self->pid, 0;
