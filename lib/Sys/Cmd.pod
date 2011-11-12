@@ -225,7 +225,7 @@ L<Sys::Cmd::Template>
 L<IPC::Open3>, L<IPC::Open3::Simple>, L<IPC::Run>, L<IPC::Run3>,
 L<IPC::Cmd>, L<IPC::Capture>, L<IPC::Exe>, L<Spawn::Safe>,
 L<Proc::Spawn>, L<IPC::ShellCmd>, L<System::Command>, L<Forks::Super>,
-L<IPC::RunSession::Simple>, L<Capture::Tiny>
+L<IPC::RunSession::Simple>, L<Capture::Tiny>, L<Argv>
 
 =head1 SUPPORT
 
