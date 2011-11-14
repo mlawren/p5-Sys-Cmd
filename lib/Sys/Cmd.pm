@@ -70,11 +70,10 @@ sub runx {
 sub spawn {
     my @cmd = grep { ref $_ ne 'HASH' } @_;
 
-    my $bin = $cmd[0];
-    defined $bin || confess '$cmd must be defined';
+    defined $cmd[0] || confess '$cmd must be defined';
 
-    if ( !-f $bin and splitdir($bin) < 2 ) {
-        $cmd[0] = which($bin) || confess 'command not found: ' . $bin;
+    if ( !-f $cmd[0] ) {
+        $cmd[0] = which( $cmd[0] ) || confess 'command not found: ' . $cmd[0];
     }
 
     my @opts = grep { ref $_ eq 'HASH' } @_;
