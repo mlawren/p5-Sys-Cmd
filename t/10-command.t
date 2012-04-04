@@ -147,7 +147,7 @@ for my $t ( @tests, @fail ) {
     );
 
     # close and check
-    $cmd->close();
+    $cmd->wait_child();
     is( $cmd->exit,   0, 'exit 0' );
     is( $cmd->signal, 0, 'no signal received' );
     is( $cmd->core, $t->{core} || 0, 'no core dumped' );

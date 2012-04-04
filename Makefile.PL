@@ -10,6 +10,7 @@ requires 'Carp'          => 0;
 requires 'Cwd'           => 0;
 requires 'IO::Handle'    => 0;
 requires 'Log::Any'      => 0;
+requires 'POSIX'         => 0;
 requires 'Sub::Exporter' => 0;
 requires 'File::Which'   => 0;
 requires 'File::chdir'   => '0.08';

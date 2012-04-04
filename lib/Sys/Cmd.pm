@@ -10,6 +10,7 @@ use File::chdir;
 use File::Which qw/which/;
 use Log::Any qw/$log/;
 use File::Spec::Functions qw/splitdir/;
+use POSIX ":sys_wait_h";
 use Sub::Exporter -setup => { exports => [qw/spawn run runx/], };
 
 our $VERSION = '0.07_2';
@@ -30,7 +31,7 @@ sub run {
     my @out  = $proc->stdout->getlines;
     my @err  = $proc->stderr->getlines;
 
-    $proc->close;
+    $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
         confess( join( '', @err ) . 'Command exited with value ' . $proc->exit )
@@ -51,7 +52,7 @@ sub runx {
     my @out  = $proc->stdout->getlines;
     my @err  = $proc->stderr->getlines;
 
-    $proc->close;
+    $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
         confess( join( '', @err ) . 'Command exited with value ' . $proc->exit )
@@ -140,6 +141,11 @@ has 'stderr' => (
     init_arg => undef,
 );
 
+has _on_exit => (
+    is       => 'rw',
+    init_arg => 'on_exit',
+);
+
 has 'exit' => (
     is        => 'rw',
     init_arg  => undef,
@@ -155,6 +161,8 @@ has 'core' => (
     is       => 'rw',
     init_arg => undef,
 );
+
+my @children;
 
 sub BUILD {
     my $self = shift;
@@ -175,13 +183,21 @@ sub BUILD {
     pipe( $r_out, $w_out ) || die "pipe: $!";
     pipe( $r_err, $w_err ) || die "pipe: $!";
 
+    push( @children, $self );
+    $SIG{CHLD} ||= \&_reap if $self->_on_exit;
+
     # spawn the command
     $log->debug( scalar $self->cmdline );
 
-    my $pid = fork();
-    die "fork: $!" unless defined $pid;
+    $self->pid( fork() );
+    if ( !defined $self->pid ) {
+        my $why = $!;
+        pop @children;
+        die "fork: $why";
+    }
 
-    if ( $pid == 0 ) {    # Child
+    if ( $self->pid == 0 ) {    # Child
+        $SIG{CHLD} = 'DEFAULT';
         if ( !open $REAL_STDERR, '>&=', fileno($w_err) ) {
             print $w_err "open: $! at ", caller, "\n";
             die "open: $!";
@@ -231,7 +247,6 @@ sub BUILD {
         $w_in->close;
     }
 
-    $self->pid($pid);
     $self->stdin($w_in);
     $self->stdout($r_out);
     $self->stderr($r_err);
@@ -248,11 +263,102 @@ sub cmdline {
     }
 }
 
+# A signal handler, not a method
+sub _reap {
+    my $sig = shift;
+    my $try = shift || '';
+
+    croak '_reap("CHLD",[$pid])' unless $sig eq 'CHLD';
+
+    while (1) {
+        my $pid;
+        local $?;
+        local $!;
+
+        if ($try) {
+            $pid = waitpid $try, 0;
+            $try = undef;
+        }
+        else {
+            $pid = waitpid -1, &WNOHANG;
+        }
+
+        my $ret = $?;
+
+        if ( $pid == -1 ) {
+
+            # No child processes running
+            last;
+        }
+        elsif ( $pid == 0 ) {
+
+            # child processes still running, but not ours??
+            last;
+        }
+
+        if ( $ret == -1 ) {
+
+            # So waitpid returned a PID but then sets $? to this
+            # strange value? (Strange in that tests randomly show it to
+            # be invalid.) Most likely a perl bug; I think that waitpid
+            # got interrupted and when it restarts/resumes the status
+            # is lost.
+            #
+            # See http://www.perlmonks.org/?node_id=641620 for a
+            # possibly related discussion.
+            #
+            # However, since I localised $? and $! above I haven't seen
+            # this problem again, so I hope that is a good enough work
+            # around. Lets warn any way so that we know when something
+            # dodgy is going on.
+            warn __PACKAGE__
+              . ' received invalid child exit status for pid '
+              . $pid
+              . ' Setting to 0';
+            $ret = 0;
+
+        }
+
+        my @dead = grep { $_->pid == $pid } @children;
+        @children = grep { $_->pid != $pid } @children;
+
+        if ( !@dead ) {
+            warn __PACKAGE__
+              . ' not our child: '
+              . $pid
+              . ' exit '
+              . ( $ret >> 8 )
+              . ' signal '
+              . ( $ret & 127 )
+              . ' core '
+              . ( $ret & 128 );
+            next;
+        }
+
+        foreach my $child (@dead) {
+            $child->exit( $ret >> 8 );
+            $child->signal( $ret & 127 );
+            $child->core( $ret & 128 );
+            if ( my $subref = $child->_on_exit ) {
+                $subref->($child);
+            }
+        }
+    }
+
+    return;
+}
+
+sub wait_child {
+    my $self = shift;
+
+    _reap( 'CHLD', $self->pid ) unless $self->have_exit;
+    return;
+}
+
 sub close {
     my $self = shift;
 
-    # close all pipes
-    my $in  = $self->stdin;
+    my $in  = $self->stdin || return;
     my $out = $self->stdout;
     my $err = $self->stderr;
 
@@ -260,26 +366,19 @@ sub close {
     $out->opened and $out->close || carp "error closing stdout: $!";
     $err->opened and $err->close || carp "error closing stderr: $!";
 
-    # and wait for the child
-    my $pid = waitpid $self->pid, 0;
-
-    # check $?
-    my $ret = $?;
-
-    if ( $pid != $self->pid ) {
-        croak "Child process already reaped, check for a SIGCHLD handler";
-    }
-
-    $self->exit( $ret >> 8 );
-    $self->signal( $ret & 127 );
-    $self->core( $ret & 128 );
+    $self->stdin(undef);
+    $self->stdout(undef);
+    $self->stderr(undef);
 
     return;
 }
 
 sub DESTROY {
     my $self = shift;
-    $self->close if !$self->have_exit;
+
+    $self->close;
+    _reap( 'CHLD', $self->pid ) unless $self->have_exit;
+    return;
 }
 
 1;

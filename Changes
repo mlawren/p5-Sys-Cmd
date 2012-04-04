@@ -1,3 +1,15 @@
+    API Changes:
+        - Split wait_child() out of close().
+
+    New Features:
+        - SIGCHLD handler and "on_exit" subref support
+
+    Enhancements:
+        - N/A
+
+    Bug Fixes:
+        - N/A
+
 0.05 (2011-09-20)
 
     API Changes:
@@ -5,9 +17,10 @@
         - In doing the above rename the following functionality changes
           also took place: "Sys::Command::Process" became "Sys::Cmd".
           "Sys::Command" became "Sys::Cmd::Template".
+        - Split wait_child() out of close().
 
     New Features:
-        - N/A
+        - SIGCHLD handler and "on_exit" subref support
 
     Enhancements:
         - Borrowed some tests from System::Command.
