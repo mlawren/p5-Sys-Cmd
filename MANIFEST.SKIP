@@ -1,8 +1,13 @@
 build-stamp
 install-stamp
 Makefile$
+Makefile.old$
 MANIFEST.bak
 \.git
 \.swp$
 .perltidyrc
 x/
+old/
+pm_to_blib
+blib/
+TODO
