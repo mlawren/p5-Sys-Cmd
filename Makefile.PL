@@ -4,6 +4,7 @@ use inc::Module::Install;
 name 'Sys-Cmd';
 license 'Perl';
 all_from 'lib/Sys/Cmd.pm';
+readme_from 'lib/Sys/Cmd.pod';
 
 requires 'Moo'           => 0;
 requires 'Carp'          => 0;
