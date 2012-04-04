@@ -8,7 +8,8 @@
         - N/A
 
     Bug Fixes:
-        - N/A
+        - Filehandle fixes from inherited code as described here:
+            https://rt.cpan.org/Public/Bug/Display.html?id=73614
 
 0.05 (2011-09-20)
 

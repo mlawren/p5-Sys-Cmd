@@ -16,16 +16,6 @@ use Sub::Exporter -setup => { exports => [qw/spawn run runx/], };
 our $VERSION = '0.07_2';
 our $CONFESS;
 
-# Trap the real STDIN/ERR/OUT file handles in case someone
-# *COUGH* Catalyst *COUGH* screws with them which breaks open3
-my ( $REAL_STDIN, $REAL_STDOUT, $REAL_STDERR );
-
-BEGIN {
-    open $REAL_STDIN,  "<&=" . fileno(*STDIN);
-    open $REAL_STDOUT, ">>&=" . fileno(*STDOUT);
-    open $REAL_STDERR, ">>&=" . fileno(*STDERR);
-}
-
 sub run {
     my $proc = spawn(@_);
     my @out  = $proc->stdout->getlines;
@@ -198,12 +188,12 @@ sub BUILD {
 
     if ( $self->pid == 0 ) {    # Child
         $SIG{CHLD} = 'DEFAULT';
-        if ( !open $REAL_STDERR, '>&=', fileno($w_err) ) {
+        if ( !open STDERR, '>&=', fileno($w_err) ) {
             print $w_err "open: $! at ", caller, "\n";
             die "open: $!";
         }
-        open $REAL_STDIN,  '<&=', fileno($r_in)  || die "open: $!";
-        open $REAL_STDOUT, '>&=', fileno($w_out) || die "open: $!";
+        open STDIN,  '<&=', fileno($r_in)  || die "open: $!";
+        open STDOUT, '>&=', fileno($w_out) || die "open: $!";
 
         close $r_out;
         close $r_err;
