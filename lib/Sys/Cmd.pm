@@ -13,7 +13,7 @@ use File::Spec::Functions qw/splitdir/;
 use POSIX ":sys_wait_h";
 use Sub::Exporter -setup => { exports => [qw/spawn run runx/], };
 
-our $VERSION = '0.07_3';
+our $VERSION = '0.08';
 our $CONFESS;
 
 sub run {
