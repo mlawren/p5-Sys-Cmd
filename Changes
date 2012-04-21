@@ -1,19 +1,37 @@
-0.98_4 (2011-06-23)
+0.08 (2012-04-21)
+
+    API Changes:
+        - Split wait_child() out of close().
+
+    New Features:
+        - SIGCHLD handler and "on_exit" subref support
+
+    Enhancements:
+        - More informative debugging output
+
+    Bug Fixes:
+        - Filehandle fixes from inherited code as described here:
+            https://rt.cpan.org/Public/Bug/Display.html?id=73614
+
+0.05 (2011-09-20)
 
     API Changes:
         - Renamed from Sys::Command to Sys::Cmd.
         - In doing the above rename the following functionality changes
           also took place: "Sys::Command::Process" became "Sys::Cmd".
           "Sys::Command" became "Sys::Cmd::Template".
+        - Split wait_child() out of close().
 
     New Features:
-        - N/A
+        - SIGCHLD handler and "on_exit" subref support
 
     Enhancements:
         - Borrowed some tests from System::Command.
+        - Confess on command not found.
 
     Bug Fixes:
-        - Add missing dependency on File::Which.
+        - Add missing dependency on File::Which plus various
+          test_requires modules.
 
 0.04 (2011-06-09)
 

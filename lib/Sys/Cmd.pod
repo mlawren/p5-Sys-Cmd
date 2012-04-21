@@ -5,7 +5,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.98_4 Development release.
+0.08
 
 =head1 SYNOPSIS
 
@@ -20,11 +20,15 @@ Sys::Cmd - run a system command or spawn a system processes
 
     # Spawn and interact with a process somewhere else:
     $proc = spawn( @cmd, { dir => '/' , encoding => 'iso-8859-3'} );
+
     while (my $line = $proc->stdout->getline) {
         $proc->stdin->print("thanks");
     }
+
     my @errors = $proc->stderr->getlines;
-    $proc->close();     # Done!
+
+    $proc->wait_child();  # Done!
+    $proc->close();       # Cleanup
 
     # read exit information
     $proc->exit();      # exit status
@@ -99,6 +103,10 @@ constructor if you prefer that to the C<spawn> function:
         env => { SOME => 'VALUE' },
         enc => 'iso-8859-3',
         input => 'feedme',
+        on_exit => sub {
+            my $proc = shift;
+            print $proc->pid .' exited with '. $proc->exit;
+        },
     );
 
 Note that B<Sys::Cmd> objects created this way will not lookup the
@@ -116,6 +124,10 @@ B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes.
 Spawns a process based on %args. %args must contain at least a C<cmd>
 value, and optionally C<encoding>, C<env>, C<dir> and C<input> values
 as defined as attributes below.
+
+If an C<on_exit> subref argument is provided a SIGCHLD handler will be
+installed (process wide!) which is called asynchronously (with the
+B<Sys::Cmd> object as first argument) when the child exits.
 
 =back
 
@@ -148,10 +160,10 @@ from the environment altogether.
 
 A string which is fed to the command via its standard input, which is
 then closed. This is a shortcut for printing to, and closing the
-commands stdin file-handle. An empty string will close the command's
-standard input without writing to it. On some systems, some commands
-may close standard input on startup, which will cause a SIGPIPE when
-trying to write to it. This will raise an exception.
+command's I<stdin> file-handle. An empty string will close the
+command's standard input without writing to it. On some systems, some
+commands may close standard input on startup, which will cause a
+SIGPIPE when trying to write to it. This will raise an exception.
 
 =item pid
 
@@ -159,35 +171,37 @@ The command's process ID.
 
 =item stdin
 
-The command's C<STDIN> file handle, based on L<IO::Handle> so you can
+The command's I<STDIN> file handle, based on L<IO::Handle> so you can
 call print() etc methods on it. Autoflush is automatically enabled on
 this handle.
 
 =item stdout
 
-The command's C<STDOUT> file handle, based on L<IO::Handle> so you can
+The command's I<STDOUT> file handle, based on L<IO::Handle> so you can
 call getline() etc methods on it.
 
 =item stderr
 
-The command's C<STDERR> file handle, based on L<IO::Handle> so you can
+The command's I<STDERR> file handle, based on L<IO::Handle> so you can
 call getline() etc methods on it.
 
 =item exit
 
 The command's exit value, shifted by 8 (see "perldoc -f system"). Set
-only after the close() method has been called.
+either when a SIGCHLD is received or after a call to C<wait_child()>.
 
 =item signal
 
 The signal number (if any) that terminated the command, bitwise-added
-with 127 (see "perldoc -f system"). Set only after the close() method
-has been called.
+with 127 (see "perldoc -f system"). Set either when a SIGCHLD is
+received or after a call to C<wait_child()>.
+
 
 =item core
 
-A boolean indicating the process core was dumped. Set only after the
-close() method has been called.
+A boolean indicating the process core was dumped. Set either when a
+SIGCHLD is received or after a call to C<wait_child()>.
+
 
 =back
 
@@ -201,14 +215,17 @@ In array context returns a list of the command and its arguments.  In
 scalar context returns a string of the command and its arguments joined
 together by spaces.
 
+=item wait_child()
+
+Wait for the child to exit and collect the exit status. This method is
+resposible for setting the I<exit>, I<signal> and I<core> attributes.
+
 =item close()
 
-Close all pipes to the child process, and collects exit status, etc.
-and defines a number of attributes (see above).
-
-Note that C<close()> is automatically called when the C<Sys::Cmd>
-object is destroyed. Annoyingly, this means that in the following
-example C<$fh> will be closed when you tried to use it:
+Close all pipes to the child process.  This method is automatically
+called when the C<Sys::Cmd> object is destroyed.  Annoyingly, this
+means that in the following example C<$fh> will be closed when you
+tried to use it:
 
     my $fh = Sys::Cmd->new( %args )->stdout;
 
@@ -225,7 +242,9 @@ L<Sys::Cmd::Template>
 L<IPC::Open3>, L<IPC::Open3::Simple>, L<IPC::Run>, L<IPC::Run3>,
 L<IPC::Cmd>, L<IPC::Capture>, L<IPC::Exe>, L<Spawn::Safe>,
 L<Proc::Spawn>, L<IPC::ShellCmd>, L<System::Command>, L<Forks::Super>,
-L<IPC::RunSession::Simple>
+L<IPC::RunSession::Simple>, L<Capture::Tiny>, L<Argv>,
+L<IPC::Command::Multiplex>, L<POE::Pipe::TwoWay>, L<AnyEvent::Util>,
+L<AnyEvent::Run>, L<Child>, L<Proc::Background>
 
 =head1 SUPPORT
 
@@ -248,7 +267,7 @@ L<Git::Repository::Command> by Philippe Bruhat (BooK).
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2011 Mark Lawrence <nomad@null.net>
+Copyright 2011-2012 Mark Lawrence <nomad@null.net>
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the

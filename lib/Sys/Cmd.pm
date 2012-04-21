@@ -5,39 +5,23 @@ use 5.006;
 use Moo;
 use Carp qw/carp confess croak/;
 use Cwd qw/cwd/;
-use Sub::Exporter -setup => { exports => [qw/spawn run runx/], };
 use IO::Handle;
-use IPC::Open3 qw/open3/;
+use File::chdir;
 use File::Which qw/which/;
 use Log::Any qw/$log/;
 use File::Spec::Functions qw/splitdir/;
+use POSIX ":sys_wait_h";
+use Sub::Exporter -setup => { exports => [qw/spawn run runx/], };
 
-our $VERSION = '0.98_4';
+our $VERSION = '0.08';
 our $CONFESS;
-
-# MSWin32 support
-use constant MSWin32 => $^O eq 'MSWin32';
-if (MSWin32) {
-    require Socket;
-    Socket->import(qw( AF_UNIX SOCK_STREAM PF_UNSPEC ));
-}
-
-# Trap the real STDIN/ERR/OUT file handles in case someone
-# *COUGH* Catalyst *COUGH* screws with them which breaks open3
-my ( $REAL_STDIN, $REAL_STDOUT, $REAL_STDERR );
-
-BEGIN {
-    open $REAL_STDIN,  "<&=" . fileno(*STDIN);
-    open $REAL_STDOUT, ">>&=" . fileno(*STDOUT);
-    open $REAL_STDERR, ">>&=" . fileno(*STDERR);
-}
 
 sub run {
     my $proc = spawn(@_);
     my @out  = $proc->stdout->getlines;
     my @err  = $proc->stderr->getlines;
 
-    $proc->close;
+    $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
         confess( join( '', @err ) . 'Command exited with value ' . $proc->exit )
@@ -58,7 +42,7 @@ sub runx {
     my @out  = $proc->stdout->getlines;
     my @err  = $proc->stderr->getlines;
 
-    $proc->close;
+    $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
         confess( join( '', @err ) . 'Command exited with value ' . $proc->exit )
@@ -77,11 +61,10 @@ sub runx {
 sub spawn {
     my @cmd = grep { ref $_ ne 'HASH' } @_;
 
-    my $bin = $cmd[0];
-    defined $bin || confess '$cmd must be defined';
+    defined $cmd[0] || confess '$cmd must be defined';
 
-    if ( !-f $bin and splitdir($bin) < 2 ) {
-        $cmd[0] = which($bin);
+    if ( !-f $cmd[0] ) {
+        $cmd[0] = which( $cmd[0] ) || confess 'command not found: ' . $cmd[0];
     }
 
     my @opts = grep { ref $_ eq 'HASH' } @_;
@@ -100,6 +83,9 @@ has 'cmd' => (
     isa => sub {
         ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF";
         @{ $_[0] } || confess "Missing cmd elements";
+        if ( grep { !defined $_ } @{ $_[0] } ) {
+            confess 'cmd array cannot contain undef elements';
+        }
     },
     required => 1,
 );
@@ -110,10 +96,8 @@ has 'encoding' => (
 );
 
 has 'env' => (
-    is  => 'ro',
-    isa => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
-
-    #    default   => sub { {} },
+    is        => 'ro',
+    isa       => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
     predicate => 'have_env',
 );
 
@@ -147,6 +131,11 @@ has 'stderr' => (
     init_arg => undef,
 );
 
+has _on_exit => (
+    is       => 'rw',
+    init_arg => 'on_exit',
+);
+
 has 'exit' => (
     is        => 'rw',
     init_arg  => undef,
@@ -163,102 +152,93 @@ has 'core' => (
     init_arg => undef,
 );
 
-sub _pipe {
-    socketpair( $_[0], $_[1], AF_UNIX(), SOCK_STREAM(), PF_UNSPEC() )
-      or return undef;
-    shutdown( $_[0], 1 );    # No more writing for reader
-    shutdown( $_[1], 0 );    # No more reading for writer
-    return 1;
-}
+my @children;
 
 sub BUILD {
     my $self = shift;
+    local $CWD = $self->dir;
 
-    # keep changes to the environment local
-    local %ENV = %ENV;
+    my $r_in  = IO::Handle->new;
+    my $r_out = IO::Handle->new;
+    my $r_err = IO::Handle->new;
+    my $w_in  = IO::Handle->new;
+    my $w_out = IO::Handle->new;
+    my $w_err = IO::Handle->new;
 
-    if ( $self->have_env ) {
-        while ( my ( $key, $val ) = each %{ $self->env } ) {
-            if ( defined $val ) {
-                $ENV{$key} = $val;
-            }
-            else {
-                delete $ENV{$key};
+    $w_in->autoflush(1);
+    $w_out->autoflush(1);
+    $w_err->autoflush(1);
+
+    pipe( $r_in,  $w_in )  || die "pipe: $!";
+    pipe( $r_out, $w_out ) || die "pipe: $!";
+    pipe( $r_err, $w_err ) || die "pipe: $!";
+
+    push( @children, $self );
+    $SIG{CHLD} ||= \&_reap if $self->_on_exit;
+
+    $self->pid( fork() );
+    if ( !defined $self->pid ) {
+        my $why = $!;
+        pop @children;
+        die "fork: $why";
+    }
+
+    if ( $self->pid == 0 ) {    # Child
+        $SIG{CHLD} = 'DEFAULT';
+        if ( !open STDERR, '>&=', fileno($w_err) ) {
+            print $w_err "open: $! at ", caller, "\n";
+            die "open: $!";
+        }
+        open STDIN,  '<&=', fileno($r_in)  || die "open: $!";
+        open STDOUT, '>&=', fileno($w_out) || die "open: $!";
+
+        close $r_out;
+        close $r_err;
+        close $r_in;
+        close $w_in;
+        close $w_out;
+        close $w_err;
+
+        if ( $self->have_env ) {
+            while ( my ( $key, $val ) = each %{ $self->env } ) {
+                if ( defined $val ) {
+                    $ENV{$key} = $val;
+                }
+                else {
+                    delete $ENV{$key};
+                }
             }
         }
+
+        exec( $self->cmdline );
     }
 
-    my $orig = cwd;
-    if ( $self->dir ne $orig ) {
-        ( chdir $self->dir ) || confess "Can't chdir to " . $self->dir . ": $!";
-    }
+    $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
 
-    # spawn the command
-    $log->debug( scalar $self->cmdline );
+    # Parent continues from here
+    close $r_in;
+    close $w_out;
+    close $w_err;
 
-    my ( $pid, $in, $out, $err );
+    my $enc = ':encoding(' . $self->encoding . ')';
 
-    # save standard handles
-    local *STDIN  = $REAL_STDIN;
-    local *STDOUT = $REAL_STDOUT;
-    local *STDERR = $REAL_STDERR;
-
-    if (MSWin32) {
-
-        # code from: http://www.perlmonks.org/?node_id=811650
-        # discussion at: http://www.perlmonks.org/?node_id=811057
-        local ( *IN_R,  *IN_W );
-        local ( *OUT_R, *OUT_W );
-        local ( *ERR_R, *ERR_W );
-        _pipe( *IN_R,  *IN_W )  or croak "input pipe error: $^E";
-        _pipe( *OUT_R, *OUT_W ) or croak "output pipe error: $^E";
-        _pipe( *ERR_R, *ERR_W ) or croak "errput pipe error: $^E";
-
-        $pid = eval { open3( '>&IN_R', '<&OUT_W', '<&ERR_W', $self->cmdline ) };
-
-        # FIXME - better check open3 error conditions
-        croak $@ if !defined $pid;
-
-        ( $in, $out, $err ) = ( *IN_W{IO}, *OUT_R{IO}, *ERR_R{IO} );
-    }
-    else {
-        $err = Symbol::gensym;
-        $pid = eval { open3( $in, $out, $err, $self->cmdline ); };
-
-        # FIXME - better check open3 error conditions
-        croak $@ if !defined $pid;
-    }
-
-    $in->autoflush(1);
-    binmode $in,  ':encoding(' . $self->encoding . ')';
-    binmode $out, ':encoding(' . $self->encoding . ')';
-    binmode $err, ':encoding(' . $self->encoding . ')';
-
-    $self->pid($pid);
-    $self->stdin($in);
-    $self->stdout($out);
-    $self->stderr($err);
+    binmode $w_in,  $enc;
+    binmode $r_out, $enc;
+    binmode $r_err, $enc;
 
     # some input was provided
     if ( $self->have_input ) {
         local $SIG{PIPE} =
-          sub { croak "Broken pipe when writing to:" . $self->cmdline };
+          sub { warn "Broken pipe when writing to:" . $self->cmdline };
 
-        print { $self->stdin } $self->input if length $self->input;
+        print {$w_in} $self->input if length $self->input;
 
-        if (MSWin32) {
-            $self->stdin->flush;
-            shutdown( $self->stdin, 2 );
-        }
-        else {
-            $self->stdin->close;
-        }
+        $w_in->close;
     }
 
-    # chdir back to origin
-    if ( $self->dir ne $orig ) {
-        ( chdir $orig ) || croak "Can't chdir back to $orig: $!";
-    }
+    $self->stdin($w_in);
+    $self->stdout($r_out);
+    $self->stderr($r_err);
     return;
 }
 
@@ -272,45 +252,126 @@ sub cmdline {
     }
 }
 
+# A signal handler, not a method
+sub _reap {
+    my $sig = shift;
+    my $try = shift || '';
+
+    croak '_reap("CHLD",[$pid])' unless $sig eq 'CHLD';
+
+    while (1) {
+        my $pid;
+        local $?;
+        local $!;
+
+        if ($try) {
+            $pid = waitpid $try, 0;
+            $try = undef;
+        }
+        else {
+            $pid = waitpid -1, &WNOHANG;
+        }
+
+        my $ret = $?;
+
+        if ( $pid == -1 ) {
+
+            # No child processes running
+            last;
+        }
+        elsif ( $pid == 0 ) {
+
+            # child processes still running, but not ours??
+            last;
+        }
+
+        if ( $ret == -1 ) {
+
+            # So waitpid returned a PID but then sets $? to this
+            # strange value? (Strange in that tests randomly show it to
+            # be invalid.) Most likely a perl bug; I think that waitpid
+            # got interrupted and when it restarts/resumes the status
+            # is lost.
+            #
+            # See http://www.perlmonks.org/?node_id=641620 for a
+            # possibly related discussion.
+            #
+            # However, since I localised $? and $! above I haven't seen
+            # this problem again, so I hope that is a good enough work
+            # around. Lets warn any way so that we know when something
+            # dodgy is going on.
+            warn __PACKAGE__
+              . ' received invalid child exit status for pid '
+              . $pid
+              . ' Setting to 0';
+            $ret = 0;
+
+        }
+
+        my @dead = grep { $_->pid == $pid } @children;
+        @children = grep { $_->pid != $pid } @children;
+
+        if ( !@dead ) {
+            warn __PACKAGE__
+              . ' not our child: '
+              . $pid
+              . ' exit '
+              . ( $ret >> 8 )
+              . ' signal '
+              . ( $ret & 127 )
+              . ' core '
+              . ( $ret & 128 );
+            next;
+        }
+
+        foreach my $child (@dead) {
+            $log->debugf( '(PID %d) exit: %d signal:%d core:%d',
+                $child->pid, $ret >> 8, $ret & 127, $ret & 128 );
+
+            $child->exit( $ret >> 8 );
+            $child->signal( $ret & 127 );
+            $child->core( $ret & 128 );
+
+            if ( my $subref = $child->_on_exit ) {
+                $subref->($child);
+            }
+        }
+    }
+
+    return;
+}
+
+sub wait_child {
+    my $self = shift;
+
+    _reap( 'CHLD', $self->pid ) unless $self->have_exit;
+    return;
+}
+
 sub close {
     my $self = shift;
 
-    # close all pipes
-    my $in  = $self->stdin;
+    my $in  = $self->stdin || return;
     my $out = $self->stdout;
     my $err = $self->stderr;
 
-    if (MSWin32) {
-        $in->opened  and shutdown( $in,  2 ) || carp "error closing stdin: $!";
-        $out->opened and shutdown( $out, 2 ) || carp "error closing stdout: $!";
-        $err->opened and shutdown( $err, 2 ) || carp "error closing stderr: $!";
-    }
-    else {
-        $in->opened  and $in->close  || carp "error closing stdin: $!";
-        $out->opened and $out->close || carp "error closing stdout: $!";
-        $err->opened and $err->close || carp "error closing stderr: $!";
-    }
+    $in->opened  and $in->close  || carp "error closing stdin: $!";
+    $out->opened and $out->close || carp "error closing stdout: $!";
+    $err->opened and $err->close || carp "error closing stderr: $!";
 
-    # and wait for the child
-    my $pid = waitpid $self->pid, 0;
-
-    # check $?
-    my $ret = $?;
-
-    if ( $pid != $self->pid ) {
-        croak "Child process already reaped, check for a SIGCHLD handler";
-    }
-
-    $self->exit( $ret >> 8 );
-    $self->signal( $ret & 127 );
-    $self->core( $ret & 128 );
+    $self->stdin(undef);
+    $self->stdout(undef);
+    $self->stderr(undef);
 
     return;
 }
 
 sub DESTROY {
     my $self = shift;
-    $self->close if !$self->have_exit;
+
+    $self->close;
+    _reap( 'CHLD', $self->pid ) unless $self->have_exit;
+    return;
 }
 
 1;

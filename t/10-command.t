@@ -83,7 +83,7 @@ my @fail = (
     {
         cmdline =>
           [ $^X, $name, { dir => File::Spec->catdir( $dir, 'nothere' ) } ],
-        fail    => qr/^Can't chdir to /,
+        fail    => qr/^Failed to change directory/,
         options => {},
     },
 );
@@ -95,7 +95,7 @@ for my $t ( @tests, @fail ) {
     # run the command
     my $cmd = eval { spawn( @{ $t->{cmdline} } ) };
     if ( $t->{fail} ) {
-        ok( !$cmd, 'command failed' );
+        ok( !$cmd, 'command failed: ' . ( defined $cmd ? $cmd : '' ) );
         like( $@, $t->{fail}, '... expected error message' );
         next;
     }
@@ -147,7 +147,7 @@ for my $t ( @tests, @fail ) {
     );
 
     # close and check
-    $cmd->close();
+    $cmd->wait_child();
     is( $cmd->exit,   0, 'exit 0' );
     is( $cmd->signal, 0, 'no signal received' );
     is( $cmd->core, $t->{core} || 0, 'no core dumped' );
