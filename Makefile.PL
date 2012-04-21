@@ -6,15 +6,15 @@ license 'Perl';
 all_from 'lib/Sys/Cmd.pm';
 readme_from 'lib/Sys/Cmd.pod';
 
-requires 'Moo'           => 0;
-requires 'Carp'          => 0;
-requires 'Cwd'           => 0;
-requires 'IO::Handle'    => 0;
-requires 'Log::Any'      => 0;
-requires 'POSIX'         => 0;
-requires 'Sub::Exporter' => 0;
-requires 'File::Which'   => 0;
-requires 'File::chdir'   => '0.08';
+requires 'Moo'            => 0;
+requires 'Carp'           => 0;
+requires 'Cwd'            => 0;
+requires 'Exporter::Lite' => 0;
+requires 'IO::Handle'     => 0;
+requires 'Log::Any'       => 0;
+requires 'POSIX'          => 0;
+requires 'File::Which'    => 0;
+requires 'File::chdir'    => '0.08';
 
 test_requires 'Test::More'   => 0;
 test_requires 'File::Temp'   => 0;
