@@ -176,9 +176,6 @@ sub BUILD {
     push( @children, $self );
     $SIG{CHLD} ||= \&_reap if $self->_on_exit;
 
-    # spawn the command
-    $log->debug( scalar $self->cmdline );
-
     $self->pid( fork() );
     if ( !defined $self->pid ) {
         my $why = $!;
@@ -215,6 +212,8 @@ sub BUILD {
 
         exec( $self->cmdline );
     }
+
+    $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
 
     # Parent continues from here
     close $r_in;
@@ -326,9 +325,13 @@ sub _reap {
         }
 
         foreach my $child (@dead) {
+            $log->debugf( '(PID %d) exit: %d signal:%d core:%d',
+                $child->pid, $ret >> 8, $ret & 127, $ret & 128 );
+
             $child->exit( $ret >> 8 );
             $child->signal( $ret & 127 );
             $child->core( $ret & 128 );
+
             if ( my $subref = $child->_on_exit ) {
                 $subref->($child);
             }
