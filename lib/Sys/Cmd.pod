@@ -239,12 +239,13 @@ L<Sys::Cmd::Template>
 
 =head1 ALTERNATIVES
 
-L<IPC::Open3>, L<IPC::Open3::Simple>, L<IPC::Run>, L<IPC::Run3>,
-L<IPC::Cmd>, L<IPC::Capture>, L<IPC::Exe>, L<Spawn::Safe>,
-L<Proc::Spawn>, L<IPC::ShellCmd>, L<System::Command>, L<Forks::Super>,
-L<IPC::RunSession::Simple>, L<Capture::Tiny>, L<Argv>,
-L<IPC::Command::Multiplex>, L<POE::Pipe::TwoWay>, L<AnyEvent::Util>,
-L<AnyEvent::Run>, L<Child>, L<Proc::Background>
+L<AnyEvent::Run>, L<AnyEvent::Util>, L<Argv>, L<Capture::Tiny>,
+L<Child>, L<Forks::Super>, L<IPC::Capture>, L<IPC::Cmd>,
+L<IPC::Command::Multiplex>, L<IPC::Exe>, L<IPC::Open3>,
+L<IPC::Open3::Simple>, L<IPC::Run>, L<IPC::Run3>,
+L<IPC::RunSession::Simple>, L<IPC::ShellCmd>, L<POE::Pipe::TwoWay>,
+L<Proc::Background>, L<Proc::Fork>, L<Proc::Spawn>, L<Spawn::Safe>,
+L<System::Command>
 
 =head1 SUPPORT
 
