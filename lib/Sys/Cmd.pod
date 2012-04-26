@@ -240,7 +240,7 @@ L<Sys::Cmd::Template>
 =head1 ALTERNATIVES
 
 L<AnyEvent::Run>, L<AnyEvent::Util>, L<Argv>, L<Capture::Tiny>,
-L<Child>, L<Forks::Super>, L<IPC::Capture>, L<IPC::Cmd>,
+L<Child>, L<Forks::Super>, L<IO::Pipe>, L<IPC::Capture>, L<IPC::Cmd>,
 L<IPC::Command::Multiplex>, L<IPC::Exe>, L<IPC::Open3>,
 L<IPC::Open3::Simple>, L<IPC::Run>, L<IPC::Run3>,
 L<IPC::RunSession::Simple>, L<IPC::ShellCmd>, L<POE::Pipe::TwoWay>,
