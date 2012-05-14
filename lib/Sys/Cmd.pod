@@ -5,7 +5,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.08
+0.80.1 Development release
 
 =head1 SYNOPSIS
 
@@ -249,17 +249,17 @@ L<Proc::Spawn>, L<Spawn::Safe>, L<System::Command>
 
 =head1 SUPPORT
 
-=over
+This distribution is managed via github:
 
-=item Bug Reporting
+    https://github.com/mlawren/sys-cmd
 
-    https://rt.cpan.org/Public/Bug/Report.html?Queue=Sys-Cmd
+This distribution follows the semantic versioning model:
 
-=item Source Code
+    http://semver.org/
 
-    git clone git://github.com/mlawren/sys-cmd.git
+Code is tidied up on Git commit using githook-perltidy:
 
-=back
+    http://github.com/mlawren/githook-perltidy
 
 =head1 AUTHOR
 
