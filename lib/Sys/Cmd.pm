@@ -11,11 +11,10 @@ use File::Which qw/which/;
 use Log::Any qw/$log/;
 use File::Spec::Functions qw/splitdir/;
 use POSIX ":sys_wait_h";
-use Exporter::Lite;
+use Exporter::Tidy all => [qw/spawn run runx/];
 
 our $VERSION = '0.08';
 our $CONFESS;
-our @EXPORT_OK = (qw/spawn run runx/);
 
 sub run {
     my $proc = spawn(@_);
