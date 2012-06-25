@@ -14,7 +14,7 @@ requires 'IO::Handle'     => 0;
 requires 'Log::Any'       => 0;
 requires 'POSIX'          => 0;
 requires 'File::Which'    => 0;
-requires 'File::chdir'    => '0.80.1';
+requires 'File::chdir'    => 0;
 
 test_requires 'Cwd'           => 0;
 test_requires 'Data::Dumper'  => 0;
