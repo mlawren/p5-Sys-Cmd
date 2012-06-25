@@ -251,7 +251,7 @@ L<Proc::Spawn>, L<Spawn::Safe>, L<System::Command>
 
 This distribution is managed via github:
 
-    https://github.com/mlawren/sys-cmd
+    https://github.com/mlawren/sys-cmd/tree/devel
 
 This distribution follows the semantic versioning model:
 
