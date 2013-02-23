@@ -11,6 +11,13 @@ use Sys::Cmd qw/spawn run/;
 use constant MSWin32 => $^O eq 'MSWin32';
 
 $ENV{TO_BE_DELETED} = 'LATER';
+{
+    # Environment variables are not passed in and out of Perl like
+    # string scalars so make sure they stay as bytes.
+    no utf8;
+    $ENV{UTF8_CHECK} = 'Défaut';
+}
+
 my $dir   = abs_path( tempdir( CLEANUP => 1 ) );
 my $cwd   = cwd;
 my $name  = File::Spec->catfile( t => 'info.pl' );

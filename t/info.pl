@@ -6,6 +6,8 @@ use Data::Dumper;
 
 my $input = $ENV{SYS_CMD_INPUT} ? join( '', <> ) : '';
 
+binmode STDOUT, ':encoding(utf8)';
+
 print Data::Dumper->Dump(
     [
         {
