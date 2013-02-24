@@ -1,3 +1,20 @@
+0.80.1 (2013-02-24)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Switch to Semantic Versioning: http://semver.org
+        - Switch to a leaner Exporter::Tidy
+        - Various test and documentation updates
+
+    Bug Fixes:
+        - Properly test for UTF-8 values in environment variables:
+           https://rt.cpan.org/Ticket/Display.html?id=81834
+
 0.08 (2012-04-21)
 
     API Changes:
