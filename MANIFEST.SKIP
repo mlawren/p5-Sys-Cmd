@@ -4,6 +4,7 @@ Makefile$
 Makefile.old$
 MANIFEST.bak
 MANIFEST.SKIP
+MYMETA*
 \.git
 \.swp$
 .perltidyrc
