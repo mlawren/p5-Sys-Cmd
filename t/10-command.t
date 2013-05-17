@@ -1,12 +1,12 @@
-# Basically the same as System-Command/t/10-command.t which is
+# Derived from System-Command/t/10-command.t which is
 # copyright Phillipe Bruhat (BooK).
 use strict;
 use warnings;
-use Test::More;
+use Cwd qw/cwd abs_path/;
 use File::Spec;
-use File::Temp qw( tempdir );
-use Cwd qw( cwd abs_path );
+use File::Temp qw/tempdir/;
 use Sys::Cmd qw/spawn run/;
+use Test::More;
 
 use constant MSWin32 => $^O eq 'MSWin32';
 
@@ -23,18 +23,17 @@ my $cwd   = cwd;
 my $name  = File::Spec->catfile( t => 'info.pl' );
 my @tests = (
     {
+        test    => 'standard',
         cmdline => [ $^X, $name ],
         options => {},
     },
     {
+        test    => 'env',
         cmdline => [ $^X, $name, { env => { SYS_CMD => 'Sys::Cmd' } } ],
         options => { env => { SYS_CMD => 'Sys::Cmd' } },
     },
     {
-        cmdline => [ $^X, $name, { env => { SYS_CMD => 'Sys::Cmd' } }, ],
-        options => { env => { SYS_CMD => 'Sys::Cmd' }, },
-    },
-    {
+        test    => 'dir',
         cmdline => [
             $^X,
             File::Spec->catfile( $cwd => $name ),
@@ -47,6 +46,7 @@ my @tests = (
         },
     },
     {
+        test    => 'delete env',
         cmdline => [
             $^X, $name,
             {
@@ -66,6 +66,7 @@ my @tests = (
         },
     },
     {
+        test    => 'input',
         cmdline => [
             $^X, $name,
             { env => { 'SYS_CMD_INPUT' => 1 }, input => 'test input' }
@@ -73,6 +74,7 @@ my @tests = (
         options => { env => { 'SYS_CMD_INPUT' => 1 }, input => 'test input' }
     },
     {
+        test    => 'empty input',
         cmdline => [
             $^X, $name,
             {
@@ -88,6 +90,7 @@ my @tests = (
 );
 my @fail = (
     {
+        test => 'chdir fail',
         cmdline =>
           [ $^X, $name, { dir => File::Spec->catdir( $dir, 'nothere' ) } ],
         fail    => qr/^Failed to change directory/,
@@ -95,68 +98,70 @@ my @fail = (
     },
 );
 
-plan tests => 13 * @tests + 2 * @fail;
-
 for my $t ( @tests, @fail ) {
 
-    # run the command
-    my $cmd = eval { spawn( @{ $t->{cmdline} } ) };
-    if ( $t->{fail} ) {
-        ok( !$cmd, 'command failed: ' . ( defined $cmd ? $cmd : '' ) );
-        like( $@, $t->{fail}, '... expected error message' );
-        next;
-    }
+    subtest $t->{test}, sub {
 
-    isa_ok( $cmd, 'Sys::Cmd' );
-
-    # test the handles
-    for my $handle (qw( stdin stdout stderr )) {
-        if (MSWin32) {
-            isa_ok( $cmd->$handle, 'IO::File' );
+        # run the command
+        my $cmd = eval { spawn( @{ $t->{cmdline} } ) };
+        if ( $t->{fail} ) {
+            ok( !$cmd, 'command failed: ' . ( defined $cmd ? $cmd : '' ) );
+            like( $@, $t->{fail}, '... expected error message' );
+            return;
         }
-        else {
-            isa_ok( $cmd->$handle, 'GLOB' );
+
+        isa_ok( $cmd, 'Sys::Cmd' );
+
+        # test the handles
+        for my $handle (qw( stdin stdout stderr )) {
+            if (MSWin32) {
+                isa_ok( $cmd->$handle, 'IO::File' );
+            }
+            else {
+                isa_ok( $cmd->$handle, 'GLOB' );
+            }
+            if ( $handle eq 'stdin' ) {
+                my $opened = !exists $t->{options}{input};
+                is( $cmd->$handle->opened, $opened,
+                    "$handle @{[ !$opened && 'not ']}opened" );
+            }
+            else {
+                ok( $cmd->$handle->opened, "$handle opened" );
+            }
         }
-        if ( $handle eq 'stdin' ) {
-            my $opened = !exists $t->{options}{input};
-            is( $cmd->$handle->opened, $opened,
-                "$handle @{[ !$opened && 'not ']}opened" );
-        }
-        else {
-            ok( $cmd->$handle->opened, "$handle opened" );
-        }
-    }
 
-    is_deeply( [ $cmd->cmdline ],
-        [ grep { !ref } @{ $t->{cmdline} } ], 'cmdline' );
+        is_deeply( [ $cmd->cmdline ],
+            [ grep { !ref } @{ $t->{cmdline} } ], 'cmdline' );
 
-    # get the output
-    my $output = join '', $cmd->stdout->getlines();
-    my $errput = join '', $cmd->stderr->getlines();
-    is( $errput, '', 'no errput' );
+        # get the output
+        my $output = join '', $cmd->stdout->getlines();
+        my $errput = join '', $cmd->stderr->getlines();
+        is( $errput, '', 'no errput' );
 
-    my $env = { %ENV, %{ $t->{options}{env} || {} } };
-    delete $env->{$_}
-      for grep { !defined $t->{options}{env}{$_} }
-      keys %{ $t->{options}{env} || {} };
-    my $info;
-    eval $output;
-    is_deeply(
-        $info,
-        {
-            argv  => [],
-            dir   => $t->{options}{dir} || $cwd,
-            env   => $env,
-            input => $t->{options}{input} || '',
-            pid   => $cmd->pid,
-        },
-        "perl $name"
-    );
+        my $env = { %ENV, %{ $t->{options}{env} || {} } };
+        delete $env->{$_}
+          for grep { !defined $t->{options}{env}{$_} }
+          keys %{ $t->{options}{env} || {} };
+        my $info;
+        eval $output;
+        is_deeply(
+            $info,
+            {
+                argv  => [],
+                dir   => $t->{options}{dir} || $cwd,
+                env   => $env,
+                input => $t->{options}{input} || '',
+                pid   => $cmd->pid,
+            },
+            "perl $name"
+        );
 
-    # close and check
-    $cmd->wait_child();
-    is( $cmd->exit,   0, 'exit 0' );
-    is( $cmd->signal, 0, 'no signal received' );
-    is( $cmd->core, $t->{core} || 0, 'no core dumped' );
+        # close and check
+        $cmd->wait_child();
+        is( $cmd->exit,   0, 'exit 0' );
+        is( $cmd->signal, 0, 'no signal received' );
+        is( $cmd->core, $t->{core} || 0, 'no core dumped' );
+    };
 }
 
+done_testing();
