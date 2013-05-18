@@ -27,8 +27,8 @@ Sys::Cmd - run a system command or spawn a system processes
 
     my @errors = $proc->stderr->getlines;
 
-    $proc->wait_child();  # Done!
-    $proc->close();       # Cleanup
+    $proc->close();       # Finished talking
+    $proc->wait_child();  # Cleanup
 
     # read exit information
     $proc->exit();      # exit status
@@ -215,11 +215,6 @@ In array context returns a list of the command and its arguments.  In
 scalar context returns a string of the command and its arguments joined
 together by spaces.
 
-=item wait_child()
-
-Wait for the child to exit and collect the exit status. This method is
-resposible for setting the I<exit>, I<signal> and I<core> attributes.
-
 =item close()
 
 Close all pipes to the child process.  This method is automatically
@@ -230,6 +225,11 @@ tried to use it:
     my $fh = Sys::Cmd->new( %args )->stdout;
 
 So you have to keep track of the Sys::Cmd object manually.
+
+=item wait_child()
+
+Wait for the child to exit and collect the exit status. This method is
+resposible for setting the I<exit>, I<signal> and I<core> attributes.
 
 =back
 
