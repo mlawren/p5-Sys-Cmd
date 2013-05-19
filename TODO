@@ -1,0 +1,2 @@
+Fix failing tests on Win32:
+    https://rt.cpan.org/Ticket/Display.html?id=85410

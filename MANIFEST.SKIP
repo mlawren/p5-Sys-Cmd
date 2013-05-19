@@ -12,6 +12,5 @@ old/
 extlib/
 pm_to_blib
 blib/
-TODO
 Sys-Cmd
 xt/
