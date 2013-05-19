@@ -9,7 +9,7 @@ use File::Which;
 use Moo;
 use Sys::Cmd;
 
-our $VERSION = '0.80.1';
+our $VERSION = '0.80.2';
 our $CONFESS;
 
 sub cmd_template {

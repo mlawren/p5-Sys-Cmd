@@ -13,7 +13,7 @@ use Log::Any qw/$log/;
 use Moo;
 use POSIX ":sys_wait_h";
 
-our $VERSION = '0.80.1';
+our $VERSION = '0.80.2';
 our $CONFESS;
 
 sub run {
