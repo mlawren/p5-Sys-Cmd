@@ -2,18 +2,18 @@ package Sys::Cmd;
 use strict;
 use warnings;
 use 5.006;
-use Moo;
 use Carp qw/carp confess croak/;
 use Cwd qw/cwd/;
+use Exporter::Tidy all => [qw/spawn run runx/];
 use IO::Handle;
 use File::chdir;
+use File::Spec::Functions qw/splitdir/;
 use File::Which qw/which/;
 use Log::Any qw/$log/;
-use File::Spec::Functions qw/splitdir/;
+use Moo;
 use POSIX ":sys_wait_h";
-use Sub::Exporter -setup => { exports => [qw/spawn run runx/], };
 
-our $VERSION = '0.08';
+our $VERSION = '0.80.2';
 our $CONFESS;
 
 sub run {

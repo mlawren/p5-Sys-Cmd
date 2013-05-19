@@ -2,14 +2,14 @@ package Sys::Cmd::Template;
 use strict;
 use warnings;
 use 5.006;
-use Moo;
 use Carp qw/croak confess/;
-use Sub::Exporter -setup => { exports => [qw/cmd_template/], };
+use Exporter::Tidy default => [qw/cmd_template/];
 use File::Spec::Functions qw/splitdir/;
 use File::Which;
+use Moo;
 use Sys::Cmd;
 
-our $VERSION = '0.08';
+our $VERSION = '0.80.2';
 our $CONFESS;
 
 sub cmd_template {

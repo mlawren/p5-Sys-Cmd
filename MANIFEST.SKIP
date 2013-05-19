@@ -3,12 +3,14 @@ install-stamp
 Makefile$
 Makefile.old$
 MANIFEST.bak
+MANIFEST.SKIP
+MYMETA*
 \.git
 \.swp$
 .perltidyrc
-x/
 old/
+extlib/
 pm_to_blib
 blib/
-TODO
 Sys-Cmd
+xt/

@@ -5,7 +5,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.08
+0.80.2 Development release
 
 =head1 SYNOPSIS
 
@@ -27,8 +27,8 @@ Sys::Cmd - run a system command or spawn a system processes
 
     my @errors = $proc->stderr->getlines;
 
-    $proc->wait_child();  # Done!
-    $proc->close();       # Cleanup
+    $proc->close();       # Finished talking
+    $proc->wait_child();  # Cleanup
 
     # read exit information
     $proc->exit();      # exit status
@@ -215,11 +215,6 @@ In array context returns a list of the command and its arguments.  In
 scalar context returns a string of the command and its arguments joined
 together by spaces.
 
-=item wait_child()
-
-Wait for the child to exit and collect the exit status. This method is
-resposible for setting the I<exit>, I<signal> and I<core> attributes.
-
 =item close()
 
 Close all pipes to the child process.  This method is automatically
@@ -231,6 +226,11 @@ tried to use it:
 
 So you have to keep track of the Sys::Cmd object manually.
 
+=item wait_child()
+
+Wait for the child to exit and collect the exit status. This method is
+resposible for setting the I<exit>, I<signal> and I<core> attributes.
+
 =back
 
 =head1 SEE ALSO
@@ -239,26 +239,27 @@ L<Sys::Cmd::Template>
 
 =head1 ALTERNATIVES
 
-L<IPC::Open3>, L<IPC::Open3::Simple>, L<IPC::Run>, L<IPC::Run3>,
-L<IPC::Cmd>, L<IPC::Capture>, L<IPC::Exe>, L<Spawn::Safe>,
-L<Proc::Spawn>, L<IPC::ShellCmd>, L<System::Command>, L<Forks::Super>,
-L<IPC::RunSession::Simple>, L<Capture::Tiny>, L<Argv>,
-L<IPC::Command::Multiplex>, L<POE::Pipe::TwoWay>, L<AnyEvent::Util>,
-L<AnyEvent::Run>, L<Child>, L<Proc::Background>
+L<AnyEvent::Run>, L<AnyEvent::Util>, L<Argv>, L<Capture::Tiny>,
+L<Child>, L<Forks::Super>, L<IO::Pipe>, L<IPC::Capture>, L<IPC::Cmd>,
+L<IPC::Command::Multiplex>, L<IPC::Exe>, L<IPC::Open3>,
+L<IPC::Open3::Simple>, L<IPC::Run>, L<IPC::Run3>,
+L<IPC::RunSession::Simple>, L<IPC::ShellCmd>, L<IPC::System::Simple>,
+L<POE::Pipe::TwoWay>, L<Proc::Background>, L<Proc::Fork>,
+L<Proc::Spawn>, L<Spawn::Safe>, L<System::Command>
 
 =head1 SUPPORT
 
-=over
+This distribution is managed via github:
 
-=item Bug Reporting
+    https://github.com/mlawren/sys-cmd/tree/devel
 
-    https://rt.cpan.org/Public/Bug/Report.html?Queue=Sys-Cmd
+This distribution follows the semantic versioning model:
 
-=item Source Code
+    http://semver.org/
 
-    git clone git://github.com/mlawren/sys-cmd.git
+Code is tidied up on Git commit using githook-perltidy:
 
-=back
+    http://github.com/mlawren/githook-perltidy
 
 =head1 AUTHOR
 
