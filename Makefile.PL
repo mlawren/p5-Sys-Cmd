@@ -7,6 +7,10 @@ version '0.80.2';
 all_from 'lib/Sys/Cmd.pm';
 readme_from 'lib/Sys/Cmd.pod';
 
+homepage 'https://github.com/mlawren/p5-Sys-Cmd';
+bugtracker 'https://github.com/mlawren/p5-Sys-Cmd/issues';
+repository 'git://github.com/mlawren/p5-Sys-Cmd.git';
+
 requires 'Moo'            => 0;
 requires 'Carp'           => 0;
 requires 'Cwd'            => 0;
@@ -23,8 +27,6 @@ test_requires 'File::Temp'    => 0;
 test_requires 'File::Spec'    => 0;
 test_requires 'Test::More'    => 0;
 test_requires 'Test::Command' => 0;
-
-repository 'http://github.com/mlawren/sys-cmd';
 
 auto_install;
 
