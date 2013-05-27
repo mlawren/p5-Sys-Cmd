@@ -11,9 +11,7 @@ homepage 'https://github.com/mlawren/p5-Sys-Cmd';
 bugtracker 'https://github.com/mlawren/p5-Sys-Cmd/issues';
 repository 'git://github.com/mlawren/p5-Sys-Cmd.git';
 
-requires 'Moo'            => 0;
 requires 'Carp'           => 0;
-requires 'Cwd'            => 0;
 requires 'Exporter::Tidy' => 0;
 requires 'IO::Handle'     => 0;
 requires 'Log::Any'       => 0;
