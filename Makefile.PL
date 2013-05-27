@@ -19,12 +19,13 @@ requires 'POSIX'          => 0;
 requires 'File::Which'    => 0;
 requires 'File::chdir'    => 0;
 
-test_requires 'Cwd'           => 0;
-test_requires 'Data::Dumper'  => 0;
-test_requires 'File::Temp'    => 0;
-test_requires 'File::Spec'    => 0;
-test_requires 'Test::More'    => 0;
-test_requires 'Test::Command' => 0;
+test_requires 'Cwd'          => 0;
+test_requires 'Data::Dumper' => 0;
+test_requires 'File::Temp'   => 0;
+test_requires 'File::Spec'   => 0;
+test_requires 'Test::More'   => 0;
+
+tests_recursive 't';
 
 auto_install;
 
