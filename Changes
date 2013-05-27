@@ -1,3 +1,18 @@
+0.80.3_1 (2013-02-24)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Switch to a leaner Mo
+        - Various test refactoring
+
+    Bug Fixes:
+        - None.
+
 0.80.2 (2013-02-24)
 
     API Changes:
