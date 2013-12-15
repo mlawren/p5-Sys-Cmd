@@ -115,10 +115,10 @@ for my $t ( @tests, @fail ) {
         # test the handles
         for my $handle (qw( stdin stdout stderr )) {
             if (MSWin32) {
-                isa_ok( $cmd->$handle, 'IO::File' );
+                isa_ok( $cmd->$handle, 'IO::Handle' );
             }
             else {
-                isa_ok( $cmd->$handle, 'GLOB' );
+                isa_ok( $cmd->$handle, 'IO::Handle' );
             }
             if ( $handle eq 'stdin' ) {
                 my $opened = !exists $t->{options}{input};
