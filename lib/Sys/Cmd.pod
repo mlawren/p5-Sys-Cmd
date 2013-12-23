@@ -5,7 +5,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.80.2 Development release
+0.81.0 (2013-12-23) Development release
 
 =head1 SYNOPSIS
 
@@ -51,9 +51,9 @@ raising an exception in the event of error. In array context returns a
 list instead of a plain string.
 
 The first element of C<@cmd> will be looked up using L<File::Which> if
-it is not found as a relative file name. The command input and
-environment can be modified with an optional hashref containing the
-following key/values:
+it is not a CODE reference, or cannot be found as a relative file name.
+The command input and environment can be modified with an optional
+hashref containing the following key/values:
 
 =over 4
 
@@ -89,8 +89,8 @@ appended to the C<STDOUT> output.
 Return a B<Sys::Cmd> object (documented below) representing the process
 running @cmd, with attributes set according to the optional \%opt
 hashref.  The first element of the C<@cmd> array is looked up using
-L<File::Which> if it is not found in the file-system as a relative file
-name.
+L<File::Which> if it is not a CODE reference or cannot be found in the
+file-system as a relative file name.
 
 =back
 
@@ -139,7 +139,8 @@ All attributes are read-only.
 
 =item cmd
 
-An array ref containing the command and its arguments.
+An array ref containing the command or CODE reference and its
+arguments.
 
 =item dir
 

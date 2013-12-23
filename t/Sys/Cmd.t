@@ -2,6 +2,7 @@
 # copyright Phillipe Bruhat (BooK).
 use strict;
 use warnings;
+use utf8;
 use Cwd qw/cwd abs_path/;
 use File::Spec;
 use File::Temp qw/tempdir/;
@@ -115,10 +116,10 @@ for my $t ( @tests, @fail ) {
         # test the handles
         for my $handle (qw( stdin stdout stderr )) {
             if (MSWin32) {
-                isa_ok( $cmd->$handle, 'IO::File' );
+                isa_ok( $cmd->$handle, 'IO::Handle' );
             }
             else {
-                isa_ok( $cmd->$handle, 'GLOB' );
+                isa_ok( $cmd->$handle, 'IO::Handle' );
             }
             if ( $handle eq 'stdin' ) {
                 my $opened = !exists $t->{options}{input};
@@ -157,11 +158,75 @@ for my $t ( @tests, @fail ) {
         );
 
         # close and check
+        $cmd->close();
         $cmd->wait_child();
         is( $cmd->exit,   0, 'exit 0' );
         is( $cmd->signal, 0, 'no signal received' );
         is( $cmd->core, $t->{core} || 0, 'no core dumped' );
     };
 }
+
+subtest 'reaper', sub {
+    my $proc  = spawn($^X);
+    my $proc2 = spawn(
+        $^X,
+        {
+            on_exit => sub { kill 9, $proc->pid }
+        }
+    );
+
+    kill 9, $proc2->pid;
+    $proc2->wait_child;    # still need to wait for the signal to happen
+    ok( ( defined $proc2->exit ), 'reaper found 2' );
+    is $proc2->signal, 9, 'matching signal';
+
+    $proc->wait_child;
+    ok( ( defined $proc->exit ), 'reaper worked' );
+    is $proc->signal, 9, 'matching signal - on_exit worked';
+
+};
+
+subtest 'coderef', sub {
+
+    my $proc = spawn(
+        sub {
+            while ( my $line = <STDIN> ) {
+                print STDOUT $line;
+            }
+            exit 3;
+        }
+    );
+
+    foreach my $i ( 1 .. 10, 'Zürich' ) {
+        $proc->stdin->print( $i . "\n" );
+        my $res = $proc->stdout->getline;
+        chomp $res;
+        is $res, $i, "echo $i";
+    }
+
+    $proc->close;
+    $proc->wait_child;
+    is $proc->exit, 3, 'exit 3';
+
+    $proc = spawn(
+        sub {
+            while ( my $line = <STDIN> ) {
+                print STDOUT $line;
+            }
+            return 3;    # return value should be independpent of exit
+        }
+    );
+
+    foreach my $i ( 1 .. 2, 'Zürich' ) {
+        $proc->stdin->print( $i . "\n" );
+        my $res = $proc->stdout->getline;
+        chomp $res;
+        is $res, $i, "echo $i";
+    }
+
+    $proc->close;
+    $proc->wait_child;
+    is $proc->exit, 0, 'exit 0';
+};
 
 done_testing();

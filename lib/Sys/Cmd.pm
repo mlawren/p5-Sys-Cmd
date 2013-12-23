@@ -3,17 +3,15 @@ use strict;
 use warnings;
 use 5.006;
 use Carp qw/carp confess croak/;
-use Cwd qw/cwd/;
 use Exporter::Tidy all => [qw/spawn run runx/];
 use IO::Handle;
 use File::chdir;
-use File::Spec::Functions qw/splitdir/;
 use File::Which qw/which/;
 use Log::Any qw/$log/;
-use Moo;
-use POSIX ":sys_wait_h";
+use Sys::Cmd::Mo qw/build is required default/;
+use POSIX qw/WNOHANG/;
 
-our $VERSION = '0.80.2';
+our $VERSION = '0.81.0';
 our $CONFESS;
 
 sub run {
@@ -63,7 +61,7 @@ sub spawn {
 
     defined $cmd[0] || confess '$cmd must be defined';
 
-    if ( !-f $cmd[0] ) {
+    unless ( ref $cmd[0] eq 'CODE' or -f $cmd[0] ) {
         $cmd[0] = which( $cmd[0] ) || confess 'command not found: ' . $cmd[0];
     }
 
@@ -96,20 +94,16 @@ has 'encoding' => (
 );
 
 has 'env' => (
-    is        => 'ro',
-    isa       => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
-    predicate => 'have_env',
+    is  => 'ro',
+    isa => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
 );
 
 has 'dir' => (
     is      => 'ro',
-    default => sub { cwd },
+    default => sub { $CWD },
 );
 
-has 'input' => (
-    is        => 'ro',
-    predicate => 'have_input',
-);
+has 'input' => ( is => 'ro', );
 
 has 'pid' => (
     is       => 'rw',
@@ -131,15 +125,14 @@ has 'stderr' => (
     init_arg => undef,
 );
 
-has _on_exit => (
+has on_exit => (
     is       => 'rw',
     init_arg => 'on_exit',
 );
 
 has 'exit' => (
-    is        => 'rw',
-    init_arg  => undef,
-    predicate => 'have_exit',
+    is       => 'rw',
+    init_arg => undef,
 );
 
 has 'signal' => (
@@ -158,6 +151,7 @@ sub BUILD {
     my $self = shift;
     local $CWD = $self->dir;
 
+    my $enc   = ':encoding(' . $self->encoding . ')';
     my $r_in  = IO::Handle->new;
     my $r_out = IO::Handle->new;
     my $r_err = IO::Handle->new;
@@ -174,7 +168,7 @@ sub BUILD {
     pipe( $r_err, $w_err ) || die "pipe: $!";
 
     push( @children, $self );
-    $SIG{CHLD} ||= \&_reap if $self->_on_exit;
+    $SIG{CHLD} ||= \&_reap if $self->on_exit;
 
     $self->pid( fork() );
     if ( !defined $self->pid ) {
@@ -199,8 +193,8 @@ sub BUILD {
         close $w_out;
         close $w_err;
 
-        if ( $self->have_env ) {
-            while ( my ( $key, $val ) = each %{ $self->env } ) {
+        if ( defined( my $x = $self->env ) ) {
+            while ( my ( $key, $val ) = each %$x ) {
                 if ( defined $val ) {
                     $ENV{$key} = $val;
                 }
@@ -210,7 +204,16 @@ sub BUILD {
             }
         }
 
-        exec( $self->cmdline );
+        if ( ref $self->cmd->[0] eq 'CODE' ) {
+            binmode STDIN,  $enc;
+            binmode STDOUT, $enc;
+            binmode STDERR, $enc;
+            $self->cmd->[0]->();
+            exit;
+        }
+        else {
+            exec( $self->cmdline );
+        }
     }
 
     $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
@@ -220,18 +223,16 @@ sub BUILD {
     close $w_out;
     close $w_err;
 
-    my $enc = ':encoding(' . $self->encoding . ')';
-
     binmode $w_in,  $enc;
     binmode $r_out, $enc;
     binmode $r_err, $enc;
 
     # some input was provided
-    if ( $self->have_input ) {
+    if ( defined( my $input = $self->input ) ) {
         local $SIG{PIPE} =
           sub { warn "Broken pipe when writing to:" . $self->cmdline };
 
-        print {$w_in} $self->input if length $self->input;
+        print {$w_in} $input if length $input;
 
         $w_in->close;
     }
@@ -332,7 +333,7 @@ sub _reap {
             $child->signal( $ret & 127 );
             $child->core( $ret & 128 );
 
-            if ( my $subref = $child->_on_exit ) {
+            if ( my $subref = $child->on_exit ) {
                 $subref->($child);
             }
         }
@@ -344,7 +345,7 @@ sub _reap {
 sub wait_child {
     my $self = shift;
 
-    _reap( 'CHLD', $self->pid ) unless $self->have_exit;
+    _reap( 'CHLD', $self->pid ) unless defined $self->exit;
     return;
 }
 
@@ -370,7 +371,7 @@ sub DESTROY {
     my $self = shift;
 
     $self->close;
-    _reap( 'CHLD', $self->pid ) unless $self->have_exit;
+    _reap( 'CHLD', $self->pid ) unless defined $self->exit;
     return;
 }
 
