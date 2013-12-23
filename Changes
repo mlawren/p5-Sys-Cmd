@@ -1,4 +1,4 @@
-0.81.1 (yyyy-mm-dd)
+0.81.2 (2013-12-23)
 
     API Changes:
         - None.
@@ -11,6 +11,7 @@
 
     Bug Fixes:
         - Don't index Sys::Cmd::Mo.
+        - 0.81.0 was released with a Sys::Cmd::VERSION of 0.80.3
 
 0.81.0 (2013-12-23)
 
