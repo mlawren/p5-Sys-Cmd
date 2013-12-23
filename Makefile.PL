@@ -3,7 +3,7 @@ use inc::Module::Install;
 
 name 'Sys-Cmd';
 license 'Perl';
-version '0.81.0';
+version '0.81.1_1';
 all_from 'lib/Sys/Cmd.pm';
 readme_from 'lib/Sys/Cmd.pod';
 
@@ -26,6 +26,8 @@ test_requires 'File::Spec'   => 0;
 test_requires 'Test::More'   => 0;
 
 tests_recursive 't';
+
+no_index package => 'Sys::Cmd::Mo';
 
 auto_install;
 
