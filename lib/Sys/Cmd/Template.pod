@@ -5,7 +5,7 @@ Sys::Cmd::Template - command/process templates for Sys::Cmd
 
 =head1 VERSION
 
-0.80.3 (2013-12-15) Development release
+0.81.0 (2013-12-23) Development release
 
 =head1 SYNOPSIS
 
