@@ -61,7 +61,7 @@ sub spawn {
 
     defined $cmd[0] || confess '$cmd must be defined';
 
-    if ( !-f $cmd[0] ) {
+    unless ( ref $cmd[0] eq 'CODE' or -f $cmd[0] ) {
         $cmd[0] = which( $cmd[0] ) || confess 'command not found: ' . $cmd[0];
     }
 
@@ -151,6 +151,7 @@ sub BUILD {
     my $self = shift;
     local $CWD = $self->dir;
 
+    my $enc   = ':encoding(' . $self->encoding . ')';
     my $r_in  = IO::Handle->new;
     my $r_out = IO::Handle->new;
     my $r_err = IO::Handle->new;
@@ -203,7 +204,16 @@ sub BUILD {
             }
         }
 
-        exec( $self->cmdline );
+        if ( ref $self->cmd->[0] eq 'CODE' ) {
+            binmode STDIN,  $enc;
+            binmode STDOUT, $enc;
+            binmode STDERR, $enc;
+            $self->cmd->[0]->();
+            exit;
+        }
+        else {
+            exec( $self->cmdline );
+        }
     }
 
     $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
@@ -212,8 +222,6 @@ sub BUILD {
     close $r_in;
     close $w_out;
     close $w_err;
-
-    my $enc = ':encoding(' . $self->encoding . ')';
 
     binmode $w_in,  $enc;
     binmode $r_out, $enc;
