@@ -11,7 +11,7 @@ use Log::Any qw/$log/;
 use Sys::Cmd::Mo qw/build is required default/;
 use POSIX qw/WNOHANG/;
 
-our $VERSION = '0.81.0';
+our $VERSION = '0.81.2';
 our $CONFESS;
 
 sub run {
