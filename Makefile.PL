@@ -26,6 +26,7 @@ test_requires 'File::Spec'   => 0;
 test_requires 'Test::More'   => 0;
 
 tests_recursive 't';
+author_tests 'xt';
 
 no_index package => 'Sys::Cmd::Mo';
 
