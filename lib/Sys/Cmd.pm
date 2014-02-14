@@ -322,10 +322,10 @@ sub _reap {
 
         }
 
-        my @dead = grep { $_->pid == $pid } @children;
-        @children = grep { $_->pid != $pid } @children;
+        my @dead = grep { defined $_ && $_->pid == $pid } @children;
+        @children = grep { defined $_ && $_->pid != $pid } @children;
 
-        if ( !@dead ) {
+        if ( @children and !@dead ) {
             warn __PACKAGE__
               . ' not our child: '
               . $pid

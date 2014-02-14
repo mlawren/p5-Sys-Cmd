@@ -12,6 +12,7 @@
         - Run author tests from xt/ when an author
         - Use POSIX::_exit after calling CODEref to prevent DESTROY
           actions
+        - Remove unecessary warnings during DESTROY/END blocks
 
     Bug Fixes:
         - 0.81.0 was released with a Sys::Cmd::VERSION of 0.80.3
