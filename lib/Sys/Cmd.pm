@@ -179,6 +179,8 @@ sub BUILD {
 
     if ( $self->pid == 0 ) {    # Child
         $SIG{CHLD} = 'DEFAULT';
+        $self->exit(0);         # stop DESTROY() from trying to reap
+
         if ( !open STDERR, '>&=', fileno($w_err) ) {
             print $w_err "open: $! at ", caller, "\n";
             die "open: $!";
