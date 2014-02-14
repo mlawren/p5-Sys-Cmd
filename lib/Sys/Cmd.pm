@@ -354,25 +354,20 @@ sub wait_child {
 sub close {
     my $self = shift;
 
-    my $in  = $self->stdin || return;
-    my $out = $self->stdout;
-    my $err = $self->stderr;
+    $self->stdin->opened
+      && ( $self->stdin->close || carp "error closing stdin: $!" );
 
-    $in->opened  and $in->close  || carp "error closing stdin: $!";
-    $out->opened and $out->close || carp "error closing stdout: $!";
-    $err->opened and $err->close || carp "error closing stderr: $!";
+    $self->stdout->opened
+      && ( $self->stdout->close || carp "error closing stdout: $!" );
 
-    $self->stdin(undef);
-    $self->stdout(undef);
-    $self->stderr(undef);
+    $self->stderr->opened
+      && ( $self->stderr->close || carp "error closing stderr: $!" );
 
     return;
 }
 
 sub DESTROY {
     my $self = shift;
-
-    $self->close;
     _reap( 'CHLD', $self->pid ) unless defined $self->exit;
     return;
 }

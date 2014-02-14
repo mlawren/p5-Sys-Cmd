@@ -14,6 +14,7 @@
         - 0.81.0 was released with a Sys::Cmd::VERSION of 0.80.3
         - Run author tests from xt/ when an author
         - Prevent child process from reaping itself
+        - Do not attempt to close handles on DESTROY
 
 0.81.0 (2013-12-23)
 
