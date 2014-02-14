@@ -97,6 +97,24 @@ my @fail = (
         fail    => qr/^Failed to change directory/,
         options => {},
     },
+    {
+        test    => 'command not found',
+        cmdline => ['no_command_x77328efe'],
+        fail    => qr/^command not found/,
+        options => {},
+    },
+    {
+        test    => 'not executable',
+        cmdline => [__FILE__],
+        fail    => qr/^command not executable/,
+        options => {},
+    },
+    {
+        test    => 'execute a directory',
+        cmdline => ['t'],
+        fail    => qr/^command not a file/,
+        options => {},
+    },
 );
 
 for my $t ( @tests, @fail ) {

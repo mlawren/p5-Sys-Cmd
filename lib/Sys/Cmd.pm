@@ -6,12 +6,11 @@ use Carp qw/carp confess croak/;
 use Exporter::Tidy all => [qw/spawn run runx/];
 use IO::Handle;
 use File::chdir;
-use File::Which qw/which/;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo qw/build is required default/;
-use POSIX qw/WNOHANG/;
+use POSIX qw/WNOHANG _exit/;
 
-our $VERSION = '0.81.2';
+our $VERSION = '0.81.4';
 our $CONFESS;
 
 sub run {
@@ -61,8 +60,20 @@ sub spawn {
 
     defined $cmd[0] || confess '$cmd must be defined';
 
-    unless ( ref $cmd[0] eq 'CODE' or -f $cmd[0] ) {
-        $cmd[0] = which( $cmd[0] ) || confess 'command not found: ' . $cmd[0];
+    unless ( ref $cmd[0] eq 'CODE' ) {
+        if ( !-e $cmd[0] ) {
+            require File::Which;
+            $cmd[0] = File::Which::which( $cmd[0] )
+              || confess 'command not found: ' . $cmd[0];
+        }
+
+        if ( !-f $cmd[0] ) {
+            confess 'command not a file: ' . $cmd[0];
+        }
+
+        if ( !-x $cmd[0] ) {
+            confess 'command not executable: ' . $cmd[0];
+        }
     }
 
     my @opts = grep { ref $_ eq 'HASH' } @_;
@@ -179,6 +190,8 @@ sub BUILD {
 
     if ( $self->pid == 0 ) {    # Child
         $SIG{CHLD} = 'DEFAULT';
+        $self->exit(0);         # stop DESTROY() from trying to reap
+
         if ( !open STDERR, '>&=', fileno($w_err) ) {
             print $w_err "open: $! at ", caller, "\n";
             die "open: $!";
@@ -209,11 +222,11 @@ sub BUILD {
             binmode STDOUT, $enc;
             binmode STDERR, $enc;
             $self->cmd->[0]->();
-            exit;
+            _exit;
         }
-        else {
-            exec( $self->cmdline );
-        }
+
+        exec( $self->cmdline );
+        die "exec: $!";
     }
 
     $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
@@ -309,10 +322,10 @@ sub _reap {
 
         }
 
-        my @dead = grep { $_->pid == $pid } @children;
-        @children = grep { $_->pid != $pid } @children;
+        my @dead = grep { defined $_ && $_->pid == $pid } @children;
+        @children = grep { defined $_ && $_->pid != $pid } @children;
 
-        if ( !@dead ) {
+        if ( @children and !@dead ) {
             warn __PACKAGE__
               . ' not our child: '
               . $pid
@@ -352,25 +365,20 @@ sub wait_child {
 sub close {
     my $self = shift;
 
-    my $in  = $self->stdin || return;
-    my $out = $self->stdout;
-    my $err = $self->stderr;
+    $self->stdin->opened
+      && ( $self->stdin->close || carp "error closing stdin: $!" );
 
-    $in->opened  and $in->close  || carp "error closing stdin: $!";
-    $out->opened and $out->close || carp "error closing stdout: $!";
-    $err->opened and $err->close || carp "error closing stderr: $!";
+    $self->stdout->opened
+      && ( $self->stdout->close || carp "error closing stdout: $!" );
 
-    $self->stdin(undef);
-    $self->stdout(undef);
-    $self->stderr(undef);
+    $self->stderr->opened
+      && ( $self->stderr->close || carp "error closing stderr: $!" );
 
     return;
 }
 
 sub DESTROY {
     my $self = shift;
-
-    $self->close;
     _reap( 'CHLD', $self->pid ) unless defined $self->exit;
     return;
 }

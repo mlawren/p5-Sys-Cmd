@@ -1,3 +1,21 @@
+0.81.4 (2014-02-14)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Better detection & tests for non-executable target
+        - Use POSIX::_exit after calling CODEref to prevent DESTROY
+          actions
+        - Remove unecessary warnings during DESTROY/END blocks
+
+    Bug Fixes:
+        - Prevent child process from reaping itself
+        - Do not attempt to close handles on DESTROY
+
 0.81.2 (2013-12-23)
 
     API Changes:

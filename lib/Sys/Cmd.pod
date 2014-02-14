@@ -5,7 +5,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.81.2 (2013-12-23) Development release
+0.81.4 (2014-02-14) Development release
 
 =head1 SYNOPSIS
 
@@ -269,7 +269,7 @@ L<Git::Repository::Command> by Philippe Bruhat (BooK).
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2011-2012 Mark Lawrence <nomad@null.net>
+Copyright 2011-2014 Mark Lawrence <nomad@null.net>
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the

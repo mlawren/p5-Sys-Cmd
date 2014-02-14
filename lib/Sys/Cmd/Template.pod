@@ -5,7 +5,7 @@ Sys::Cmd::Template - command/process templates for Sys::Cmd
 
 =head1 VERSION
 
-0.81.2 (2013-12-23) Development release
+0.81.4 (2014-02-14) Development release
 
 =head1 SYNOPSIS
 
@@ -228,7 +228,7 @@ Mark Lawrence E<lt>nomad@null.netE<gt>.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011-2012 Mark Lawrence <nomad@null.net>
+Copyright (C) 2011-2014 Mark Lawrence <nomad@null.net>
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
