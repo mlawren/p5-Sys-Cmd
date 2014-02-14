@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - Better detection & tests for non-executable target
 
     Bug Fixes:
         - Don't index Sys::Cmd::Mo.
