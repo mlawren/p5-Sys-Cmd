@@ -1,4 +1,4 @@
-0.81.2 (2014-02-14)
+0.81.4 (2014-02-14)
 
     API Changes:
         - None.
@@ -7,17 +7,30 @@
         - None.
 
     Enhancements:
-        - Don't index Sys::Cmd::Mo.
         - Better detection & tests for non-executable target
-        - Run author tests from xt/ when an author
         - Use POSIX::_exit after calling CODEref to prevent DESTROY
           actions
         - Remove unecessary warnings during DESTROY/END blocks
 
     Bug Fixes:
-        - 0.81.0 was released with a Sys::Cmd::VERSION of 0.80.3
         - Prevent child process from reaping itself
         - Do not attempt to close handles on DESTROY
+
+0.81.2 (2013-12-23)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - Don't index Sys::Cmd::Mo.
+        - 0.81.0 was released with a Sys::Cmd::VERSION of 0.80.3
+        - Run author tests from xt/ when an author
 
 0.81.0 (2013-12-23)
 
