@@ -10,6 +10,8 @@
         - Don't index Sys::Cmd::Mo.
         - Better detection & tests for non-executable target
         - Run author tests from xt/ when an author
+        - Use POSIX::_exit after calling CODEref to prevent DESTROY
+          actions
 
     Bug Fixes:
         - 0.81.0 was released with a Sys::Cmd::VERSION of 0.80.3

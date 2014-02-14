@@ -8,7 +8,7 @@ use IO::Handle;
 use File::chdir;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo qw/build is required default/;
-use POSIX qw/WNOHANG/;
+use POSIX qw/WNOHANG _exit/;
 
 our $VERSION = '0.81.2';
 our $CONFESS;
@@ -222,11 +222,11 @@ sub BUILD {
             binmode STDOUT, $enc;
             binmode STDERR, $enc;
             $self->cmd->[0]->();
-            exit;
+            _exit;
         }
-        else {
-            exec( $self->cmdline );
-        }
+
+        exec( $self->cmdline );
+        die "exec: $!";
     }
 
     $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
