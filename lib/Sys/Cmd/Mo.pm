@@ -1,8 +1,8 @@
 package Sys::Cmd::Mo;
 
-# use Mo qw/build is required default/;
+# use Mo qw/build is required default import/;
 #   The following line of code was produced from the previous line by
-#   Mo::Inline version 0.34
+#   Mo::Inline version 0.38
 no warnings;
 my $M = __PACKAGE__ . '::';
 *{ $M . Object::new } = sub {
@@ -51,7 +51,7 @@ my $M = __PACKAGE__ . '::';
         my ( $m, $n, %a ) = @_;
         $a{is} or return $m;
         sub {
-                 $#_
+            $#_
               && $a{is} eq 'ro'
               && caller ne 'Mo::coerce' ? die $n . ' is ro' : $m->(@_);
           }
@@ -93,10 +93,15 @@ my $M = __PACKAGE__ . '::';
           }
       }
 };
-@f = qw[build is required default];
+my $i = \&import;
+*{ $M . import } = sub {
+    ( @_ == 2 and not $_[1] ) ? pop @_ : @_ == 1 ? push @_, grep !/import/,
+      @f : ();
+    goto &$i;
+};
+@f = qw[build is required default import];
 use strict;
 use warnings;
-no warnings;
 1;
 
 __END__
