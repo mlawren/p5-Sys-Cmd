@@ -10,7 +10,7 @@
         - Updated to Mo 0.38.
 
     Bug Fixes:
-        - None.
+        - Add missing argument to _exit() call.
 
 0.81.4 (2014-02-14)
 

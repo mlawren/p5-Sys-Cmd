@@ -222,7 +222,7 @@ sub BUILD {
             binmode STDOUT, $enc;
             binmode STDERR, $enc;
             $self->cmd->[0]->();
-            _exit;
+            _exit(0);
         }
 
         exec( $self->cmdline );
