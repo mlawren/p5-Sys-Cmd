@@ -1,3 +1,17 @@
+0.81.6 (2014-03-24)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Updated to Mo 0.38.
+
+    Bug Fixes:
+        - Add missing argument to _exit() call.
+
 0.81.4 (2014-02-14)
 
     API Changes:

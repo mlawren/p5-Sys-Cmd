@@ -7,10 +7,10 @@ use Exporter::Tidy all => [qw/spawn run runx/];
 use IO::Handle;
 use File::chdir;
 use Log::Any qw/$log/;
-use Sys::Cmd::Mo qw/build is required default/;
+use Sys::Cmd::Mo;
 use POSIX qw/WNOHANG _exit/;
 
-our $VERSION = '0.81.4';
+our $VERSION = '0.81.6';
 our $CONFESS;
 
 sub run {
@@ -222,7 +222,7 @@ sub BUILD {
             binmode STDOUT, $enc;
             binmode STDERR, $enc;
             $self->cmd->[0]->();
-            _exit;
+            _exit(0);
         }
 
         exec( $self->cmdline );
