@@ -1,3 +1,4 @@
+.envrc
 *.swp
 README
 Makefile.old
