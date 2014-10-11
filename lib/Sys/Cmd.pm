@@ -161,8 +161,55 @@ my @children;
 sub BUILD {
     my $self = shift;
     local $CWD = $self->dir;
+    local %ENV = %ENV;
 
-    my $enc   = ':encoding(' . $self->encoding . ')';
+    if ( defined( my $x = $self->env ) ) {
+        while ( my ( $key, $val ) = each %$x ) {
+            if ( defined $val ) {
+                $ENV{$key} = $val;
+            }
+            else {
+                delete $ENV{$key};
+            }
+        }
+    }
+
+    push( @children, $self );
+    $SIG{CHLD} ||= \&_reap if $self->on_exit;
+
+    if ( $^O eq 'MSWin32' ) {
+        $self->_spawn;
+    }
+    else {
+        $self->_fork;
+    }
+
+    $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
+
+    my $enc = ':encoding(' . $self->encoding . ')';
+    binmode $self->stdin,  $enc;
+    binmode $self->stdout, $enc;
+    binmode $self->stderr, $enc;
+
+    # some input was provided
+    if ( defined( my $input = $self->input ) ) {
+        local $SIG{PIPE} =
+          sub { warn "Broken pipe when writing to:" . $self->cmdline };
+
+        print { $self->stdin } $input if length $input;
+
+        $self->stdin->close;
+    }
+
+    return;
+}
+
+sub _spawn {
+    my $self = shift;
+
+    require Proc::FastSpawn;
+    Proc::FastSpawn->import(qw/fd_inherit/);
+
     my $r_in  = IO::Handle->new;
     my $r_out = IO::Handle->new;
     my $r_err = IO::Handle->new;
@@ -178,8 +225,79 @@ sub BUILD {
     pipe( $r_out, $w_out ) || die "pipe: $!";
     pipe( $r_err, $w_err ) || die "pipe: $!";
 
-    push( @children, $self );
-    $SIG{CHLD} ||= \&_reap if $self->on_exit;
+    # Get handles to descriptors 0,1,2
+    my $fd0 = IO::Handle->new_from_fd( 0, '<' );
+    my $fd1 = IO::Handle->new_from_fd( 1, '>' );
+    my $fd2 = IO::Handle->new_from_fd( 2, '>' );
+
+    # Dup the 0,1,2 descriptors
+    open my $stdin,  '<&', 0;
+    open my $stdout, '>&', 1;
+    open my $stderr, '>&', 2;
+
+    # Re-open 0,1,2 by duping the pipe end
+    open $fd0, '<&', fileno($r_in);
+    open $fd1, '>&', fileno($w_out);
+    open $fd2, '>&', fileno($w_err);
+
+    # Make sure that 0,1,2 are inherited (probably are anyway)
+    fd_inherit( 0, 1 );
+    fd_inherit( 1, 1 );
+    fd_inherit( 2, 1 );
+
+    # But don't inherit these
+    fd_inherit( fileno($stdin),  0 );
+    fd_inherit( fileno($stdout), 0 );
+    fd_inherit( fileno($stderr), 0 );
+    fd_inherit( fileno($r_in),   0 );
+    fd_inherit( fileno($r_out),  0 );
+    fd_inherit( fileno($r_err),  0 );
+    fd_inherit( fileno($w_in),   0 );
+    fd_inherit( fileno($w_out),  0 );
+    fd_inherit( fileno($w_err),  0 );
+
+    my @cmd = $self->cmdline;
+    my $cmd = $cmd[0];
+    my @env = map { "$_=$ENV{$_}" } keys %ENV;
+
+    $self->pid( Proc::FastSpawn::spawn( $cmd, \@cmd, \@env ) );
+
+    # dup fd 0,1,2 again from the proper place
+    open $fd0, '<&', fileno($stdin);
+    open $fd1, '>&', fileno($stdout);
+    open $fd2, '>&', fileno($stderr);
+
+    # and restore things for perl
+    open STDIN,  '<&=', fileno($fd0);
+    open STDOUT, '>&=', fileno($fd1);
+    open STDERR, '>&=', fileno($fd2);
+
+    close($r_in);
+    close($w_out);
+    close($w_err);
+
+    $self->stdin($w_in);
+    $self->stdout($r_out);
+    $self->stderr($r_err);
+    return;
+}
+
+sub _fork {
+    my $self  = shift;
+    my $r_in  = IO::Handle->new;
+    my $r_out = IO::Handle->new;
+    my $r_err = IO::Handle->new;
+    my $w_in  = IO::Handle->new;
+    my $w_out = IO::Handle->new;
+    my $w_err = IO::Handle->new;
+
+    $w_in->autoflush(1);
+    $w_out->autoflush(1);
+    $w_err->autoflush(1);
+
+    pipe( $r_in,  $w_in )  || die "pipe: $!";
+    pipe( $r_out, $w_out ) || die "pipe: $!";
+    pipe( $r_err, $w_err ) || die "pipe: $!";
 
     $self->pid( fork() );
     if ( !defined $self->pid ) {
@@ -206,18 +324,8 @@ sub BUILD {
         close $w_out;
         close $w_err;
 
-        if ( defined( my $x = $self->env ) ) {
-            while ( my ( $key, $val ) = each %$x ) {
-                if ( defined $val ) {
-                    $ENV{$key} = $val;
-                }
-                else {
-                    delete $ENV{$key};
-                }
-            }
-        }
-
         if ( ref $self->cmd->[0] eq 'CODE' ) {
+            my $enc = ':encoding(' . $self->encoding . ')';
             binmode STDIN,  $enc;
             binmode STDOUT, $enc;
             binmode STDERR, $enc;
@@ -229,30 +337,15 @@ sub BUILD {
         die "exec: $!";
     }
 
-    $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
-
     # Parent continues from here
     close $r_in;
     close $w_out;
     close $w_err;
 
-    binmode $w_in,  $enc;
-    binmode $r_out, $enc;
-    binmode $r_err, $enc;
-
-    # some input was provided
-    if ( defined( my $input = $self->input ) ) {
-        local $SIG{PIPE} =
-          sub { warn "Broken pipe when writing to:" . $self->cmdline };
-
-        print {$w_in} $input if length $input;
-
-        $w_in->close;
-    }
-
     $self->stdin($w_in);
     $self->stdout($r_out);
     $self->stderr($r_err);
+
     return;
 }
 

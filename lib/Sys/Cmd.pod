@@ -51,9 +51,9 @@ raising an exception in the event of error. In array context returns a
 list instead of a plain string.
 
 The first element of C<@cmd> will be looked up using L<File::Which> if
-it is not a CODE reference, or cannot be found as a relative file name.
-The command input and environment can be modified with an optional
-hashref containing the following key/values:
+it doesn't exist as a relative file name is is a CODE reference (UNIX
+only).  The command input and environment can be modified with an
+optional hashref containing the following key/values:
 
 =over 4
 
@@ -89,8 +89,8 @@ appended to the C<STDOUT> output.
 Return a B<Sys::Cmd> object (documented below) representing the process
 running @cmd, with attributes set according to the optional \%opt
 hashref.  The first element of the C<@cmd> array is looked up using
-L<File::Which> if it is not a CODE reference or cannot be found in the
-file-system as a relative file name.
+L<File::Which> if it cannot be found in the file-system as a relative
+file name or it is a CODE reference (UNIX only).
 
 =back
 
@@ -139,8 +139,8 @@ All attributes are read-only.
 
 =item cmd
 
-An array ref containing the command or CODE reference and its
-arguments.
+An array ref containing the command or CODE reference (UNIX only) and
+its arguments.
 
 =item dir
 
