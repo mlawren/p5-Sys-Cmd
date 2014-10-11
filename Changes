@@ -1,0 +1,175 @@
+0.81.7_1 (2014-10-11)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - New Win32 support based on Proc::FastSpawn
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - None.
+
+0.81.6 (2014-03-24)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Updated to Mo 0.38.
+
+    Bug Fixes:
+        - Add missing argument to _exit() call.
+
+0.81.4 (2014-02-14)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Better detection & tests for non-executable target
+        - Use POSIX::_exit after calling CODEref to prevent DESTROY
+          actions
+        - Remove unecessary warnings during DESTROY/END blocks
+
+    Bug Fixes:
+        - Prevent child process from reaping itself
+        - Do not attempt to close handles on DESTROY
+
+0.81.2 (2013-12-23)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - Don't index Sys::Cmd::Mo.
+        - 0.81.0 was released with a Sys::Cmd::VERSION of 0.80.3
+        - Run author tests from xt/ when an author
+
+0.81.0 (2013-12-23)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - Accept CODErefs as arguments
+
+    Enhancements:
+        - Switch to a leaner Mo
+        - Various test refactoring
+
+    Bug Fixes:
+        - None.
+
+0.80.2 (2013-02-24)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - Switch to Semantic Versioning: http://semver.org
+        - Switch to a leaner Exporter::Tidy
+        - Various test and documentation updates
+
+    Bug Fixes:
+        - Properly test for UTF-8 values in environment variables:
+           https://rt.cpan.org/Ticket/Display.html?id=81834
+
+0.08 (2012-04-21)
+
+    API Changes:
+        - Split wait_child() out of close().
+
+    New Features:
+        - SIGCHLD handler and "on_exit" subref support
+
+    Enhancements:
+        - More informative debugging output
+
+    Bug Fixes:
+        - Filehandle fixes from inherited code as described here:
+            https://rt.cpan.org/Public/Bug/Display.html?id=73614
+
+0.05 (2011-09-20)
+
+    API Changes:
+        - Renamed from Sys::Command to Sys::Cmd.
+        - In doing the above rename the following functionality changes
+          also took place: "Sys::Command::Process" became "Sys::Cmd".
+          "Sys::Command" became "Sys::Cmd::Template".
+        - Split wait_child() out of close().
+
+    New Features:
+        - SIGCHLD handler and "on_exit" subref support
+
+    Enhancements:
+        - Borrowed some tests from System::Command.
+        - Confess on command not found.
+
+    Bug Fixes:
+        - Add missing dependency on File::Which plus various
+          test_requires modules.
+
+0.04 (2011-06-09)
+
+    API Changes:
+        - N/A
+
+    New Features:
+        - N/A
+
+    Enhancements:
+        - Hopefully fix failing tests due to not finding 'perl'
+
+    Bug Fixes:
+        - N/A
+
+0.03 (2011-06-07)
+
+    API Changes:
+        - N/A
+
+    New Features:
+        - N/A
+
+    Enhancements:
+        - N/A
+
+    Bug Fixes:
+        - Make Makefile.PL (and META.yml) point to correct repository.
+        - Add missing Sub::Exporter dependency
+
+0.02 (2011-06-06)
+
+    API Changes:
+        - N/A
+
+    New Features:
+        - N/A
+
+    Enhancements:
+        - N/A
+
+    Bug Fixes:
+        - Fixed README and Sys::Command::Process Documentation errors.
+
+0.01 (2011-06-06)
+
+    Initial Release
