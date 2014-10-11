@@ -1,3 +1,17 @@
+0.81.7_1 (yyyy-mm-dd)
+
+    API Changes:
+        - None.
+
+    New Features:
+        - New Win32 support based on Proc::FastSpawn
+
+    Enhancements:
+        - None.
+
+    Bug Fixes:
+        - None.
+
 0.81.6 (2014-03-24)
 
     API Changes:
