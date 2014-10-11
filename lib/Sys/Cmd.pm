@@ -10,7 +10,7 @@ use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 use POSIX qw/WNOHANG _exit/;
 
-our $VERSION = '0.81.7_1';
+our $VERSION = '0.81.8';
 our $CONFESS;
 
 sub run {
