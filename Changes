@@ -7,7 +7,7 @@
         - New Win32 support based on Proc::FastSpawn
 
     Enhancements:
-        - None.
+        - Be verbose for unexpected test failures
 
     Bug Fixes:
         - None.
