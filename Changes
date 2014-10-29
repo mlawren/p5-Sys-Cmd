@@ -8,6 +8,7 @@
 
     Enhancements:
         - Be verbose for unexpected test failures
+        - Move POD back into .pm files
 
     Bug Fixes:
         - None.
