@@ -1,4 +1,5 @@
-package Sys::Cmd::Mo;
+package    # Trick xt/ tests into working
+  Sys::Cmd::Mo;
 
 BEGIN {
 #<<< No perltidy
