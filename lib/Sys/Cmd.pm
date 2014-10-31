@@ -24,7 +24,7 @@ use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 use POSIX qw/WNOHANG _exit/;
 
-our $VERSION = '0.81.8';
+our $VERSION = '0.81.9_1';
 our $CONFESS;
 
 sub run {
@@ -500,7 +500,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.81.8 (yyyy-mm-dd) Development release
+0.81.9_1 (yyyy-mm-dd) Development release
 
 =head1 SYNOPSIS
 
