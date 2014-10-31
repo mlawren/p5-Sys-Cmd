@@ -171,7 +171,7 @@ for my $t ( @tests, @fail ) {
             $info,
             {
                 argv  => [],
-                dir   => $t->{options}{dir} || $cwd,
+                cwd   => lc( $t->{options}{dir} || $cwd ),
                 env   => $env,
                 input => $t->{options}{input} || '',
                 pid   => $cmd->pid,

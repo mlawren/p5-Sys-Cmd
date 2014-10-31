@@ -15,7 +15,7 @@ print Data::Dumper->Dump(
         {
             argv  => \@ARGV,
             env   => \%ENV,
-            dir   => cwd(),
+            cwd   => lc( cwd() ),
             input => $input,
             pid   => $$,
         }
