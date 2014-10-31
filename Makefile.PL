@@ -3,9 +3,9 @@ use inc::Module::Install;
 
 name 'Sys-Cmd';
 license 'Perl';
-version '0.81.7_1';
+version '0.81.8';
 all_from 'lib/Sys/Cmd.pm';
-readme_from 'lib/Sys/Cmd.pod';
+readme_from 'lib/Sys/Cmd.pm';
 
 homepage 'https://github.com/mlawren/p5-Sys-Cmd';
 bugtracker 'https://github.com/mlawren/p5-Sys-Cmd/issues';

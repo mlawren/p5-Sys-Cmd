@@ -128,6 +128,7 @@ for my $t ( @tests, @fail ) {
             like( $@, $t->{fail}, '... expected error message' );
             return;
         }
+        die $@ if $@;
 
         isa_ok( $cmd, 'Sys::Cmd' );
 
@@ -158,8 +159,8 @@ for my $t ( @tests, @fail ) {
         is( $errput, '', 'no errput' );
 
         my $env = { %ENV, %{ $t->{options}{env} || {} } };
-        if (exists $t->{options}->{dir} and $^O eq 'MSWin32') {
-            $env->{PWD} = $t->{options}->{dir}; 
+        if ( exists $t->{options}->{dir} and $^O eq 'MSWin32' ) {
+            $env->{PWD} = $t->{options}->{dir};
         }
         delete $env->{$_}
           for grep { !defined $t->{options}{env}{$_} }
@@ -170,7 +171,7 @@ for my $t ( @tests, @fail ) {
             $info,
             {
                 argv  => [],
-                dir   => $t->{options}{dir} || $cwd,
+                cwd   => lc( $t->{options}{dir} || $cwd ),
                 env   => $env,
                 input => $t->{options}{input} || '',
                 pid   => $cmd->pid,
@@ -199,17 +200,17 @@ subtest 'reaper', sub {
     kill 9, $proc2->pid;
     $proc2->wait_child;    # still need to wait for the signal to happen
     ok( ( defined $proc2->exit ), 'reaper found 2' );
-TODO: {
-    local $TODO = 'signals not working on Win32' if $^O eq 'MSWin32';
-    is $proc2->signal, 9, 'matching signal';
-}
+  TODO: {
+        local $TODO = 'signals not working on Win32' if $^O eq 'MSWin32';
+        is $proc2->signal, 9, 'matching signal';
+    }
 
     $proc->wait_child;
     ok( ( defined $proc->exit ), 'reaper worked' );
-TODO: {
-    local $TODO = 'signals not working on Win32' if $^O eq 'MSWin32';
-    is $proc->signal, 9, 'matching signal - on_exit worked';
-}
+  TODO: {
+        local $TODO = 'signals not working on Win32' if $^O eq 'MSWin32';
+        is $proc->signal, 9, 'matching signal - on_exit worked';
+    }
 
 };
 

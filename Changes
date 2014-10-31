@@ -1,4 +1,4 @@
-0.81.7_1 (2014-10-11)
+0.81.8 (2014-10-31)
 
     API Changes:
         - None.
@@ -7,7 +7,8 @@
         - New Win32 support based on Proc::FastSpawn
 
     Enhancements:
-        - None.
+        - Be verbose for unexpected test failures
+        - Move POD back into .pm files
 
     Bug Fixes:
         - None.

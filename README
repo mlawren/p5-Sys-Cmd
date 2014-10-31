@@ -2,7 +2,7 @@ NAME
     Sys::Cmd - run a system command or spawn a system processes
 
 VERSION
-    0.81.7_1 (2014-10-11) Development release
+    0.81.8 (2014-10-31) Development release
 
 SYNOPSIS
         use Sys::Cmd qw/run spawn/;
