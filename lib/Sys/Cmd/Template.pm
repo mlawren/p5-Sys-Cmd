@@ -6,8 +6,8 @@ use Carp qw/croak confess/;
 use Exporter::Tidy default => [qw/cmd_template/];
 use File::Spec::Functions qw/splitdir/;
 use File::Which;
-use Sys::Cmd::Mo qw/is default/;
 use Sys::Cmd;
+use Sys::Cmd::Mo qw/is default/;
 
 our $VERSION = '0.81.8';
 our $CONFESS;
