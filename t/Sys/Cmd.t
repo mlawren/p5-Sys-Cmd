@@ -128,6 +128,7 @@ for my $t ( @tests, @fail ) {
             like( $@, $t->{fail}, '... expected error message' );
             return;
         }
+        die $@ if $@;
 
         isa_ok( $cmd, 'Sys::Cmd' );
 
@@ -158,6 +159,9 @@ for my $t ( @tests, @fail ) {
         is( $errput, '', 'no errput' );
 
         my $env = { %ENV, %{ $t->{options}{env} || {} } };
+        if ( exists $t->{options}->{dir} and $^O eq 'MSWin32' ) {
+            $env->{PWD} = $t->{options}->{dir};
+        }
         delete $env->{$_}
           for grep { !defined $t->{options}{env}{$_} }
           keys %{ $t->{options}{env} || {} };
@@ -167,7 +171,7 @@ for my $t ( @tests, @fail ) {
             $info,
             {
                 argv  => [],
-                dir   => $t->{options}{dir} || $cwd,
+                cwd   => lc( $t->{options}{dir} || $cwd ),
                 env   => $env,
                 input => $t->{options}{input} || '',
                 pid   => $cmd->pid,
@@ -196,55 +200,65 @@ subtest 'reaper', sub {
     kill 9, $proc2->pid;
     $proc2->wait_child;    # still need to wait for the signal to happen
     ok( ( defined $proc2->exit ), 'reaper found 2' );
-    is $proc2->signal, 9, 'matching signal';
+  TODO: {
+        local $TODO = 'signals not working on Win32' if $^O eq 'MSWin32';
+        is $proc2->signal, 9, 'matching signal';
+    }
 
     $proc->wait_child;
     ok( ( defined $proc->exit ), 'reaper worked' );
-    is $proc->signal, 9, 'matching signal - on_exit worked';
+  TODO: {
+        local $TODO = 'signals not working on Win32' if $^O eq 'MSWin32';
+        is $proc->signal, 9, 'matching signal - on_exit worked';
+    }
 
 };
 
-subtest 'coderef', sub {
+SKIP: {
+    skip "coderefs not supported on Win32", 1 if $^O eq 'MSWin32';
 
-    my $proc = spawn(
-        sub {
-            while ( my $line = <STDIN> ) {
-                print STDOUT $line;
+    subtest 'coderef', sub {
+
+        my $proc = spawn(
+            sub {
+                while ( my $line = <STDIN> ) {
+                    print STDOUT $line;
+                }
+                exit 3;
             }
-            exit 3;
+        );
+
+        foreach my $i ( 1 .. 10, 'Zürich' ) {
+            $proc->stdin->print( $i . "\n" );
+            my $res = $proc->stdout->getline;
+            chomp $res;
+            is $res, $i, "echo $i";
         }
-    );
 
-    foreach my $i ( 1 .. 10, 'Zürich' ) {
-        $proc->stdin->print( $i . "\n" );
-        my $res = $proc->stdout->getline;
-        chomp $res;
-        is $res, $i, "echo $i";
-    }
+        $proc->close;
+        $proc->wait_child;
+        is $proc->exit, 3, 'exit 3';
 
-    $proc->close;
-    $proc->wait_child;
-    is $proc->exit, 3, 'exit 3';
-
-    $proc = spawn(
-        sub {
-            while ( my $line = <STDIN> ) {
-                print STDOUT $line;
+        $proc = spawn(
+            sub {
+                while ( my $line = <STDIN> ) {
+                    print STDOUT $line;
+                }
+                return 3;    # return value should be independpent of exit
             }
-            return 3;    # return value should be independpent of exit
+        );
+
+        foreach my $i ( 1 .. 2, 'Zürich' ) {
+            $proc->stdin->print( $i . "\n" );
+            my $res = $proc->stdout->getline;
+            chomp $res;
+            is $res, $i, "echo $i";
         }
-    );
 
-    foreach my $i ( 1 .. 2, 'Zürich' ) {
-        $proc->stdin->print( $i . "\n" );
-        my $res = $proc->stdout->getline;
-        chomp $res;
-        is $res, $i, "echo $i";
-    }
-
-    $proc->close;
-    $proc->wait_child;
-    is $proc->exit, 0, 'exit 0';
-};
+        $proc->close;
+        $proc->wait_child;
+        is $proc->exit, 0, 'exit 0';
+    };
+}
 
 done_testing();
