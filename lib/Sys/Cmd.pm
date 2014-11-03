@@ -19,7 +19,6 @@ use 5.006;
 use Carp qw/carp confess croak/;
 use Exporter::Tidy all => [qw/spawn run runx/];
 use IO::Handle;
-use File::chdir;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 
@@ -122,10 +121,7 @@ has 'env' => (
     isa => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
 );
 
-has 'dir' => (
-    is      => 'ro',
-    default => sub { $CWD },
-);
+has 'dir' => ( is => 'ro', );
 
 has 'input' => ( is => 'ro', );
 
@@ -171,7 +167,11 @@ has 'core' => (
 
 sub BUILD {
     my $self = shift;
-    local $CWD = $self->dir;
+    my $dir  = $self->dir;
+
+    require File::chdir if $dir;
+    local $File::chdir::CWD = $dir if $dir;
+
     local %ENV = %ENV;
 
     if ( defined( my $x = $self->env ) ) {
