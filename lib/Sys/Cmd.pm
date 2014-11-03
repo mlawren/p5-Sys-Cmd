@@ -133,16 +133,19 @@ has 'pid' => (
 has 'stdin' => (
     is       => 'rw',
     init_arg => undef,
+    default  => sub { IO::Handle->new },
 );
 
 has 'stdout' => (
     is       => 'rw',
     init_arg => undef,
+    default  => sub { IO::Handle->new },
 );
 
 has 'stderr' => (
     is       => 'rw',
     init_arg => undef,
+    default  => sub { IO::Handle->new },
 );
 
 has on_exit => (
@@ -214,98 +217,64 @@ sub BUILD {
 
 sub _spawn {
     my $self = shift;
+    my @cmd  = $self->cmdline;
+    my $cmd  = $cmd[0];
+    my @env  = map { "$_=$ENV{$_}" } keys %ENV;
 
     require Proc::FastSpawn;
     Proc::FastSpawn->import(qw/fd_inherit/);
 
-    my $r_in  = IO::Handle->new;
-    my $r_out = IO::Handle->new;
-    my $r_err = IO::Handle->new;
-    my $w_in  = IO::Handle->new;
-    my $w_out = IO::Handle->new;
-    my $w_err = IO::Handle->new;
+    # Get new handles to descriptors 0,1,2
+    my $fd0 = IO::Handle->new_from_fd( 0, 'r' );
+    my $fd1 = IO::Handle->new_from_fd( 1, 'w' );
+    my $fd2 = IO::Handle->new_from_fd( 2, 'w' );
 
-    $w_in->autoflush(1);
-    $w_out->autoflush(1);
-    $w_err->autoflush(1);
+    # Backup the original 0,1,2 file descriptors
+    open my $old_fd0, '<&', 0;
+    open my $old_fd1, '>&', 1;
+    open my $old_fd2, '>&', 2;
 
-    pipe( $r_in,  $w_in )  || die "pipe: $!";
-    pipe( $r_out, $w_out ) || die "pipe: $!";
-    pipe( $r_err, $w_err ) || die "pipe: $!";
+    # Pipe our filehandles to new child filehandles
+    pipe( my $child_in,  $self->stdin )  || die "pipe: $!";
+    pipe( $self->stdout, my $child_out ) || die "pipe: $!";
+    pipe( $self->stderr, my $child_err ) || die "pipe: $!";
 
-    # Get handles to descriptors 0,1,2
-    my $fd0 = IO::Handle->new_from_fd( 0, '<' );
-    my $fd1 = IO::Handle->new_from_fd( 1, '>' );
-    my $fd2 = IO::Handle->new_from_fd( 2, '>' );
-
-    # Dup the 0,1,2 descriptors
-    open my $stdin,  '<&', 0;
-    open my $stdout, '>&', 1;
-    open my $stderr, '>&', 2;
-
-    # Re-open 0,1,2 by duping the pipe end
-    open $fd0, '<&', fileno($r_in);
-    open $fd1, '>&', fileno($w_out);
-    open $fd2, '>&', fileno($w_err);
+    # Now re-open 0,1,2 by duping the child pipe ends
+    open $fd0, '<&', fileno($child_in);
+    open $fd1, '>&', fileno($child_out);
+    open $fd2, '>&', fileno($child_err);
 
     # Make sure that 0,1,2 are inherited (probably are anyway)
-    fd_inherit( 0, 1 );
-    fd_inherit( 1, 1 );
-    fd_inherit( 2, 1 );
+    fd_inherit( $_, 1 ) for 0, 1, 2;
 
-    # But don't inherit these
-    fd_inherit( fileno($stdin),  0 );
-    fd_inherit( fileno($stdout), 0 );
-    fd_inherit( fileno($stderr), 0 );
-    fd_inherit( fileno($r_in),   0 );
-    fd_inherit( fileno($r_out),  0 );
-    fd_inherit( fileno($r_err),  0 );
-    fd_inherit( fileno($w_in),   0 );
-    fd_inherit( fileno($w_out),  0 );
-    fd_inherit( fileno($w_err),  0 );
+    # But don't inherit the rest
+    fd_inherit( fileno($_), 0 )
+      for $old_fd0, $old_fd1, $old_fd2, $child_in, $child_out, $child_err,
+      $self->stdin, $self->stdout, $self->stderr;
 
-    my @cmd = $self->cmdline;
-    my $cmd = $cmd[0];
-    my @env = map { "$_=$ENV{$_}" } keys %ENV;
-
+    # Kick off the new process
     $self->pid( Proc::FastSpawn::spawn( $cmd, \@cmd, \@env ) );
 
-    # dup fd 0,1,2 again from the proper place
-    open $fd0, '<&', fileno($stdin);
-    open $fd1, '>&', fileno($stdout);
-    open $fd2, '>&', fileno($stderr);
+    # Restore our local 0,1,2 to the originals
+    open $fd0, '<&', fileno($old_fd0);
+    open $fd1, '>&', fileno($old_fd1);
+    open $fd2, '>&', fileno($old_fd2);
 
-    # and restore things for perl
-    open STDIN,  '<&=', fileno($fd0);
-    open STDOUT, '>&=', fileno($fd1);
-    open STDERR, '>&=', fileno($fd2);
+    # Parent doesn't need to see the child or backup descriptors anymore
+    close($_)
+      for $old_fd0, $old_fd1, $old_fd2, $child_in, $child_out, $child_err;
 
-    close($r_in);
-    close($w_out);
-    close($w_err);
+    $self->stdin->autoflush(1);
 
-    $self->stdin($w_in);
-    $self->stdout($r_out);
-    $self->stderr($r_err);
     return;
 }
 
 sub _fork {
-    my $self  = shift;
-    my $r_in  = IO::Handle->new;
-    my $r_out = IO::Handle->new;
-    my $r_err = IO::Handle->new;
-    my $w_in  = IO::Handle->new;
-    my $w_out = IO::Handle->new;
-    my $w_err = IO::Handle->new;
+    my $self = shift;
 
-    $w_in->autoflush(1);
-    $w_out->autoflush(1);
-    $w_err->autoflush(1);
-
-    pipe( $r_in,  $w_in )  || die "pipe: $!";
-    pipe( $r_out, $w_out ) || die "pipe: $!";
-    pipe( $r_err, $w_err ) || die "pipe: $!";
+    pipe( my $child_in,  $self->stdin )  || die "pipe: $!";
+    pipe( $self->stdout, my $child_out ) || die "pipe: $!";
+    pipe( $self->stderr, my $child_err ) || die "pipe: $!";
 
     $self->pid( fork() );
     if ( !defined $self->pid ) {
@@ -316,19 +285,19 @@ sub _fork {
     if ( $self->pid == 0 ) {    # Child
         $self->exit(0);         # stop DESTROY() from trying to reap
 
-        if ( !open STDERR, '>&=', fileno($w_err) ) {
-            print $w_err "open: $! at ", caller, "\n";
+        $child_out->autoflush(1);
+        $child_err->autoflush(1);
+
+        if ( !open STDERR, '>&=', fileno($child_err) ) {
+            print $child_err "open: $! at ", caller, "\n";
             die "open: $!";
         }
-        open STDIN,  '<&=', fileno($r_in)  || die "open: $!";
-        open STDOUT, '>&=', fileno($w_out) || die "open: $!";
+        open STDIN,  '<&=', fileno($child_in)  || die "open: $!";
+        open STDOUT, '>&=', fileno($child_out) || die "open: $!";
 
-        close $r_out;
-        close $r_err;
-        close $r_in;
-        close $w_in;
-        close $w_out;
-        close $w_err;
+        close $self->stdin;
+        close $self->stdout;
+        close $self->stderr;
 
         if ( ref $self->cmd->[0] eq 'CODE' ) {
             my $enc = ':encoding(' . $self->encoding . ')';
@@ -344,13 +313,11 @@ sub _fork {
     }
 
     # Parent continues from here
-    close $r_in;
-    close $w_out;
-    close $w_err;
+    close $child_in;
+    close $child_out;
+    close $child_err;
 
-    $self->stdin($w_in);
-    $self->stdout($r_out);
-    $self->stderr($r_err);
+    $self->stdin->autoflush(1);
 
     return;
 }
