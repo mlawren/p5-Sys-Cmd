@@ -134,12 +134,7 @@ for my $t ( @tests, @fail ) {
 
         # test the handles
         for my $handle (qw( stdin stdout stderr )) {
-            if (MSWin32) {
-                isa_ok( $cmd->$handle, 'IO::Handle' );
-            }
-            else {
-                isa_ok( $cmd->$handle, 'IO::Handle' );
-            }
+            isa_ok( $cmd->$handle, 'IO::Handle' );
             if ( $handle eq 'stdin' ) {
                 my $opened = !exists $t->{options}{input};
                 is( $cmd->$handle->opened, $opened,
@@ -198,17 +193,19 @@ subtest 'reaper', sub {
     );
 
     kill 9, $proc2->pid;
-    $proc2->wait_child;    # still need to wait for the signal to happen
+    $proc2->wait_child;
     ok( ( defined $proc2->exit ), 'reaper found 2' );
-  TODO: {
-        local $TODO = 'signals not working on Win32' if $^O eq 'MSWin32';
+
+  SKIP: {
+        skip 'signals do not work on Win32', 1 if $^O eq 'MSWin32';
         is $proc2->signal, 9, 'matching signal';
     }
 
     $proc->wait_child;
     ok( ( defined $proc->exit ), 'reaper worked' );
-  TODO: {
-        local $TODO = 'signals not working on Win32' if $^O eq 'MSWin32';
+
+  SKIP: {
+        skip 'signals do not work on Win32', 1 if $^O eq 'MSWin32';
         is $proc->signal, 9, 'matching signal - on_exit worked';
     }
 
