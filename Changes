@@ -9,6 +9,7 @@
 
     Enhancements:
         - Removed empty sections from (this) Changes file
+        - Removed a dependency on the POSIX module
 
     Bug Fixes:
         - None.
