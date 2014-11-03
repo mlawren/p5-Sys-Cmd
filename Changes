@@ -1,7 +1,8 @@
 0.81.9_1 (yyyy-mm-dd)
 
     API / Behaviour Changes:
-        - None.
+        - No longer set $SIG{CHLD} for any reason - leave it to calling
+          code to define such global behaviour.
 
     New Features:
         - None.

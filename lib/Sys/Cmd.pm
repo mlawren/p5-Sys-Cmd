@@ -170,8 +170,6 @@ has 'core' => (
     init_arg => undef,
 );
 
-my @children;
-
 sub BUILD {
     my $self = shift;
     local $CWD = $self->dir;
@@ -187,9 +185,6 @@ sub BUILD {
             }
         }
     }
-
-    push( @children, $self );
-    $SIG{CHLD} ||= \&_reap if $self->on_exit;
 
     if ( $^O eq 'MSWin32' ) {
         $self->_spawn;
@@ -316,12 +311,10 @@ sub _fork {
     $self->pid( fork() );
     if ( !defined $self->pid ) {
         my $why = $!;
-        pop @children;
         die "fork: $why";
     }
 
     if ( $self->pid == 0 ) {    # Child
-        $SIG{CHLD} = 'DEFAULT';
         $self->exit(0);         # stop DESTROY() from trying to reap
 
         if ( !open STDERR, '>&=', fileno($w_err) ) {
@@ -373,100 +366,59 @@ sub cmdline {
     }
 }
 
-# A signal handler, not a method
-sub _reap {
-    my $sig = shift;
-    my $try = shift || '';
-
-    croak '_reap("CHLD",[$pid])' unless $sig eq 'CHLD';
-
-    while (1) {
-        my $pid;
-        local $?;
-        local $!;
-
-        if ($try) {
-            $pid = waitpid $try, 0;
-            $try = undef;
-        }
-        else {
-            $pid = waitpid -1, &WNOHANG;
-        }
-
-        my $ret = $?;
-
-        if ( $pid == -1 ) {
-
-            # No child processes running
-            last;
-        }
-        elsif ( $pid == 0 ) {
-
-            # child processes still running, but not ours??
-            last;
-        }
-
-        if ( $ret == -1 ) {
-
-            # So waitpid returned a PID but then sets $? to this
-            # strange value? (Strange in that tests randomly show it to
-            # be invalid.) Most likely a perl bug; I think that waitpid
-            # got interrupted and when it restarts/resumes the status
-            # is lost.
-            #
-            # See http://www.perlmonks.org/?node_id=641620 for a
-            # possibly related discussion.
-            #
-            # However, since I localised $? and $! above I haven't seen
-            # this problem again, so I hope that is a good enough work
-            # around. Lets warn any way so that we know when something
-            # dodgy is going on.
-            warn __PACKAGE__
-              . ' received invalid child exit status for pid '
-              . $pid
-              . ' Setting to 0';
-            $ret = 0;
-
-        }
-
-        my @dead = grep { defined $_ && $_->pid == $pid } @children;
-        @children = grep { defined $_ && $_->pid != $pid } @children;
-
-        if ( @children and !@dead ) {
-            warn __PACKAGE__
-              . ' not our child: '
-              . $pid
-              . ' exit '
-              . ( $ret >> 8 )
-              . ' signal '
-              . ( $ret & 127 )
-              . ' core '
-              . ( $ret & 128 );
-            next;
-        }
-
-        foreach my $child (@dead) {
-            $log->debugf( '(PID %d) exit: %d signal:%d core:%d',
-                $child->pid, $ret >> 8, $ret & 127, $ret & 128 );
-
-            $child->exit( $ret >> 8 );
-            $child->signal( $ret & 127 );
-            $child->core( $ret & 128 );
-
-            if ( my $subref = $child->on_exit ) {
-                $subref->($child);
-            }
-        }
-    }
-
-    return;
-}
-
 sub wait_child {
     my $self = shift;
+    return unless $self->pid;
+    return if defined $self->exit;
 
-    _reap( 'CHLD', $self->pid ) unless defined $self->exit;
-    return;
+    local $?;
+    local $!;
+
+    my $pid = waitpid $self->pid, 0;
+    my $ret = $?;
+
+    if ( $pid != $self->pid ) {
+        warn sprintf( 'Could not reap child process %d (waitpid returned: %d)',
+            $self->pid, $pid );
+        $pid = $self->pid;
+        $ret = 0;
+    }
+
+    if ( $ret == -1 ) {
+
+        # So waitpid returned a PID but then sets $? to this
+        # strange value? (Strange in that tests randomly show it to
+        # be invalid.) Most likely a perl bug; I think that waitpid
+        # got interrupted and when it restarts/resumes the status
+        # is lost.
+        #
+        # See http://www.perlmonks.org/?node_id=641620 for a
+        # possibly related discussion.
+        #
+        # However, since I localised $? and $! above I haven't seen
+        # this problem again, so I hope that is a good enough work
+        # around. Lets warn any way so that we know when something
+        # dodgy is going on.
+        warn __PACKAGE__
+          . ' received invalid child exit status for pid '
+          . $pid
+          . ' Setting to 0';
+        $ret = 0;
+
+    }
+
+    $log->debugf( '(PID %d) exit: %d signal:%d core:%d',
+        $pid, $ret >> 8, $ret & 127, $ret & 128 );
+
+    $self->exit( $ret >> 8 );
+    $self->signal( $ret & 127 );
+    $self->core( $ret & 128 );
+
+    if ( my $subref = $self->on_exit ) {
+        $subref->($self);
+    }
+
+    return $ret;
 }
 
 sub close {
@@ -486,7 +438,7 @@ sub close {
 
 sub DESTROY {
     my $self = shift;
-    _reap( 'CHLD', $self->pid ) unless defined $self->exit;
+    $self->wait_child;
     return;
 }
 
@@ -620,9 +572,9 @@ Spawns a process based on %args. %args must contain at least a C<cmd>
 value, and optionally C<encoding>, C<env>, C<dir> and C<input> values
 as defined as attributes below.
 
-If an C<on_exit> subref argument is provided a SIGCHLD handler will be
-installed (process wide!) which is called asynchronously (with the
-B<Sys::Cmd> object as first argument) when the child exits.
+If an C<on_exit> subref argument is provided it will be called by the
+C<wait_child> method, which can either be called manually or will be
+automatically called when the object is destroyed.
 
 =back
 
@@ -659,7 +611,7 @@ then closed. This is a shortcut for printing to, and closing the
 command's I<stdin> file-handle. An empty string will close the
 command's standard input without writing to it. On some systems, some
 commands may close standard input on startup, which will cause a
-SIGPIPE when trying to write to it. This will raise an exception.
+SIGPIPE when trying to write to it for which B<Sys::Cmd> will warn.
 
 =item pid
 
@@ -684,20 +636,17 @@ call getline() etc methods on it.
 =item exit
 
 The command's exit value, shifted by 8 (see "perldoc -f system"). Set
-either when a SIGCHLD is received or after a call to C<wait_child()>.
+by C<wait_child()>.
 
 =item signal
 
 The signal number (if any) that terminated the command, bitwise-added
-with 127 (see "perldoc -f system"). Set either when a SIGCHLD is
-received or after a call to C<wait_child()>.
-
+with 127 (see "perldoc -f system"). Set by C<wait_child()>.
 
 =item core
 
-A boolean indicating the process core was dumped. Set either when a
-SIGCHLD is received or after a call to C<wait_child()>.
-
+A boolean indicating the process core was dumped. Set by
+C<wait_child()>.
 
 =back
 
