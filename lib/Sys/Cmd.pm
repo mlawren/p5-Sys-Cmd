@@ -239,11 +239,6 @@ sub _spawn {
     pipe( $self->stdout, my $child_out ) || die "pipe: $!";
     pipe( $self->stderr, my $child_err ) || die "pipe: $!";
 
-    # Now re-open 0,1,2 by duping the child pipe ends
-    open $fd0, '<&', fileno($child_in);
-    open $fd1, '>&', fileno($child_out);
-    open $fd2, '>&', fileno($child_err);
-
     # Make sure that 0,1,2 are inherited (probably are anyway)
     fd_inherit( $_, 1 ) for 0, 1, 2;
 
@@ -252,13 +247,22 @@ sub _spawn {
       for $old_fd0, $old_fd1, $old_fd2, $child_in, $child_out, $child_err,
       $self->stdin, $self->stdout, $self->stderr;
 
+    # Now re-open 0,1,2 by duping the child pipe ends
+    open $fd0, '<&', fileno($child_in);
+    open $fd1, '>&', fileno($child_out);
+    open $fd2, '>&', fileno($child_err);
+
     # Kick off the new process
-    $self->pid( Proc::FastSpawn::spawn( $cmd, \@cmd, \@env ) );
+    eval { $self->pid( Proc::FastSpawn::spawn( $cmd, \@cmd, \@env ) ) };
+    my $err = $@;
 
     # Restore our local 0,1,2 to the originals
     open $fd0, '<&', fileno($old_fd0);
     open $fd1, '>&', fileno($old_fd1);
     open $fd2, '>&', fileno($old_fd2);
+
+    # Complain if the spawn failed for some reason
+    croak $err if $err;
 
     # Parent doesn't need to see the child or backup descriptors anymore
     close($_)
@@ -384,7 +388,7 @@ sub wait_child {
         $subref->($self);
     }
 
-    return $ret;
+    return $self->exit;
 }
 
 sub close {
@@ -628,19 +632,21 @@ together by spaces.
 
 =item close()
 
-Close all pipes to the child process.  This method is automatically
-called when the C<Sys::Cmd> object is destroyed.  Annoyingly, this
-means that in the following example C<$fh> will be closed when you
-tried to use it:
+Close all filehandles to the child process. Note that file handles will
+automaticaly be closed when the B<Sys::Cmd> object is destroyed.
+Annoyingly, this means that in the following example C<$fh> will be
+closed when you tried to use it:
 
     my $fh = Sys::Cmd->new( %args )->stdout;
 
 So you have to keep track of the Sys::Cmd object manually.
 
-=item wait_child()
+=item wait_child() -> $exit_value
 
-Wait for the child to exit and collect the exit status. This method is
-resposible for setting the I<exit>, I<signal> and I<core> attributes.
+Wait for the child to exit using L<waitpid>, collect the exit status
+and return it. This method sets the I<exit>, I<signal> and I<core>
+attributes and will also be called automatically when the B<Sys::Cmd>
+object is destroyed.
 
 =back
 
