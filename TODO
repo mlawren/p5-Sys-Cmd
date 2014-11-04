@@ -1,4 +1,1 @@
-Fix failing tests on Win32:
-    https://rt.cpan.org/Ticket/Display.html?id=85410
-
-Warn when uncollected stderr on DESTROY?
+- Document motivation for module and comparison with alternatives
