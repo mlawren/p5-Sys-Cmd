@@ -2,7 +2,7 @@ NAME
     Sys::Cmd - run a system command or spawn a system processes
 
 VERSION
-    0.81.8 (2014-10-31) Development release
+    0.81.9_1 (2014-11-04) Development release
 
 SYNOPSIS
         use Sys::Cmd qw/run spawn/;
@@ -98,9 +98,9 @@ CONSTRUCTOR
         value, and optionally "encoding", "env", "dir" and "input" values as
         defined as attributes below.
 
-        If an "on_exit" subref argument is provided a SIGCHLD handler will
-        be installed (process wide!) which is called asynchronously (with
-        the Sys::Cmd object as first argument) when the child exits.
+        If an "on_exit" subref argument is provided it will be called by the
+        "wait_child" method, which can either be called manually or will be
+        automatically called when the object is destroyed.
 
 ATTRIBUTES
     All attributes are read-only.
@@ -124,7 +124,7 @@ ATTRIBUTES
         command's *stdin* file-handle. An empty string will close the
         command's standard input without writing to it. On some systems,
         some commands may close standard input on startup, which will cause
-        a SIGPIPE when trying to write to it. This will raise an exception.
+        a SIGPIPE when trying to write to it for which Sys::Cmd will warn.
 
     pid The command's process ID.
 
@@ -143,17 +143,16 @@ ATTRIBUTES
 
     exit
         The command's exit value, shifted by 8 (see "perldoc -f system").
-        Set either when a SIGCHLD is received or after a call to
-        "wait_child()".
+        Set by "wait_child()".
 
     signal
         The signal number (if any) that terminated the command,
-        bitwise-added with 127 (see "perldoc -f system"). Set either when a
-        SIGCHLD is received or after a call to "wait_child()".
+        bitwise-added with 127 (see "perldoc -f system"). Set by
+        "wait_child()".
 
     core
-        A boolean indicating the process core was dumped. Set either when a
-        SIGCHLD is received or after a call to "wait_child()".
+        A boolean indicating the process core was dumped. Set by
+        "wait_child()".
 
 METHODS
     cmdline => @list | $str
@@ -162,19 +161,20 @@ METHODS
         joined together by spaces.
 
     close()
-        Close all pipes to the child process. This method is automatically
-        called when the "Sys::Cmd" object is destroyed. Annoyingly, this
-        means that in the following example $fh will be closed when you
-        tried to use it:
+        Close all filehandles to the child process. Note that file handles
+        will automaticaly be closed when the Sys::Cmd object is destroyed.
+        Annoyingly, this means that in the following example $fh will be
+        closed when you tried to use it:
 
             my $fh = Sys::Cmd->new( %args )->stdout;
 
         So you have to keep track of the Sys::Cmd object manually.
 
-    wait_child()
-        Wait for the child to exit and collect the exit status. This method
-        is resposible for setting the *exit*, *signal* and *core*
-        attributes.
+    wait_child() -> $exit_value
+        Wait for the child to exit using waitpid, collect the exit status
+        and return it. This method sets the *exit*, *signal* and *core*
+        attributes and will also be called automatically when the Sys::Cmd
+        object is destroyed.
 
 SEE ALSO
     Sys::Cmd::Template

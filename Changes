@@ -1,7 +1,21 @@
-0.81.8 (2014-10-31)
+0.81.9_1 (2014-11-04)
 
-    API Changes:
+    API / Behaviour Changes:
+        - No longer set $SIG{CHLD} for any reason - leave it to calling
+          code to define such global behaviour.
+
+    New Features:
         - None.
+
+    Enhancements:
+        - Removed empty sections from (this) Changes file
+        - Removed a dependency on the POSIX module
+        - Optimized & clarified the internal fork/spawn functions
+
+    Bug Fixes:
+        - None.
+
+0.81.8 (2014-10-31)
 
     New Features:
         - New Win32 support based on Proc::FastSpawn
@@ -10,16 +24,7 @@
         - Be verbose for unexpected test failures
         - Move POD back into .pm files
 
-    Bug Fixes:
-        - None.
-
 0.81.6 (2014-03-24)
-
-    API Changes:
-        - None.
-
-    New Features:
-        - None.
 
     Enhancements:
         - Updated to Mo 0.38.
@@ -28,12 +33,6 @@
         - Add missing argument to _exit() call.
 
 0.81.4 (2014-02-14)
-
-    API Changes:
-        - None.
-
-    New Features:
-        - None.
 
     Enhancements:
         - Better detection & tests for non-executable target
@@ -47,24 +46,12 @@
 
 0.81.2 (2013-12-23)
 
-    API Changes:
-        - None.
-
-    New Features:
-        - None.
-
-    Enhancements:
-        - None.
-
     Bug Fixes:
         - Don't index Sys::Cmd::Mo.
         - 0.81.0 was released with a Sys::Cmd::VERSION of 0.80.3
         - Run author tests from xt/ when an author
 
 0.81.0 (2013-12-23)
-
-    API Changes:
-        - None.
 
     New Features:
         - Accept CODErefs as arguments
@@ -73,16 +60,7 @@
         - Switch to a leaner Mo
         - Various test refactoring
 
-    Bug Fixes:
-        - None.
-
 0.80.2 (2013-02-24)
-
-    API Changes:
-        - None.
-
-    New Features:
-        - None.
 
     Enhancements:
         - Switch to Semantic Versioning: http://semver.org
@@ -130,43 +108,16 @@
 
 0.04 (2011-06-09)
 
-    API Changes:
-        - N/A
-
-    New Features:
-        - N/A
-
     Enhancements:
         - Hopefully fix failing tests due to not finding 'perl'
 
-    Bug Fixes:
-        - N/A
-
 0.03 (2011-06-07)
-
-    API Changes:
-        - N/A
-
-    New Features:
-        - N/A
-
-    Enhancements:
-        - N/A
 
     Bug Fixes:
         - Make Makefile.PL (and META.yml) point to correct repository.
         - Add missing Sub::Exporter dependency
 
 0.02 (2011-06-06)
-
-    API Changes:
-        - N/A
-
-    New Features:
-        - N/A
-
-    Enhancements:
-        - N/A
 
     Bug Fixes:
         - Fixed README and Sys::Command::Process Documentation errors.

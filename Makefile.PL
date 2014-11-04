@@ -3,7 +3,7 @@ use inc::Module::Install;
 
 name 'Sys-Cmd';
 license 'Perl';
-version '0.81.8';
+version '0.81.9_1';
 all_from 'lib/Sys/Cmd.pm';
 readme_from 'lib/Sys/Cmd.pm';
 
@@ -15,7 +15,6 @@ requires 'Carp'            => 0;
 requires 'Exporter::Tidy'  => 0;
 requires 'IO::Handle'      => 0;
 requires 'Log::Any'        => 0;
-requires 'POSIX'           => 0;
 requires 'Proc::FastSpawn' => 0 if $^O eq 'MSWin32';
 requires 'File::Which'     => 0;
 requires 'File::chdir'     => 0;

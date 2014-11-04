@@ -19,12 +19,10 @@ use 5.006;
 use Carp qw/carp confess croak/;
 use Exporter::Tidy all => [qw/spawn run runx/];
 use IO::Handle;
-use File::chdir;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
-use POSIX qw/WNOHANG _exit/;
 
-our $VERSION = '0.81.8';
+our $VERSION = '0.81.9_1';
 our $CONFESS;
 
 sub run {
@@ -123,10 +121,7 @@ has 'env' => (
     isa => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
 );
 
-has 'dir' => (
-    is      => 'ro',
-    default => sub { $CWD },
-);
+has 'dir' => ( is => 'ro', );
 
 has 'input' => ( is => 'ro', );
 
@@ -138,16 +133,19 @@ has 'pid' => (
 has 'stdin' => (
     is       => 'rw',
     init_arg => undef,
+    default  => sub { IO::Handle->new },
 );
 
 has 'stdout' => (
     is       => 'rw',
     init_arg => undef,
+    default  => sub { IO::Handle->new },
 );
 
 has 'stderr' => (
     is       => 'rw',
     init_arg => undef,
+    default  => sub { IO::Handle->new },
 );
 
 has on_exit => (
@@ -170,11 +168,13 @@ has 'core' => (
     init_arg => undef,
 );
 
-my @children;
-
 sub BUILD {
     my $self = shift;
-    local $CWD = $self->dir;
+    my $dir  = $self->dir;
+
+    require File::chdir if $dir;
+    local $File::chdir::CWD = $dir if $dir;
+
     local %ENV = %ENV;
 
     if ( defined( my $x = $self->env ) ) {
@@ -187,9 +187,6 @@ sub BUILD {
             }
         }
     }
-
-    push( @children, $self );
-    $SIG{CHLD} ||= \&_reap if $self->on_exit;
 
     if ( $^O eq 'MSWin32' ) {
         $self->_spawn;
@@ -220,123 +217,91 @@ sub BUILD {
 
 sub _spawn {
     my $self = shift;
+    my @cmd  = $self->cmdline;
+    my $cmd  = $cmd[0];
+    my @env  = map { "$_=$ENV{$_}" } keys %ENV;
 
     require Proc::FastSpawn;
     Proc::FastSpawn->import(qw/fd_inherit/);
 
-    my $r_in  = IO::Handle->new;
-    my $r_out = IO::Handle->new;
-    my $r_err = IO::Handle->new;
-    my $w_in  = IO::Handle->new;
-    my $w_out = IO::Handle->new;
-    my $w_err = IO::Handle->new;
+    # Get new handles to descriptors 0,1,2
+    my $fd0 = IO::Handle->new_from_fd( 0, 'r' );
+    my $fd1 = IO::Handle->new_from_fd( 1, 'w' );
+    my $fd2 = IO::Handle->new_from_fd( 2, 'w' );
 
-    $w_in->autoflush(1);
-    $w_out->autoflush(1);
-    $w_err->autoflush(1);
+    # Backup the original 0,1,2 file descriptors
+    open my $old_fd0, '<&', 0;
+    open my $old_fd1, '>&', 1;
+    open my $old_fd2, '>&', 2;
 
-    pipe( $r_in,  $w_in )  || die "pipe: $!";
-    pipe( $r_out, $w_out ) || die "pipe: $!";
-    pipe( $r_err, $w_err ) || die "pipe: $!";
-
-    # Get handles to descriptors 0,1,2
-    my $fd0 = IO::Handle->new_from_fd( 0, '<' );
-    my $fd1 = IO::Handle->new_from_fd( 1, '>' );
-    my $fd2 = IO::Handle->new_from_fd( 2, '>' );
-
-    # Dup the 0,1,2 descriptors
-    open my $stdin,  '<&', 0;
-    open my $stdout, '>&', 1;
-    open my $stderr, '>&', 2;
-
-    # Re-open 0,1,2 by duping the pipe end
-    open $fd0, '<&', fileno($r_in);
-    open $fd1, '>&', fileno($w_out);
-    open $fd2, '>&', fileno($w_err);
+    # Pipe our filehandles to new child filehandles
+    pipe( my $child_in,  $self->stdin )  || die "pipe: $!";
+    pipe( $self->stdout, my $child_out ) || die "pipe: $!";
+    pipe( $self->stderr, my $child_err ) || die "pipe: $!";
 
     # Make sure that 0,1,2 are inherited (probably are anyway)
-    fd_inherit( 0, 1 );
-    fd_inherit( 1, 1 );
-    fd_inherit( 2, 1 );
+    fd_inherit( $_, 1 ) for 0, 1, 2;
 
-    # But don't inherit these
-    fd_inherit( fileno($stdin),  0 );
-    fd_inherit( fileno($stdout), 0 );
-    fd_inherit( fileno($stderr), 0 );
-    fd_inherit( fileno($r_in),   0 );
-    fd_inherit( fileno($r_out),  0 );
-    fd_inherit( fileno($r_err),  0 );
-    fd_inherit( fileno($w_in),   0 );
-    fd_inherit( fileno($w_out),  0 );
-    fd_inherit( fileno($w_err),  0 );
+    # But don't inherit the rest
+    fd_inherit( fileno($_), 0 )
+      for $old_fd0, $old_fd1, $old_fd2, $child_in, $child_out, $child_err,
+      $self->stdin, $self->stdout, $self->stderr;
 
-    my @cmd = $self->cmdline;
-    my $cmd = $cmd[0];
-    my @env = map { "$_=$ENV{$_}" } keys %ENV;
+    # Now re-open 0,1,2 by duping the child pipe ends
+    open $fd0, '<&', fileno($child_in);
+    open $fd1, '>&', fileno($child_out);
+    open $fd2, '>&', fileno($child_err);
 
-    $self->pid( Proc::FastSpawn::spawn( $cmd, \@cmd, \@env ) );
+    # Kick off the new process
+    eval { $self->pid( Proc::FastSpawn::spawn( $cmd, \@cmd, \@env ) ) };
+    my $err = $@;
 
-    # dup fd 0,1,2 again from the proper place
-    open $fd0, '<&', fileno($stdin);
-    open $fd1, '>&', fileno($stdout);
-    open $fd2, '>&', fileno($stderr);
+    # Restore our local 0,1,2 to the originals
+    open $fd0, '<&', fileno($old_fd0);
+    open $fd1, '>&', fileno($old_fd1);
+    open $fd2, '>&', fileno($old_fd2);
 
-    # and restore things for perl
-    open STDIN,  '<&=', fileno($fd0);
-    open STDOUT, '>&=', fileno($fd1);
-    open STDERR, '>&=', fileno($fd2);
+    # Complain if the spawn failed for some reason
+    croak $err if $err;
 
-    close($r_in);
-    close($w_out);
-    close($w_err);
+    # Parent doesn't need to see the child or backup descriptors anymore
+    close($_)
+      for $old_fd0, $old_fd1, $old_fd2, $child_in, $child_out, $child_err;
 
-    $self->stdin($w_in);
-    $self->stdout($r_out);
-    $self->stderr($r_err);
+    $self->stdin->autoflush(1);
+
     return;
 }
 
 sub _fork {
-    my $self  = shift;
-    my $r_in  = IO::Handle->new;
-    my $r_out = IO::Handle->new;
-    my $r_err = IO::Handle->new;
-    my $w_in  = IO::Handle->new;
-    my $w_out = IO::Handle->new;
-    my $w_err = IO::Handle->new;
+    my $self = shift;
 
-    $w_in->autoflush(1);
-    $w_out->autoflush(1);
-    $w_err->autoflush(1);
-
-    pipe( $r_in,  $w_in )  || die "pipe: $!";
-    pipe( $r_out, $w_out ) || die "pipe: $!";
-    pipe( $r_err, $w_err ) || die "pipe: $!";
+    pipe( my $child_in,  $self->stdin )  || die "pipe: $!";
+    pipe( $self->stdout, my $child_out ) || die "pipe: $!";
+    pipe( $self->stderr, my $child_err ) || die "pipe: $!";
 
     $self->pid( fork() );
     if ( !defined $self->pid ) {
         my $why = $!;
-        pop @children;
         die "fork: $why";
     }
 
     if ( $self->pid == 0 ) {    # Child
-        $SIG{CHLD} = 'DEFAULT';
         $self->exit(0);         # stop DESTROY() from trying to reap
 
-        if ( !open STDERR, '>&=', fileno($w_err) ) {
-            print $w_err "open: $! at ", caller, "\n";
+        $child_out->autoflush(1);
+        $child_err->autoflush(1);
+
+        if ( !open STDERR, '>&=', fileno($child_err) ) {
+            print $child_err "open: $! at ", caller, "\n";
             die "open: $!";
         }
-        open STDIN,  '<&=', fileno($r_in)  || die "open: $!";
-        open STDOUT, '>&=', fileno($w_out) || die "open: $!";
+        open STDIN,  '<&=', fileno($child_in)  || die "open: $!";
+        open STDOUT, '>&=', fileno($child_out) || die "open: $!";
 
-        close $r_out;
-        close $r_err;
-        close $r_in;
-        close $w_in;
-        close $w_out;
-        close $w_err;
+        close $self->stdin;
+        close $self->stdout;
+        close $self->stderr;
 
         if ( ref $self->cmd->[0] eq 'CODE' ) {
             my $enc = ':encoding(' . $self->encoding . ')';
@@ -352,13 +317,11 @@ sub _fork {
     }
 
     # Parent continues from here
-    close $r_in;
-    close $w_out;
-    close $w_err;
+    close $child_in;
+    close $child_out;
+    close $child_err;
 
-    $self->stdin($w_in);
-    $self->stdout($r_out);
-    $self->stderr($r_err);
+    $self->stdin->autoflush(1);
 
     return;
 }
@@ -373,100 +336,59 @@ sub cmdline {
     }
 }
 
-# A signal handler, not a method
-sub _reap {
-    my $sig = shift;
-    my $try = shift || '';
-
-    croak '_reap("CHLD",[$pid])' unless $sig eq 'CHLD';
-
-    while (1) {
-        my $pid;
-        local $?;
-        local $!;
-
-        if ($try) {
-            $pid = waitpid $try, 0;
-            $try = undef;
-        }
-        else {
-            $pid = waitpid -1, &WNOHANG;
-        }
-
-        my $ret = $?;
-
-        if ( $pid == -1 ) {
-
-            # No child processes running
-            last;
-        }
-        elsif ( $pid == 0 ) {
-
-            # child processes still running, but not ours??
-            last;
-        }
-
-        if ( $ret == -1 ) {
-
-            # So waitpid returned a PID but then sets $? to this
-            # strange value? (Strange in that tests randomly show it to
-            # be invalid.) Most likely a perl bug; I think that waitpid
-            # got interrupted and when it restarts/resumes the status
-            # is lost.
-            #
-            # See http://www.perlmonks.org/?node_id=641620 for a
-            # possibly related discussion.
-            #
-            # However, since I localised $? and $! above I haven't seen
-            # this problem again, so I hope that is a good enough work
-            # around. Lets warn any way so that we know when something
-            # dodgy is going on.
-            warn __PACKAGE__
-              . ' received invalid child exit status for pid '
-              . $pid
-              . ' Setting to 0';
-            $ret = 0;
-
-        }
-
-        my @dead = grep { defined $_ && $_->pid == $pid } @children;
-        @children = grep { defined $_ && $_->pid != $pid } @children;
-
-        if ( @children and !@dead ) {
-            warn __PACKAGE__
-              . ' not our child: '
-              . $pid
-              . ' exit '
-              . ( $ret >> 8 )
-              . ' signal '
-              . ( $ret & 127 )
-              . ' core '
-              . ( $ret & 128 );
-            next;
-        }
-
-        foreach my $child (@dead) {
-            $log->debugf( '(PID %d) exit: %d signal:%d core:%d',
-                $child->pid, $ret >> 8, $ret & 127, $ret & 128 );
-
-            $child->exit( $ret >> 8 );
-            $child->signal( $ret & 127 );
-            $child->core( $ret & 128 );
-
-            if ( my $subref = $child->on_exit ) {
-                $subref->($child);
-            }
-        }
-    }
-
-    return;
-}
-
 sub wait_child {
     my $self = shift;
+    return unless $self->pid;
+    return if defined $self->exit;
 
-    _reap( 'CHLD', $self->pid ) unless defined $self->exit;
-    return;
+    local $?;
+    local $!;
+
+    my $pid = waitpid $self->pid, 0;
+    my $ret = $?;
+
+    if ( $pid != $self->pid ) {
+        warn sprintf( 'Could not reap child process %d (waitpid returned: %d)',
+            $self->pid, $pid );
+        $pid = $self->pid;
+        $ret = 0;
+    }
+
+    if ( $ret == -1 ) {
+
+        # So waitpid returned a PID but then sets $? to this
+        # strange value? (Strange in that tests randomly show it to
+        # be invalid.) Most likely a perl bug; I think that waitpid
+        # got interrupted and when it restarts/resumes the status
+        # is lost.
+        #
+        # See http://www.perlmonks.org/?node_id=641620 for a
+        # possibly related discussion.
+        #
+        # However, since I localised $? and $! above I haven't seen
+        # this problem again, so I hope that is a good enough work
+        # around. Lets warn any way so that we know when something
+        # dodgy is going on.
+        warn __PACKAGE__
+          . ' received invalid child exit status for pid '
+          . $pid
+          . ' Setting to 0';
+        $ret = 0;
+
+    }
+
+    $log->debugf( '(PID %d) exit: %d signal:%d core:%d',
+        $pid, $ret >> 8, $ret & 127, $ret & 128 );
+
+    $self->exit( $ret >> 8 );
+    $self->signal( $ret & 127 );
+    $self->core( $ret & 128 );
+
+    if ( my $subref = $self->on_exit ) {
+        $subref->($self);
+    }
+
+    return $self->exit;
 }
 
 sub close {
@@ -486,7 +408,7 @@ sub close {
 
 sub DESTROY {
     my $self = shift;
-    _reap( 'CHLD', $self->pid ) unless defined $self->exit;
+    $self->wait_child;
     return;
 }
 
@@ -500,7 +422,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.81.8 (2014-10-31) Development release
+0.81.9_1 (2014-11-04) Development release
 
 =head1 SYNOPSIS
 
@@ -620,9 +542,9 @@ Spawns a process based on %args. %args must contain at least a C<cmd>
 value, and optionally C<encoding>, C<env>, C<dir> and C<input> values
 as defined as attributes below.
 
-If an C<on_exit> subref argument is provided a SIGCHLD handler will be
-installed (process wide!) which is called asynchronously (with the
-B<Sys::Cmd> object as first argument) when the child exits.
+If an C<on_exit> subref argument is provided it will be called by the
+C<wait_child> method, which can either be called manually or will be
+automatically called when the object is destroyed.
 
 =back
 
@@ -659,7 +581,7 @@ then closed. This is a shortcut for printing to, and closing the
 command's I<stdin> file-handle. An empty string will close the
 command's standard input without writing to it. On some systems, some
 commands may close standard input on startup, which will cause a
-SIGPIPE when trying to write to it. This will raise an exception.
+SIGPIPE when trying to write to it for which B<Sys::Cmd> will warn.
 
 =item pid
 
@@ -684,20 +606,17 @@ call getline() etc methods on it.
 =item exit
 
 The command's exit value, shifted by 8 (see "perldoc -f system"). Set
-either when a SIGCHLD is received or after a call to C<wait_child()>.
+by C<wait_child()>.
 
 =item signal
 
 The signal number (if any) that terminated the command, bitwise-added
-with 127 (see "perldoc -f system"). Set either when a SIGCHLD is
-received or after a call to C<wait_child()>.
-
+with 127 (see "perldoc -f system"). Set by C<wait_child()>.
 
 =item core
 
-A boolean indicating the process core was dumped. Set either when a
-SIGCHLD is received or after a call to C<wait_child()>.
-
+A boolean indicating the process core was dumped. Set by
+C<wait_child()>.
 
 =back
 
@@ -713,19 +632,21 @@ together by spaces.
 
 =item close()
 
-Close all pipes to the child process.  This method is automatically
-called when the C<Sys::Cmd> object is destroyed.  Annoyingly, this
-means that in the following example C<$fh> will be closed when you
-tried to use it:
+Close all filehandles to the child process. Note that file handles will
+automaticaly be closed when the B<Sys::Cmd> object is destroyed.
+Annoyingly, this means that in the following example C<$fh> will be
+closed when you tried to use it:
 
     my $fh = Sys::Cmd->new( %args )->stdout;
 
 So you have to keep track of the Sys::Cmd object manually.
 
-=item wait_child()
+=item wait_child() -> $exit_value
 
-Wait for the child to exit and collect the exit status. This method is
-resposible for setting the I<exit>, I<signal> and I<core> attributes.
+Wait for the child to exit using L<waitpid>, collect the exit status
+and return it. This method sets the I<exit>, I<signal> and I<core>
+attributes and will also be called automatically when the B<Sys::Cmd>
+object is destroyed.
 
 =back
 
