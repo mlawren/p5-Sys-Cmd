@@ -22,7 +22,7 @@ use IO::Handle;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 
-our $VERSION = '0.81.9_1';
+our $VERSION = '0.81.9_2';
 our $CONFESS;
 
 sub run {
@@ -394,20 +394,20 @@ sub wait_child {
 sub close {
     my $self = shift;
 
-    $self->stdin->opened
-      && ( $self->stdin->close || carp "error closing stdin: $!" );
+    foreach my $h (qw/stdin stdout stderr/) {
 
-    $self->stdout->opened
-      && ( $self->stdout->close || carp "error closing stdout: $!" );
-
-    $self->stderr->opened
-      && ( $self->stderr->close || carp "error closing stderr: $!" );
+        # may not be defined during global destruction
+        my $fh = $self->$h or next;
+        $fh->opened or next;
+        $fh->close || carp "error closing $h: $!";
+    }
 
     return;
 }
 
 sub DESTROY {
     my $self = shift;
+    $self->close;
     $self->wait_child;
     return;
 }
@@ -422,7 +422,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.81.9_1 (2014-11-04) Development release
+0.81.9_2 (2015-01-21) Development release
 
 =head1 SYNOPSIS
 

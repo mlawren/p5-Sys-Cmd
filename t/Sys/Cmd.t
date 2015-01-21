@@ -124,8 +124,11 @@ for my $t ( @tests, @fail ) {
         # run the command
         my $cmd = eval { spawn( @{ $t->{cmdline} } ) };
         if ( $t->{fail} ) {
-            ok( !$cmd, 'command failed: ' . ( defined $cmd ? $cmd : '' ) );
-            like( $@, $t->{fail}, '... expected error message' );
+            ok( !$cmd,
+                    $t->{test}
+                  . ': command failed: '
+                  . ( defined $cmd ? $cmd : '' ) );
+            like( $@, $t->{fail}, $t->{test} . ': expected error message' );
             return;
         }
         die $@ if $@;
@@ -138,20 +141,23 @@ for my $t ( @tests, @fail ) {
             if ( $handle eq 'stdin' ) {
                 my $opened = !exists $t->{options}{input};
                 is( $cmd->$handle->opened, $opened,
-                    "$handle @{[ !$opened && 'not ']}opened" );
+                    "$t->{test}: $handle @{[ !$opened && 'not ']}opened" );
             }
             else {
-                ok( $cmd->$handle->opened, "$handle opened" );
+                ok( $cmd->$handle->opened, "$t->{test}: $handle opened" );
             }
         }
 
-        is_deeply( [ $cmd->cmdline ],
-            [ grep { !ref } @{ $t->{cmdline} } ], 'cmdline' );
+        is_deeply(
+            [ $cmd->cmdline ],
+            [ grep { !ref } @{ $t->{cmdline} } ],
+            $t->{test} . ': cmdline'
+        );
 
         # get the output
         my $output = join '', $cmd->stdout->getlines();
         my $errput = join '', $cmd->stderr->getlines();
-        is( $errput, '', 'no errput' );
+        is( $errput, '', $t->{test} . ': no errput' );
 
         my $env = { %ENV, %{ $t->{options}{env} || {} } };
         if ( exists $t->{options}->{dir} and $^O eq 'MSWin32' ) {
@@ -171,15 +177,15 @@ for my $t ( @tests, @fail ) {
                 input => $t->{options}{input} || '',
                 pid   => $cmd->pid,
             },
-            "perl $name"
+            "$t->{test}: perl $name"
         );
 
         # close and check
         $cmd->close();
         $cmd->wait_child();
-        is( $cmd->exit,   0, 'exit 0' );
-        is( $cmd->signal, 0, 'no signal received' );
-        is( $cmd->core, $t->{core} || 0, 'no core dumped' );
+        is( $cmd->exit,   0, $t->{test} . ': exit 0' );
+        is( $cmd->signal, 0, $t->{test} . ': no signal received' );
+        is( $cmd->core, $t->{core} || 0, $t->{test} . ': no core dumped' );
     };
 }
 
