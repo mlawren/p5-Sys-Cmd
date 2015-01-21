@@ -394,20 +394,20 @@ sub wait_child {
 sub close {
     my $self = shift;
 
-    $self->stdin->opened
-      && ( $self->stdin->close || carp "error closing stdin: $!" );
+    foreach my $h (qw/stdin stdout stderr/) {
 
-    $self->stdout->opened
-      && ( $self->stdout->close || carp "error closing stdout: $!" );
-
-    $self->stderr->opened
-      && ( $self->stderr->close || carp "error closing stderr: $!" );
+        # may not be defined during global destruction
+        my $fh = $self->$h or next;
+        $fh->opened or next;
+        $fh->close || carp "error closing $h: $!";
+    }
 
     return;
 }
 
 sub DESTROY {
     my $self = shift;
+    $self->close;
     $self->wait_child;
     return;
 }
