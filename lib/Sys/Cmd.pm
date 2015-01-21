@@ -377,12 +377,13 @@ sub wait_child {
 
     }
 
-    $log->debugf( '(PID %d) exit: %d signal:%d core:%d',
-        $pid, $ret >> 8, $ret & 127, $ret & 128 );
-
-    $self->exit( $ret >> 8 );
-    $self->signal( $ret & 127 );
-    $self->core( $ret & 128 );
+    $log->debugf(
+        '(PID %d) exit: %d signal:%d core:%d',
+        $pid,
+        $self->exit( $ret >> 8 ),
+        $self->signal( $ret & 127 ),
+        $self->core( $ret & 128 )
+    );
 
     if ( my $subref = $self->on_exit ) {
         $subref->($self);

@@ -11,6 +11,7 @@
         - Removed empty sections from (this) Changes file
         - Removed a dependency on the POSIX module
         - Optimized & clarified the internal fork/spawn functions
+        - Minor code cleanups
 
     Bug Fixes:
         - None.
