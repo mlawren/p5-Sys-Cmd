@@ -1,4 +1,4 @@
-0.81.9_2 (2015-01-21)
+0.81.9_3 (2015-01-22)
 
     API / Behaviour Changes:
         - No longer set $SIG{CHLD} for any reason - leave it to calling
@@ -11,9 +11,10 @@
         - Removed empty sections from (this) Changes file
         - Removed a dependency on the POSIX module
         - Optimized & clarified the internal fork/spawn functions
+        - Minor code cleanups
 
     Bug Fixes:
-        - None.
+        - Removed invalid coderef test that wasn't testing anything
 
 0.81.8 (2014-10-31)
 

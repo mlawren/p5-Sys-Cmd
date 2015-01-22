@@ -22,7 +22,7 @@ use IO::Handle;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 
-our $VERSION = '0.81.9_2';
+our $VERSION = '0.81.9_3';
 our $CONFESS;
 
 sub run {
@@ -377,12 +377,13 @@ sub wait_child {
 
     }
 
-    $log->debugf( '(PID %d) exit: %d signal:%d core:%d',
-        $pid, $ret >> 8, $ret & 127, $ret & 128 );
-
-    $self->exit( $ret >> 8 );
-    $self->signal( $ret & 127 );
-    $self->core( $ret & 128 );
+    $log->debugf(
+        '(PID %d) exit: %d signal:%d core:%d',
+        $pid,
+        $self->exit( $ret >> 8 ),
+        $self->signal( $ret & 127 ),
+        $self->core( $ret & 128 )
+    );
 
     if ( my $subref = $self->on_exit ) {
         $subref->($self);
@@ -422,7 +423,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.81.9_2 (2015-01-21) Development release
+0.81.9_3 (2015-01-22) Development release
 
 =head1 SYNOPSIS
 
