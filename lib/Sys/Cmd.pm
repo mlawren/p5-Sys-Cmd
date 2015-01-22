@@ -22,7 +22,7 @@ use IO::Handle;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 
-our $VERSION = '0.81.9_3';
+our $VERSION = '0.81.10';
 our $CONFESS;
 
 sub run {
@@ -423,7 +423,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.81.9_3 (yyyy-mm-dd) Development release
+0.81.10 (yyyy-mm-dd) Development release
 
 =head1 SYNOPSIS
 
