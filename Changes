@@ -14,7 +14,7 @@
         - Minor code cleanups
 
     Bug Fixes:
-        - None.
+        - Removed invalid coderef test that wasn't testing anything
 
 0.81.8 (2014-10-31)
 

@@ -235,32 +235,12 @@ SKIP: {
             $proc->stdin->print( $i . "\n" );
             my $res = $proc->stdout->getline;
             chomp $res;
-            is $res, $i, "echo $i";
+            is $res, $i, "coderef: echo $i";
         }
 
         $proc->close;
         $proc->wait_child;
-        is $proc->exit, 3, 'exit 3';
-
-        $proc = spawn(
-            sub {
-                while ( my $line = <STDIN> ) {
-                    print STDOUT $line;
-                }
-                return 3;    # return value should be independpent of exit
-            }
-        );
-
-        foreach my $i ( 1 .. 2, 'Zürich' ) {
-            $proc->stdin->print( $i . "\n" );
-            my $res = $proc->stdout->getline;
-            chomp $res;
-            is $res, $i, "echo $i";
-        }
-
-        $proc->close;
-        $proc->wait_child;
-        is $proc->exit, 0, 'exit 0';
+        is $proc->exit, 3, 'coderef: exit 3';
     };
 }
 
