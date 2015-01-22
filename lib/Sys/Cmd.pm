@@ -338,7 +338,8 @@ sub cmdline {
 
 sub wait_child {
     my $self = shift;
-    return unless $self->pid;
+
+    return unless defined $self->pid;
     return if defined $self->exit;
 
     local $?;
