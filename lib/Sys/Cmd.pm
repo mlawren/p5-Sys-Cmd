@@ -22,7 +22,7 @@ use IO::Handle;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 
-our $VERSION = '0.81.9_3';
+our $VERSION = '0.82.0';
 our $CONFESS;
 
 sub run {
@@ -338,7 +338,8 @@ sub cmdline {
 
 sub wait_child {
     my $self = shift;
-    return unless $self->pid;
+
+    return unless defined $self->pid;
     return if defined $self->exit;
 
     local $?;
@@ -423,7 +424,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.81.9_3 (2015-01-22) Development release
+0.82.0 (2015-01-29) Development release
 
 =head1 SYNOPSIS
 
