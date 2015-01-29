@@ -1,4 +1,4 @@
-0.82.0 (yyyy-mm-dd)
+0.82.0 (2015-01-29)
 
     API / Behaviour Changes:
         - No longer set $SIG{CHLD} for any reason - leave it to calling
