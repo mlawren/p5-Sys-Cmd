@@ -3,7 +3,7 @@ use inc::Module::Install;
 
 name 'Sys-Cmd';
 license 'Perl';
-version '0.82.0';
+version '0.83.1_1';
 all_from 'lib/Sys/Cmd.pm';
 readme_from 'lib/Sys/Cmd.pm';
 
