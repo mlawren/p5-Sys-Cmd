@@ -2,7 +2,7 @@ NAME
     Sys::Cmd - run a system command or spawn a system processes
 
 VERSION
-    0.82.0 (2015-01-29) Development release
+    0.83.1_1 (2015-08-14)
 
 SYNOPSIS
         use Sys::Cmd qw/run spawn/;
@@ -90,7 +90,9 @@ DESCRIPTION
     Note that Sys::Cmd objects created this way will not lookup the command
     using File::Which the way the "run", "runx" and "spawn" functions do.
 
-    Sys::Cmd uses Log::Any "debug" calls for logging purposes.
+    Sys::Cmd uses Log::Any "debug" calls for logging purposes. An easy way
+    to see the output is to add "use Log::Any::Adapter 'Stdout'" in your
+    program.
 
 CONSTRUCTOR
     new(%args) => Sys::Cmd

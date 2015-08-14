@@ -33,10 +33,11 @@ requires:
   File::chdir: 0
   IO::Handle: 0
   Log::Any: 0
+  Proc::FastSpawn: 0
   perl: 5.6.0
 resources:
   bugtracker: https://github.com/mlawren/p5-Sys-Cmd/issues
   homepage: https://github.com/mlawren/p5-Sys-Cmd
   license: http://dev.perl.org/licenses/
   repository: git://github.com/mlawren/p5-Sys-Cmd.git
-version: 0.82.0
+version: 0.83.1_1

@@ -1,28 +1,14 @@
-package    # Trick xt/ tests into working
-  Sys::Cmd::Mo;
-
-BEGIN {
-#<<< No perltidy
-# use Mo qw/build is required default import/;
-#   The following line of code was produced from the previous line by
-#   Mo::Inline version 0.39
-no warnings;my$M=__PACKAGE__.'::';*{$M.Object::new}=sub{my$c=shift;my$s=bless{@_},$c;my%n=%{$c.::.':E'};map{$s->{$_}=$n{$_}->()if!exists$s->{$_}}keys%n;$s};*{$M.import}=sub{import warnings;$^H|=1538;my($P,%e,%o)=caller.'::';shift;eval"no Mo::$_",&{$M.$_.::e}($P,\%e,\%o,\@_)for@_;return if$e{M};%e=(extends,sub{eval"no $_[0]()";@{$P.ISA}=$_[0]},has,sub{my$n=shift;my$m=sub{$#_?$_[0]{$n}=$_[1]:$_[0]{$n}};@_=(default,@_)if!($#_%2);$m=$o{$_}->($m,$n,@_)for sort keys%o;*{$P.$n}=$m},%e,);*{$P.$_}=$e{$_}for keys%e;@{$P.ISA}=$M.Object};*{$M.'build::e'}=sub{my($P,$e)=@_;$e->{new}=sub{$c=shift;my$s=&{$M.Object::new}($c,@_);my@B;do{@B=($c.::BUILD,@B)}while($c)=@{$c.::ISA};exists&$_&&&$_($s)for@B;$s}};*{$M.'is::e'}=sub{my($P,$e,$o)=@_;$o->{is}=sub{my($m,$n,%a)=@_;$a{is}or return$m;sub{$#_&&$a{is}eq'ro'&&caller ne'Mo::coerce'?die$n.' is ro':$m->(@_)}}};*{$M.'required::e'}=sub{my($P,$e,$o)=@_;$o->{required}=sub{my($m,$n,%a)=@_;if($a{required}){my$C=*{$P."new"}{CODE}||*{$M.Object::new}{CODE};no warnings 'redefine';*{$P."new"}=sub{my$s=$C->(@_);my%a=@_[1..$#_];if(!exists$a{$n}){require Carp;Carp::croak($n." required")}$s}}$m}};*{$M.'default::e'}=sub{my($P,$e,$o)=@_;$o->{default}=sub{my($m,$n,%a)=@_;exists$a{default}or return$m;my($d,$r)=$a{default};my$g='HASH'eq($r=ref$d)?sub{+{%$d}}:'ARRAY'eq$r?sub{[@$d]}:'CODE'eq$r?$d:sub{$d};my$i=exists$a{lazy}?$a{lazy}:!${$P.':N'};$i or ${$P.':E'}{$n}=$g and return$m;sub{$#_?$m->(@_):!exists$_[0]{$n}?$_[0]{$n}=$g->(@_):$m->(@_)}}};my$i=\&import;*{$M.import}=sub{(@_==2 and not$_[1])?pop@_:@_==1?push@_,grep!/import/,@f:();goto&$i};@f=qw[build is required default import];use strict;use warnings;
-$INC{'Sys/Cmd/Mo.pm'} = __FILE__;
-#>>>
-}
-1;
-
 package Sys::Cmd;
 use strict;
 use warnings;
 use 5.006;
-use Carp qw/carp confess croak/;
+use Carp;
 use Exporter::Tidy all => [qw/spawn run runx/];
 use IO::Handle;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 
-our $VERSION = '0.82.0';
+our $VERSION = '0.83.1_1';
 our $CONFESS;
 
 sub run {
@@ -33,9 +19,11 @@ sub run {
     $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
-        confess( join( '', @err ) . 'Command exited with value ' . $proc->exit )
+        Carp::confess(
+            join( '', @err ) . 'Command exited with value ' . $proc->exit )
           if $CONFESS;
-        croak( join( '', @err ) . 'Command exited with value ' . $proc->exit );
+        Carp::croak(
+            join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
 
     if (wantarray) {
@@ -54,9 +42,11 @@ sub runx {
     $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
-        confess( join( '', @err ) . 'Command exited with value ' . $proc->exit )
+        Carp::confess(
+            join( '', @err ) . 'Command exited with value ' . $proc->exit )
           if $CONFESS;
-        croak( join( '', @err ) . 'Command exited with value ' . $proc->exit );
+        Carp::croak(
+            join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
 
     if (wantarray) {
@@ -70,27 +60,27 @@ sub runx {
 sub spawn {
     my @cmd = grep { ref $_ ne 'HASH' } @_;
 
-    defined $cmd[0] || confess '$cmd must be defined';
+    defined $cmd[0] || Carp::confess '$cmd must be defined';
 
     unless ( ref $cmd[0] eq 'CODE' ) {
         if ( !-e $cmd[0] ) {
             require File::Which;
             $cmd[0] = File::Which::which( $cmd[0] )
-              || confess 'command not found: ' . $cmd[0];
+              || Carp::confess 'command not found: ' . $cmd[0];
         }
 
         if ( !-f $cmd[0] ) {
-            confess 'command not a file: ' . $cmd[0];
+            Carp::confess 'command not a file: ' . $cmd[0];
         }
 
         if ( !-x $cmd[0] ) {
-            confess 'command not executable: ' . $cmd[0];
+            Carp::confess 'command not executable: ' . $cmd[0];
         }
     }
 
     my @opts = grep { ref $_ eq 'HASH' } @_;
     if ( @opts > 2 ) {
-        confess __PACKAGE__ . ": only a single hashref allowed";
+        Carp::confess __PACKAGE__ . ": only a single hashref allowed";
     }
 
     my %args = @opts ? %{ $opts[0] } : ();
@@ -102,10 +92,10 @@ sub spawn {
 has 'cmd' => (
     is  => 'ro',
     isa => sub {
-        ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF";
-        @{ $_[0] } || confess "Missing cmd elements";
+        ref $_[0] eq 'ARRAY' || Carp::confess "cmd must be ARRAYREF";
+        @{ $_[0] } || Carp::confess "Missing cmd elements";
         if ( grep { !defined $_ } @{ $_[0] } ) {
-            confess 'cmd array cannot contain undef elements';
+            Carp::confess 'cmd array cannot contain undef elements';
         }
     },
     required => 1,
@@ -118,7 +108,7 @@ has 'encoding' => (
 
 has 'env' => (
     is  => 'ro',
-    isa => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
+    isa => sub { ref $_[0] eq 'HASH' || Carp::confess "env must be HASHREF" },
 );
 
 has 'dir' => ( is => 'ro', );
@@ -188,11 +178,11 @@ sub BUILD {
         }
     }
 
-    if ( $^O eq 'MSWin32' ) {
-        $self->_spawn;
+    if ( ref $self->cmd->[0] eq 'CODE' ) {
+        $self->_fork;
     }
     else {
-        $self->_fork;
+        $self->_spawn;
     }
 
     $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
@@ -217,12 +207,7 @@ sub BUILD {
 
 sub _spawn {
     my $self = shift;
-    my @cmd  = $self->cmdline;
-    my $cmd  = $cmd[0];
-    my @env  = map { "$_=$ENV{$_}" } keys %ENV;
-
     require Proc::FastSpawn;
-    Proc::FastSpawn->import(qw/fd_inherit/);
 
     # Get new handles to descriptors 0,1,2
     my $fd0 = IO::Handle->new_from_fd( 0, 'r' );
@@ -240,20 +225,27 @@ sub _spawn {
     pipe( $self->stderr, my $child_err ) || die "pipe: $!";
 
     # Make sure that 0,1,2 are inherited (probably are anyway)
-    fd_inherit( $_, 1 ) for 0, 1, 2;
+    Proc::FastSpawn::fd_inherit( $_, 1 ) for 0, 1, 2;
 
     # But don't inherit the rest
-    fd_inherit( fileno($_), 0 )
+    Proc::FastSpawn::fd_inherit( fileno($_), 0 )
       for $old_fd0, $old_fd1, $old_fd2, $child_in, $child_out, $child_err,
       $self->stdin, $self->stdout, $self->stderr;
 
-    # Now re-open 0,1,2 by duping the child pipe ends
-    open $fd0, '<&', fileno($child_in);
-    open $fd1, '>&', fileno($child_out);
-    open $fd2, '>&', fileno($child_err);
+    eval {
+        # Re-open 0,1,2 by duping the child pipe ends
+        open $fd0, '<&', fileno($child_in);
+        open $fd1, '>&', fileno($child_out);
+        open $fd2, '>&', fileno($child_err);
 
-    # Kick off the new process
-    eval { $self->pid( Proc::FastSpawn::spawn( $cmd, \@cmd, \@env ) ) };
+        # Kick off the new process
+        $self->pid(
+            Proc::FastSpawn::spawn(
+                $self->cmd->[0], $self->cmd,
+                [ map { "$_=$ENV{$_}" } keys %ENV ]
+            )
+        );
+    };
     my $err = $@;
 
     # Restore our local 0,1,2 to the originals
@@ -262,7 +254,8 @@ sub _spawn {
     open $fd2, '>&', fileno($old_fd2);
 
     # Complain if the spawn failed for some reason
-    croak $err if $err;
+    Carp::croak $err if $err;
+    Carp::croak 'Unable to spawn child' unless defined $self->pid;
 
     # Parent doesn't need to see the child or backup descriptors anymore
     close($_)
@@ -302,6 +295,9 @@ sub _fork {
         close $self->stdin;
         close $self->stdout;
         close $self->stderr;
+        close $child_in;
+        close $child_out;
+        close $child_err;
 
         if ( ref $self->cmd->[0] eq 'CODE' ) {
             my $enc = ':encoding(' . $self->encoding . ')';
@@ -312,7 +308,7 @@ sub _fork {
             _exit(0);
         }
 
-        exec( $self->cmdline );
+        exec( @{ $self->cmd } );
         die "exec: $!";
     }
 
@@ -340,7 +336,7 @@ sub wait_child {
     my $self = shift;
 
     return unless defined $self->pid;
-    return if defined $self->exit;
+    return $self->exit if defined $self->exit;
 
     local $?;
     local $!;
@@ -401,7 +397,7 @@ sub close {
         # may not be defined during global destruction
         my $fh = $self->$h or next;
         $fh->opened or next;
-        $fh->close || carp "error closing $h: $!";
+        $fh->close || Carp::carp "error closing $h: $!";
     }
 
     return;
@@ -414,6 +410,19 @@ sub DESTROY {
     return;
 }
 
+package Sys::Cmd::Mo;
+no strict;
+
+BEGIN {
+#<<< No perltidy
+# use Mo qw/build is required default import/;
+#   The following line of code was produced from the previous line by
+#   Mo::Inline version 0.39
+no warnings;my$M=__PACKAGE__.'::';*{$M.Object::new}=sub{my$c=shift;my$s=bless{@_},$c;my%n=%{$c.::.':E'};map{$s->{$_}=$n{$_}->()if!exists$s->{$_}}keys%n;$s};*{$M.import}=sub{import warnings;$^H|=1538;my($P,%e,%o)=caller.'::';shift;eval"no Mo::$_",&{$M.$_.::e}($P,\%e,\%o,\@_)for@_;return if$e{M};%e=(extends,sub{eval"no $_[0]()";@{$P.ISA}=$_[0]},has,sub{my$n=shift;my$m=sub{$#_?$_[0]{$n}=$_[1]:$_[0]{$n}};@_=(default,@_)if!($#_%2);$m=$o{$_}->($m,$n,@_)for sort keys%o;*{$P.$n}=$m},%e,);*{$P.$_}=$e{$_}for keys%e;@{$P.ISA}=$M.Object};*{$M.'build::e'}=sub{my($P,$e)=@_;$e->{new}=sub{$c=shift;my$s=&{$M.Object::new}($c,@_);my@B;do{@B=($c.::BUILD,@B)}while($c)=@{$c.::ISA};exists&$_&&&$_($s)for@B;$s}};*{$M.'is::e'}=sub{my($P,$e,$o)=@_;$o->{is}=sub{my($m,$n,%a)=@_;$a{is}or return$m;sub{$#_&&$a{is}eq'ro'&&caller ne'Mo::coerce'?die$n.' is ro':$m->(@_)}}};*{$M.'required::e'}=sub{my($P,$e,$o)=@_;$o->{required}=sub{my($m,$n,%a)=@_;if($a{required}){my$C=*{$P."new"}{CODE}||*{$M.Object::new}{CODE};no warnings 'redefine';*{$P."new"}=sub{my$s=$C->(@_);my%a=@_[1..$#_];if(!exists$a{$n}){require Carp;Carp::croak($n." required")}$s}}$m}};*{$M.'default::e'}=sub{my($P,$e,$o)=@_;$o->{default}=sub{my($m,$n,%a)=@_;exists$a{default}or return$m;my($d,$r)=$a{default};my$g='HASH'eq($r=ref$d)?sub{+{%$d}}:'ARRAY'eq$r?sub{[@$d]}:'CODE'eq$r?$d:sub{$d};my$i=exists$a{lazy}?$a{lazy}:!${$P.':N'};$i or ${$P.':E'}{$n}=$g and return$m;sub{$#_?$m->(@_):!exists$_[0]{$n}?$_[0]{$n}=$g->(@_):$m->(@_)}}};my$i=\&import;*{$M.import}=sub{(@_==2 and not$_[1])?pop@_:@_==1?push@_,grep!/import/,@f:();goto&$i};@f=qw[build is required default import];use strict;use warnings;
+$INC{'Sys/Cmd/Mo.pm'} = __FILE__;
+#>>>
+}
+
 1;
 
 __END__
@@ -424,7 +433,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.82.0 (2015-01-29) Development release
+0.83.1_1 (2015-08-14)
 
 =head1 SYNOPSIS
 
@@ -532,7 +541,9 @@ Note that B<Sys::Cmd> objects created this way will not lookup the
 command using L<File::Which> the way the C<run>, C<runx> and C<spawn>
 functions do.
 
-B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes.
+B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes. An
+easy way to see the output is to add C<use Log::Any::Adapter 'Stdout'>
+in your program.
 
 =head1 CONSTRUCTOR
 
