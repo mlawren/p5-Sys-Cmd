@@ -211,7 +211,7 @@ sub BUILD {
         local $SIG{PIPE} =
           sub { warn "Broken pipe when writing to:" . $self->cmdline };
 
-        print { $self->stdin } $input if length $input;
+        $self->stdin->print($input) if length $input;
 
         $self->stdin->close;
     }
@@ -389,7 +389,7 @@ sub wait_child {
     }
 
     $log->debugf(
-        '(PID %d) exit: %d signal:%d core:%d',
+        '(PID %d) exit: %d signal: %d core: %d',
         $pid,
         $self->exit( $ret >> 8 ),
         $self->signal( $ret & 127 ),
