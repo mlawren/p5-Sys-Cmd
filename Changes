@@ -10,7 +10,7 @@
         - None.
 
     Bug Fixes:
-        - None.
+        - Move Sys::Cmd::Mo back to start of Cmd.pm.
 
     Dependencies:
         - None.
