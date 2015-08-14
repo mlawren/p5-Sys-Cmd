@@ -423,7 +423,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.83.1_1 (yyyy-mm-dd) Development release
+0.83.1_1 (yyyy-mm-dd)
 
 =head1 SYNOPSIS
 
