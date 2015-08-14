@@ -174,11 +174,11 @@ sub BUILD {
         }
     }
 
-    if ( $^O eq 'MSWin32' ) {
-        $self->_spawn;
+    if ( ref $self->cmd->[0] eq 'CODE' ) {
+        $self->_fork;
     }
     else {
-        $self->_fork;
+        $self->_spawn;
     }
 
     $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
