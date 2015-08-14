@@ -541,7 +541,9 @@ Note that B<Sys::Cmd> objects created this way will not lookup the
 command using L<File::Which> the way the C<run>, C<runx> and C<spawn>
 functions do.
 
-B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes.
+B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes. An
+easy way to see the output is to add C<use Log::Any::Adapter 'Stdout'>
+in your program.
 
 =head1 CONSTRUCTOR
 
