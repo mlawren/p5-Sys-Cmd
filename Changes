@@ -7,7 +7,8 @@
         - None.
 
     Enhancements:
-        - None.
+        - Use Proc::FastSpawn for everything except CODErefs on POSIX
+        - Small efficiency changes & code refactoring
 
     Bug Fixes:
         - None.
