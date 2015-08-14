@@ -2,7 +2,7 @@ package Sys::Cmd;
 use strict;
 use warnings;
 use 5.006;
-use Carp qw/carp confess croak/;
+use Carp;
 use Exporter::Tidy all => [qw/spawn run runx/];
 use IO::Handle;
 use Log::Any qw/$log/;
@@ -19,9 +19,11 @@ sub run {
     $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
-        confess( join( '', @err ) . 'Command exited with value ' . $proc->exit )
+        Carp::confess(
+            join( '', @err ) . 'Command exited with value ' . $proc->exit )
           if $CONFESS;
-        croak( join( '', @err ) . 'Command exited with value ' . $proc->exit );
+        Carp::croak(
+            join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
 
     if (wantarray) {
@@ -40,9 +42,11 @@ sub runx {
     $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
-        confess( join( '', @err ) . 'Command exited with value ' . $proc->exit )
+        Carp::confess(
+            join( '', @err ) . 'Command exited with value ' . $proc->exit )
           if $CONFESS;
-        croak( join( '', @err ) . 'Command exited with value ' . $proc->exit );
+        Carp::croak(
+            join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
 
     if (wantarray) {
@@ -56,27 +60,27 @@ sub runx {
 sub spawn {
     my @cmd = grep { ref $_ ne 'HASH' } @_;
 
-    defined $cmd[0] || confess '$cmd must be defined';
+    defined $cmd[0] || Carp::confess '$cmd must be defined';
 
     unless ( ref $cmd[0] eq 'CODE' ) {
         if ( !-e $cmd[0] ) {
             require File::Which;
             $cmd[0] = File::Which::which( $cmd[0] )
-              || confess 'command not found: ' . $cmd[0];
+              || Carp::confess 'command not found: ' . $cmd[0];
         }
 
         if ( !-f $cmd[0] ) {
-            confess 'command not a file: ' . $cmd[0];
+            Carp::confess 'command not a file: ' . $cmd[0];
         }
 
         if ( !-x $cmd[0] ) {
-            confess 'command not executable: ' . $cmd[0];
+            Carp::confess 'command not executable: ' . $cmd[0];
         }
     }
 
     my @opts = grep { ref $_ eq 'HASH' } @_;
     if ( @opts > 2 ) {
-        confess __PACKAGE__ . ": only a single hashref allowed";
+        Carp::confess __PACKAGE__ . ": only a single hashref allowed";
     }
 
     my %args = @opts ? %{ $opts[0] } : ();
@@ -88,10 +92,10 @@ sub spawn {
 has 'cmd' => (
     is  => 'ro',
     isa => sub {
-        ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF";
-        @{ $_[0] } || confess "Missing cmd elements";
+        ref $_[0] eq 'ARRAY' || Carp::confess "cmd must be ARRAYREF";
+        @{ $_[0] } || Carp::confess "Missing cmd elements";
         if ( grep { !defined $_ } @{ $_[0] } ) {
-            confess 'cmd array cannot contain undef elements';
+            Carp::confess 'cmd array cannot contain undef elements';
         }
     },
     required => 1,
@@ -104,7 +108,7 @@ has 'encoding' => (
 
 has 'env' => (
     is  => 'ro',
-    isa => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
+    isa => sub { ref $_[0] eq 'HASH' || Carp::confess "env must be HASHREF" },
 );
 
 has 'dir' => ( is => 'ro', );
@@ -250,8 +254,8 @@ sub _spawn {
     open $fd2, '>&', fileno($old_fd2);
 
     # Complain if the spawn failed for some reason
-    croak $err if $err;
-    croak 'Unable to spawn child' unless defined $self->pid;
+    Carp::croak $err if $err;
+    Carp::croak 'Unable to spawn child' unless defined $self->pid;
 
     # Parent doesn't need to see the child or backup descriptors anymore
     close($_)
@@ -393,7 +397,7 @@ sub close {
         # may not be defined during global destruction
         my $fh = $self->$h or next;
         $fh->opened or next;
-        $fh->close || carp "error closing $h: $!";
+        $fh->close || Carp::carp "error closing $h: $!";
     }
 
     return;
