@@ -291,6 +291,9 @@ sub _fork {
         close $self->stdin;
         close $self->stdout;
         close $self->stderr;
+        close $child_in;
+        close $child_out;
+        close $child_err;
 
         if ( ref $self->cmd->[0] eq 'CODE' ) {
             my $enc = ':encoding(' . $self->encoding . ')';
