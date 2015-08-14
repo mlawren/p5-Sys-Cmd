@@ -203,12 +203,7 @@ sub BUILD {
 
 sub _spawn {
     my $self = shift;
-    my @cmd  = $self->cmdline;
-    my $cmd  = $cmd[0];
-    my @env  = map { "$_=$ENV{$_}" } keys %ENV;
-
     require Proc::FastSpawn;
-    Proc::FastSpawn->import(qw/fd_inherit/);
 
     # Get new handles to descriptors 0,1,2
     my $fd0 = IO::Handle->new_from_fd( 0, 'r' );
@@ -226,20 +221,27 @@ sub _spawn {
     pipe( $self->stderr, my $child_err ) || die "pipe: $!";
 
     # Make sure that 0,1,2 are inherited (probably are anyway)
-    fd_inherit( $_, 1 ) for 0, 1, 2;
+    Proc::FastSpawn::fd_inherit( $_, 1 ) for 0, 1, 2;
 
     # But don't inherit the rest
-    fd_inherit( fileno($_), 0 )
+    Proc::FastSpawn::fd_inherit( fileno($_), 0 )
       for $old_fd0, $old_fd1, $old_fd2, $child_in, $child_out, $child_err,
       $self->stdin, $self->stdout, $self->stderr;
 
-    # Now re-open 0,1,2 by duping the child pipe ends
-    open $fd0, '<&', fileno($child_in);
-    open $fd1, '>&', fileno($child_out);
-    open $fd2, '>&', fileno($child_err);
+    eval {
+        # Re-open 0,1,2 by duping the child pipe ends
+        open $fd0, '<&', fileno($child_in);
+        open $fd1, '>&', fileno($child_out);
+        open $fd2, '>&', fileno($child_err);
 
-    # Kick off the new process
-    eval { $self->pid( Proc::FastSpawn::spawn( $cmd, \@cmd, \@env ) ) };
+        # Kick off the new process
+        $self->pid(
+            Proc::FastSpawn::spawn(
+                $self->cmd->[0], $self->cmd,
+                [ map { "$_=$ENV{$_}" } keys %ENV ]
+            )
+        );
+    };
     my $err = $@;
 
     # Restore our local 0,1,2 to the originals
@@ -249,6 +251,7 @@ sub _spawn {
 
     # Complain if the spawn failed for some reason
     croak $err if $err;
+    croak 'Unable to spawn child' unless defined $self->pid;
 
     # Parent doesn't need to see the child or backup descriptors anymore
     close($_)
@@ -298,7 +301,7 @@ sub _fork {
             _exit(0);
         }
 
-        exec( $self->cmdline );
+        exec( @{ $self->cmd } );
         die "exec: $!";
     }
 
@@ -326,7 +329,7 @@ sub wait_child {
     my $self = shift;
 
     return unless defined $self->pid;
-    return if defined $self->exit;
+    return $self->exit if defined $self->exit;
 
     local $?;
     local $!;
