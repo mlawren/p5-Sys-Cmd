@@ -22,7 +22,7 @@ use IO::Handle;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 
-our $VERSION = '0.83.1_2';
+our $VERSION = '0.84.0';
 our $CONFESS;
 
 sub run {
@@ -211,7 +211,7 @@ sub BUILD {
         local $SIG{PIPE} =
           sub { warn "Broken pipe when writing to:" . $self->cmdline };
 
-        print { $self->stdin } $input if length $input;
+        $self->stdin->print($input) if length $input;
 
         $self->stdin->close;
     }
@@ -389,7 +389,7 @@ sub wait_child {
     }
 
     $log->debugf(
-        '(PID %d) exit: %d signal:%d core:%d',
+        '(PID %d) exit: %d signal: %d core: %d',
         $pid,
         $self->exit( $ret >> 8 ),
         $self->signal( $ret & 127 ),
@@ -434,7 +434,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.83.1_2 (2015-08-14)
+0.84.0 (2015-08-29)
 
 =head1 SYNOPSIS
 

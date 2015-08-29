@@ -40,4 +40,4 @@ resources:
   homepage: https://github.com/mlawren/p5-Sys-Cmd
   license: http://dev.perl.org/licenses/
   repository: git://github.com/mlawren/p5-Sys-Cmd.git
-version: 0.83.1_2
+version: 0.84.0
