@@ -1,44 +1,15 @@
 0.83.1_3 (yyyy-mm-dd)
 
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
-
     Enhancements:
-        - None.
-
-    Bug Fixes:
-        - None.
-
-    Dependencies:
-        - None.
+        - Minor formatting change in debug message.
+        - Clean up this Changes file
 
 0.83.1_2 (2015-08-14)
-
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
-
-    Enhancements:
-        - None.
 
     Bug Fixes:
         - Move Sys::Cmd::Mo back to start of Cmd.pm.
 
-    Dependencies:
-        - None.
-
 0.83.1_1 (2015-08-14)
-
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
 
     Enhancements:
         - Use Proc::FastSpawn for everything except CODErefs on POSIX
@@ -52,9 +23,6 @@
     API / Behaviour Changes:
         - No longer set $SIG{CHLD} for any reason - leave it to calling
           code to define such global behaviour.
-
-    New Features:
-        - None.
 
     Enhancements:
         - Removed empty sections from (this) Changes file
