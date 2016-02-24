@@ -40,6 +40,8 @@ sub run {
             join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
 
+    warn @err if @err;
+
     if (wantarray) {
         return @out;
     }

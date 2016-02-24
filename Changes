@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - 'warn' any stderr output recieved in the run() function
 
     Bug Fixes:
         - None.
