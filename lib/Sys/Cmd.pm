@@ -257,8 +257,12 @@ sub _spawn {
         # Kick off the new process
         $self->pid(
             Proc::FastSpawn::spawn(
-                $self->cmd->[0], $self->cmd,
-                [ map { "$_=$ENV{$_}" } keys %ENV ]
+                $self->cmd->[0],
+                $self->cmd,
+                [
+                    map { $_ . '=' . ( defined $ENV{$_} ? $ENV{$_} : '' ) }
+                      keys %ENV
+                ]
             )
         );
     };

@@ -10,7 +10,7 @@
         - 'warn' any stderr output recieved in the run() function
 
     Bug Fixes:
-        - None.
+        - Pass undefined environment variables more cleanly
 
     Dependencies:
         - None.
