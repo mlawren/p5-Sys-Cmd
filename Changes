@@ -1,4 +1,4 @@
-0.85.1_1 (yyyy-mm-dd)
+0.85.1_1 (2016-03-03)
 
     API / Behaviour Changes:
         - Convert from Module-Install ("Makefile.PL") to Module-Build

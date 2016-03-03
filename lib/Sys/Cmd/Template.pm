@@ -152,7 +152,7 @@ Sys::Cmd::Template - command/process templates for Sys::Cmd
 
 =head1 VERSION
 
-0.85.1_1 (yyyy-mm-dd) Development release
+0.85.1_1 (2016-03-03) Development release
 
 =head1 SYNOPSIS
 
