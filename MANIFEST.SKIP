@@ -2,6 +2,7 @@
 \.swp$
 Sys-Cmd-.*/
 blib/
+^Build$
 ^_build/
 ~$
 build-stamp
