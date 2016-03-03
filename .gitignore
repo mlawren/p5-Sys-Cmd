@@ -1,4 +1,8 @@
 .envrc
+Build
+LICENSE
+META.json
+_build
 *.swp
 .direnv
 README

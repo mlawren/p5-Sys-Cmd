@@ -2,6 +2,8 @@
 \.swp$
 Sys-Cmd-.*/
 blib/
+^_build/
+~$
 build-stamp
 extlib/
 Makefile$
