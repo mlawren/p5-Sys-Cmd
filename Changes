@@ -1,3 +1,23 @@
+0.85.1_1 (2016-03-03)
+
+    API / Behaviour Changes:
+        - Convert from Module-Install ("Makefile.PL") to Module-Build
+          ("Build.PL")
+            - Done by Shlomi Fish ( http://www.shlomifish.org/ ) as part
+            of the CPAN Pull Request Challenge.
+
+    New Features:
+        - None.
+
+    Enhancements:
+        - 'warn' any stderr output recieved in the run() function
+
+    Bug Fixes:
+        - Pass undefined environment variables more cleanly
+
+    Dependencies:
+        - None.
+
 0.84.0 (2015-08-29)
 
     Enhancements:

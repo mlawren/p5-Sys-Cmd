@@ -22,7 +22,7 @@ use IO::Handle;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 
-our $VERSION = '0.84.0';
+our $VERSION = '0.85.1_1';
 our $CONFESS;
 
 sub run {
@@ -39,6 +39,8 @@ sub run {
         Carp::croak(
             join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
+
+    warn @err if @err;
 
     if (wantarray) {
         return @out;
@@ -255,8 +257,12 @@ sub _spawn {
         # Kick off the new process
         $self->pid(
             Proc::FastSpawn::spawn(
-                $self->cmd->[0], $self->cmd,
-                [ map { "$_=$ENV{$_}" } keys %ENV ]
+                $self->cmd->[0],
+                $self->cmd,
+                [
+                    map { $_ . '=' . ( defined $ENV{$_} ? $ENV{$_} : '' ) }
+                      keys %ENV
+                ]
             )
         );
     };
@@ -434,7 +440,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.84.0 (2015-08-29)
+0.85.1_1 (2016-03-03)
 
 =head1 SYNOPSIS
 

@@ -2,7 +2,7 @@ NAME
     Sys::Cmd - run a system command or spawn a system processes
 
 VERSION
-    0.84.0 (2015-08-29)
+    0.85.1_1 (2016-03-03)
 
 SYNOPSIS
         use Sys::Cmd qw/run spawn/;
@@ -33,19 +33,19 @@ SYNOPSIS
 
 DESCRIPTION
     Sys::Cmd lets you run system commands and capture their output, or spawn
-    and interact with a system process through its "STDIN", "STDOUT", and
-    "STDERR" file handles. The following functions are exported on demand by
+    and interact with a system process through its `STDIN', `STDOUT', and
+    `STDERR' file handles. The following functions are exported on demand by
     this module:
 
     run( @cmd, [\%opt] ) => $output | @output
-        Execute @cmd and return what the command sent to its "STDOUT",
+        Execute `@cmd' and return what the command sent to its `STDOUT',
         raising an exception in the event of error. In array context returns
         a list instead of a plain string.
 
-        The first element of @cmd will be looked up using File::Which if it
-        doesn't exist as a relative file name is is a CODE reference (UNIX
-        only). The command input and environment can be modified with an
-        optional hashref containing the following key/values:
+        The first element of `@cmd' will be looked up using File::Which if
+        it doesn't exist as a relative file name is is a CODE reference
+        (UNIX only). The command input and environment can be modified with
+        an optional hashref containing the following key/values:
 
         dir The working directory the command will be run in.
 
@@ -62,18 +62,18 @@ DESCRIPTION
             which is then closed.
 
     runx( @cmd, [\%opt] ) => $outerrput | @outerrput
-        The same as the "run" function but with the command's "STDERR"
-        output appended to the "STDOUT" output.
+        The same as the `run' function but with the command's `STDERR'
+        output appended to the `STDOUT' output.
 
     spawn( @cmd, [\%opt] ) => Sys::Cmd
         Return a Sys::Cmd object (documented below) representing the process
         running @cmd, with attributes set according to the optional \%opt
-        hashref. The first element of the @cmd array is looked up using
+        hashref. The first element of the `@cmd' array is looked up using
         File::Which if it cannot be found in the file-system as a relative
         file name or it is a CODE reference (UNIX only).
 
-    Sys::Cmd objects can of course be created using the standard "new"
-    constructor if you prefer that to the "spawn" function:
+    Sys::Cmd objects can of course be created using the standard `new'
+    constructor if you prefer that to the `spawn' function:
 
         $proc = Sys::Cmd->new(
             cmd => \@cmd,
@@ -88,20 +88,20 @@ DESCRIPTION
         );
 
     Note that Sys::Cmd objects created this way will not lookup the command
-    using File::Which the way the "run", "runx" and "spawn" functions do.
+    using File::Which the way the `run', `runx' and `spawn' functions do.
 
-    Sys::Cmd uses Log::Any "debug" calls for logging purposes. An easy way
-    to see the output is to add "use Log::Any::Adapter 'Stdout'" in your
+    Sys::Cmd uses Log::Any `debug' calls for logging purposes. An easy way
+    to see the output is to add `use Log::Any::Adapter 'Stdout'' in your
     program.
 
 CONSTRUCTOR
     new(%args) => Sys::Cmd
-        Spawns a process based on %args. %args must contain at least a "cmd"
-        value, and optionally "encoding", "env", "dir" and "input" values as
+        Spawns a process based on %args. %args must contain at least a `cmd'
+        value, and optionally `encoding', `env', `dir' and `input' values as
         defined as attributes below.
 
-        If an "on_exit" subref argument is provided it will be called by the
-        "wait_child" method, which can either be called manually or will be
+        If an `on_exit' subref argument is provided it will be called by the
+        `wait_child' method, which can either be called manually or will be
         automatically called when the object is destroyed.
 
 ATTRIBUTES
@@ -145,16 +145,16 @@ ATTRIBUTES
 
     exit
         The command's exit value, shifted by 8 (see "perldoc -f system").
-        Set by "wait_child()".
+        Set by `wait_child()'.
 
     signal
         The signal number (if any) that terminated the command,
         bitwise-added with 127 (see "perldoc -f system"). Set by
-        "wait_child()".
+        `wait_child()'.
 
     core
         A boolean indicating the process core was dumped. Set by
-        "wait_child()".
+        `wait_child()'.
 
 METHODS
     cmdline => @list | $str
@@ -165,7 +165,7 @@ METHODS
     close()
         Close all filehandles to the child process. Note that file handles
         will automaticaly be closed when the Sys::Cmd object is destroyed.
-        Annoyingly, this means that in the following example $fh will be
+        Annoyingly, this means that in the following example `$fh' will be
         closed when you tried to use it:
 
             my $fh = Sys::Cmd->new( %args )->stdout;
