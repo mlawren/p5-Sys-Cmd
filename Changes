@@ -1,7 +1,10 @@
 0.85.1_1 (yyyy-mm-dd)
 
     API / Behaviour Changes:
-        - None.
+        - Convert from Module-Install ("Makefile.PL") to Module-Build
+          ("Build.PL")
+            - Done by Shlomi Fish ( http://www.shlomifish.org/ ) as part
+            of the CPAN Pull Request Challenge.
 
     New Features:
         - None.
