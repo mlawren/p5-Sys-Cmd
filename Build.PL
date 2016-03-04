@@ -1,15 +1,14 @@
 #!perl
 use strict;
 use warnings;
-
 use Module::Build;
 
 my $builder = Module::Build->new(
     module_name       => 'Sys::Cmd',
     create_license    => 1,
     create_readme     => 1,
-    license           => 'perl',
-    dist_author       => q{Mark Lawrence <mlawren@cpan.org>},
+    license           => 'gpl_3',
+    dist_author       => 'Mark Lawrence <nomad@null.net>',
     dist_version_from => 'lib/Sys/Cmd.pm',
     requires          => {
         'Carp'            => 0,
@@ -35,7 +34,7 @@ my $builder = Module::Build->new(
     meta_merge           => {
         resources => {
             bugtracker => 'https://github.com/mlawren/p5-Sys-Cmd/issues',
-            repository => 'git://github.com/mlawren/p5-sys-cmd.git',
+            repository => 'git://github.com/mlawren/p5-Sys-Cmd.git',
             homepage   => 'https://github.com/mlawren/p5-Sys-Cmd',
         },
         keywords => [],
