@@ -663,10 +663,11 @@ So you have to keep track of the Sys::Cmd object manually.
 
 =item wait_child() -> $exit_value
 
-Wait for the child to exit using L<waitpid|http://perldoc.perl.org/functions/waitpid.html>, collect the exit status
-and return it. This method sets the I<exit>, I<signal> and I<core>
-attributes and will also be called automatically when the B<Sys::Cmd>
-object is destroyed.
+Wait for the child to exit using
+L<waitpid|http://perldoc.perl.org/functions/waitpid.html>, collect the
+exit status and return it. This method sets the I<exit>, I<signal> and
+I<core> attributes and will also be called automatically when the
+B<Sys::Cmd> object is destroyed.
 
 =back
 
