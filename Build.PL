@@ -31,6 +31,7 @@ my $builder = Module::Build->new(
     },
     recursive_test_files => 1,
     add_to_cleanup       => ['Sys-Cmd-*'],
+    create_makefile_pl   => 'small',
     meta_merge           => {
         resources => {
             bugtracker => 'https://github.com/mlawren/p5-Sys-Cmd/issues',

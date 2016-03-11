@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - Restore Makefile.PL support via Module::Build::Compat.
 
     Bug Fixes:
         - None.
