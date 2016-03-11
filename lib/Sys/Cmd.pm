@@ -22,7 +22,7 @@ use IO::Handle;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 
-our $VERSION = '0.85.1_1';
+our $VERSION = '0.85.2';
 our $CONFESS;
 
 sub run {
@@ -440,7 +440,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.85.1_1 (2016-03-03)
+0.85.2 (2016-03-11)
 
 =head1 SYNOPSIS
 
@@ -663,10 +663,11 @@ So you have to keep track of the Sys::Cmd object manually.
 
 =item wait_child() -> $exit_value
 
-Wait for the child to exit using L<waitpid>, collect the exit status
-and return it. This method sets the I<exit>, I<signal> and I<core>
-attributes and will also be called automatically when the B<Sys::Cmd>
-object is destroyed.
+Wait for the child to exit using
+L<waitpid|http://perldoc.perl.org/functions/waitpid.html>, collect the
+exit status and return it. This method sets the I<exit>, I<signal> and
+I<core> attributes and will also be called automatically when the
+B<Sys::Cmd> object is destroyed.
 
 =back
 

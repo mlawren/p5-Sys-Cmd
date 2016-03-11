@@ -1,13 +1,13 @@
 {
    "abstract" : "run a system command or spawn a system processes",
    "author" : [
-      "Mark Lawrence <mlawren@cpan.org>"
+      "Mark Lawrence <nomad@null.net>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "Module::Build version 0.421",
+   "generated_by" : "Module::Build version 0.4216",
    "keywords" : [],
    "license" : [
-      "perl_5"
+      "gpl_3"
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
@@ -44,25 +44,25 @@
    "provides" : {
       "Sys::Cmd" : {
          "file" : "lib/Sys/Cmd.pm",
-         "version" : "v0.85.1_1"
+         "version" : "v0.85.2"
       },
       "Sys::Cmd::Template" : {
          "file" : "lib/Sys/Cmd/Template.pm",
-         "version" : "v0.85.1_1"
+         "version" : "v0.85.2"
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/mlawren/p5-Sys-Cmd/issues"
       },
       "homepage" : "https://github.com/mlawren/p5-Sys-Cmd",
       "license" : [
-         "http://dev.perl.org/licenses/"
+         "http://www.gnu.org/licenses/gpl-3.0.txt"
       ],
       "repository" : {
-         "url" : "git://github.com/mlawren/p5-sys-cmd.git"
+         "url" : "git://github.com/mlawren/p5-Sys-Cmd.git"
       }
    },
-   "version" : "v0.85.1_1"
+   "version" : "v0.85.2"
 }

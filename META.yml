@@ -1,7 +1,7 @@
 ---
 abstract: 'run a system command or spawn a system processes'
 author:
-  - 'Mark Lawrence <mlawren@cpan.org>'
+  - 'Mark Lawrence <nomad@null.net>'
 build_requires:
   Cwd: '0'
   Data::Dumper: '0'
@@ -11,9 +11,9 @@ build_requires:
 configure_requires:
   Module::Build: '0.4004'
 dynamic_config: 1
-generated_by: 'Module::Build version 0.421, CPAN::Meta::Converter version 2.142690'
+generated_by: 'Module::Build version 0.4216, CPAN::Meta::Converter version 2.142690'
 keywords: []
-license: perl
+license: gpl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: '1.4'
@@ -21,10 +21,10 @@ name: Sys-Cmd
 provides:
   Sys::Cmd:
     file: lib/Sys/Cmd.pm
-    version: v0.85.1_1
+    version: v0.85.2
   Sys::Cmd::Template:
     file: lib/Sys/Cmd/Template.pm
-    version: v0.85.1_1
+    version: v0.85.2
 requires:
   Carp: '0'
   Exporter::Tidy: '0'
@@ -36,6 +36,6 @@ requires:
 resources:
   bugtracker: https://github.com/mlawren/p5-Sys-Cmd/issues
   homepage: https://github.com/mlawren/p5-Sys-Cmd
-  license: http://dev.perl.org/licenses/
-  repository: git://github.com/mlawren/p5-sys-cmd.git
-version: v0.85.1_1
+  license: http://www.gnu.org/licenses/gpl-3.0.txt
+  repository: git://github.com/mlawren/p5-Sys-Cmd.git
+version: v0.85.2
