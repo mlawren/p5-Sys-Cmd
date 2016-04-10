@@ -2,15 +2,16 @@
 use strict;
 use warnings;
 use Module::Build;
+use Module::Build::Compat;
 
 my $builder = Module::Build->new(
-    module_name       => 'Sys::Cmd',
-    create_license    => 1,
-    create_readme     => 1,
-    license           => 'GPL_3',
-    dist_author       => 'Mark Lawrence <nomad@null.net>',
-    dist_version_from => 'lib/Sys/Cmd.pm',
-    requires          => {
+    module_name    => 'Sys::Cmd',
+    create_license => 1,
+    create_readme  => 1,
+    license        => 'GPL_3',
+    dist_author    => 'Mark Lawrence <nomad@null.net>',
+    dist_version   => '0.85.3_1',
+    requires       => {
         'Carp'            => 0,
         'Exporter::Tidy'  => 0,
         'File::Which'     => 0,
@@ -43,3 +44,7 @@ my $builder = Module::Build->new(
 );
 
 $builder->create_build_script();
+
+# I prefer to use make when developing so lets built the Makefile here
+# as well
+Module::Build::Compat->write_makefile( build_class => 'Module::Build' );
