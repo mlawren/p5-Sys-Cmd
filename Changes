@@ -1,4 +1,4 @@
-0.85.4 (yyyy-mm-dd)
+0.85.4 (2016-06-06)
 
     Enhancements:
         - Restore Makefile.PL support via Module::Build::Compat.
