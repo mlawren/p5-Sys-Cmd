@@ -1,20 +1,11 @@
 0.85.3_1 (yyyy-mm-dd)
 
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
-
     Enhancements:
         - Restore Makefile.PL support via Module::Build::Compat.
 
     Bug Fixes:
         - Do not execute commands in current directory (unless found in
           PATH)
-
-    Dependencies:
-        - None.
 
 0.85.2 (2016-03-11)
 
