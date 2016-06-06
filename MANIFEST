@@ -7,6 +7,7 @@ t/info.pl
 t/Sys/Cmd.t
 t/Sys/Cmd/Template.t
 TODO
+Makefile.PL
 README
 LICENSE
 META.yml

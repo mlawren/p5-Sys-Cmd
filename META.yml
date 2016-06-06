@@ -21,10 +21,10 @@ name: Sys-Cmd
 provides:
   Sys::Cmd:
     file: lib/Sys/Cmd.pm
-    version: v0.85.2
+    version: v0.85.4
   Sys::Cmd::Template:
     file: lib/Sys/Cmd/Template.pm
-    version: v0.85.2
+    version: v0.85.4
 requires:
   Carp: '0'
   Exporter::Tidy: '0'
@@ -38,4 +38,4 @@ resources:
   homepage: https://github.com/mlawren/p5-Sys-Cmd
   license: http://www.gnu.org/licenses/gpl-3.0.txt
   repository: git://github.com/mlawren/p5-Sys-Cmd.git
-version: v0.85.2
+version: v0.85.4

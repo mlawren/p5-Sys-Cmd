@@ -18,11 +18,12 @@ use warnings;
 use 5.006;
 use Carp;
 use Exporter::Tidy all => [qw/spawn run runx/];
+use File::Spec;
 use IO::Handle;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 
-our $VERSION = '0.85.2';
+our $VERSION = '0.85.4';
 our $CONFESS;
 
 sub run {
@@ -79,14 +80,11 @@ sub spawn {
     defined $cmd[0] || Carp::confess '$cmd must be defined';
 
     unless ( ref $cmd[0] eq 'CODE' ) {
-        if ( !-e $cmd[0] ) {
+
+        if ( File::Spec->splitdir( $cmd[0] ) == 1 ) {
             require File::Which;
             $cmd[0] = File::Which::which( $cmd[0] )
               || Carp::confess 'command not found: ' . $cmd[0];
-        }
-
-        if ( !-f $cmd[0] ) {
-            Carp::confess 'command not a file: ' . $cmd[0];
         }
 
         if ( !-x $cmd[0] ) {
@@ -440,7 +438,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.85.2 (2016-03-11)
+0.85.4 (2016-06-06)
 
 =head1 SYNOPSIS
 

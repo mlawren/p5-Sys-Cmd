@@ -9,7 +9,7 @@ use File::Which;
 use Sys::Cmd;
 use Sys::Cmd::Mo qw/is default/;
 
-our $VERSION = '0.85.2';
+our $VERSION = '0.85.4';
 our $CONFESS;
 
 sub cmd_template {
@@ -152,7 +152,7 @@ Sys::Cmd::Template - command/process templates for Sys::Cmd
 
 =head1 VERSION
 
-0.85.2 (2016-03-11) Development release
+0.85.4 (2016-06-06) Development release
 
 =head1 SYNOPSIS
 
