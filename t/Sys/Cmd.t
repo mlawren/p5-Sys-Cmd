@@ -112,7 +112,7 @@ my @fail = (
     {
         test    => 'execute a directory',
         cmdline => ['t'],
-        fail    => qr/^command not a file/,
+        fail    => qr/^command not found/,
         options => {},
     },
 );

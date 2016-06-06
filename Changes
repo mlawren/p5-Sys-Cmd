@@ -10,7 +10,8 @@
         - Restore Makefile.PL support via Module::Build::Compat.
 
     Bug Fixes:
-        - None.
+        - Do not execute commands in current directory (unless found in
+          PATH)
 
     Dependencies:
         - None.

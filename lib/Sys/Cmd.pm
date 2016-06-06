@@ -18,6 +18,7 @@ use warnings;
 use 5.006;
 use Carp;
 use Exporter::Tidy all => [qw/spawn run runx/];
+use File::Spec;
 use IO::Handle;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
@@ -79,14 +80,11 @@ sub spawn {
     defined $cmd[0] || Carp::confess '$cmd must be defined';
 
     unless ( ref $cmd[0] eq 'CODE' ) {
-        if ( !-e $cmd[0] ) {
+
+        if ( File::Spec->splitdir( $cmd[0] ) == 1 ) {
             require File::Which;
             $cmd[0] = File::Which::which( $cmd[0] )
               || Carp::confess 'command not found: ' . $cmd[0];
-        }
-
-        if ( !-f $cmd[0] ) {
-            Carp::confess 'command not a file: ' . $cmd[0];
         }
 
         if ( !-x $cmd[0] ) {
