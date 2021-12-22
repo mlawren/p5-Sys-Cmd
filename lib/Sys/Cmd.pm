@@ -117,7 +117,7 @@ has 'cmd' => (
 
 has 'encoding' => (
     is      => 'ro',
-    default => sub { 'utf8' },
+    default => sub { ':utf8' },
 );
 
 has 'env' => (
@@ -199,12 +199,12 @@ sub BUILD {
         $self->_spawn;
     }
 
-    $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
+    my $enc = $self->encoding;
+    binmode( $self->stdin,  $enc ) or warn "binmode stdin: $!";
+    binmode( $self->stdout, $enc ) or warn "binmode stdout: $!";
+    binmode( $self->stderr, $enc ) or warn "binmode stderr: $!";
 
-    my $enc = ':encoding(' . $self->encoding . ')';
-    binmode $self->stdin,  $enc;
-    binmode $self->stdout, $enc;
-    binmode $self->stderr, $enc;
+    $log->debugf( '[%d][%s] %s', $self->pid, $enc, scalar $self->cmdline );
 
     # some input was provided
     if ( defined( my $input = $self->input ) ) {
@@ -297,47 +297,48 @@ sub _fork {
         die "fork: $why";
     }
 
-    if ( $self->pid == 0 ) {    # Child
-        $self->exit(0);         # stop DESTROY() from trying to reap
-
-        $child_out->autoflush(1);
-        $child_err->autoflush(1);
-
-        if ( !open STDERR, '>&=', fileno($child_err) ) {
-            print $child_err "open: $! at ", caller, "\n";
-            die "open: $!";
-        }
-        open STDIN,  '<&=', fileno($child_in)  || die "open: $!";
-        open STDOUT, '>&=', fileno($child_out) || die "open: $!";
-
-        close $self->stdin;
-        close $self->stdout;
-        close $self->stderr;
+    if ( $self->pid > 0 ) {    # parent
         close $child_in;
         close $child_out;
         close $child_err;
 
-        if ( ref $self->cmd->[0] eq 'CODE' ) {
-            my $enc = ':encoding(' . $self->encoding . ')';
-            binmode STDIN,  $enc;
-            binmode STDOUT, $enc;
-            binmode STDERR, $enc;
-            $self->cmd->[0]->();
-            _exit(0);
-        }
-
-        exec( @{ $self->cmd } );
-        die "exec: $!";
+        $self->stdin->autoflush(1);
+        return;
     }
 
-    # Parent continues from here
+    # Child
+
+    $self->exit(0);            # stop DESTROY() from trying to reap
+    $child_out->autoflush(1);
+    $child_err->autoflush(1);
+
+    my $enc = $self->encoding;
+
+    foreach my $h (
+        [ \*STDIN,  '<&=' . $enc, $child_in ],
+        [ \*STDOUT, '>&=' . $enc, $child_out ],
+        [ \*STDERR, '>&=' . $enc, $child_err ]
+      )
+    {
+        open( $h->[0], $h->[1], fileno( $h->[2] ) )
+          or print $child_err sprintf '[%d] open %s: %s', $self->pid,
+          $h->[0], $!;
+    }
+
+    close $self->stdin;
+    close $self->stdout;
+    close $self->stderr;
     close $child_in;
     close $child_out;
     close $child_err;
 
-    $self->stdin->autoflush(1);
+    if ( ref( my $code = $self->cmd->[0] ) eq 'CODE' ) {
+        $code->();
+        _exit(0);
+    }
 
-    return;
+    exec( @{ $self->cmd } );
+    die "exec: $!";
 }
 
 sub cmdline {
@@ -452,7 +453,7 @@ Sys::Cmd - run a system command or spawn a system processes
     @output = run(@cmd, { input => 'feedme' });
 
     # Spawn and interact with a process somewhere else:
-    $proc = spawn( @cmd, { dir => '/' , encoding => 'iso-8859-3'} );
+    $proc = spawn( @cmd, { dir => '/' , encoding => 'encoding(iso-8859-3)'} );
 
     while (my $line = $proc->stdout->getline) {
         $proc->stdin->print("thanks");
