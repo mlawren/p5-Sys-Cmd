@@ -307,22 +307,23 @@ sub _fork {
     }
 
     # Child
-
     $self->exit(0);            # stop DESTROY() from trying to reap
-    $child_out->autoflush(1);
-    $child_err->autoflush(1);
 
     my $enc = $self->encoding;
 
-    foreach my $h (
-        [ \*STDIN,  '<&=' . $enc, $child_in ],
-        [ \*STDOUT, '>&=' . $enc, $child_out ],
-        [ \*STDERR, '>&=' . $enc, $child_err ]
+    foreach my $quad (
+        [ \*STDIN,  '<&=' . $enc, fileno($child_in),  0 ],
+        [ \*STDOUT, '>&=' . $enc, fileno($child_out), 1 ],
+        [ \*STDERR, '>&=' . $enc, fileno($child_err), 1 ]
       )
     {
-        open( $h->[0], $h->[1], fileno( $h->[2] ) )
-          or print $child_err sprintf '[%d] open %s: %s', $self->pid,
-          $h->[0], $!;
+        my ( $fh, $mode, $fileno, $autoflush ) = @$quad;
+
+        open( $fh, $mode, $fileno )
+          or print $child_err sprintf '[%d] open %s, %s: %s', $self->pid,
+          $fh, $mode, $!;
+
+        $fh->autoflush(1) if $autoflush;
     }
 
     close $self->stdin;

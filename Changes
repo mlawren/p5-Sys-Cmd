@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - Set autoflush on actual output file handles (not sources)
 
     Bug Fixes:
         - None.
