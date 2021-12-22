@@ -18,11 +18,12 @@ use warnings;
 use 5.006;
 use Carp;
 use Exporter::Tidy all => [qw/spawn run runx/];
+use File::Spec;
 use IO::Handle;
 use Log::Any qw/$log/;
 use Sys::Cmd::Mo;
 
-our $VERSION = '0.85.1_1';
+our $VERSION = '0.99.0_1';
 our $CONFESS;
 
 sub run {
@@ -79,14 +80,11 @@ sub spawn {
     defined $cmd[0] || Carp::confess '$cmd must be defined';
 
     unless ( ref $cmd[0] eq 'CODE' ) {
-        if ( !-e $cmd[0] ) {
+
+        if ( File::Spec->splitdir( $cmd[0] ) == 1 ) {
             require File::Which;
             $cmd[0] = File::Which::which( $cmd[0] )
               || Carp::confess 'command not found: ' . $cmd[0];
-        }
-
-        if ( !-f $cmd[0] ) {
-            Carp::confess 'command not a file: ' . $cmd[0];
         }
 
         if ( !-x $cmd[0] ) {
@@ -119,7 +117,7 @@ has 'cmd' => (
 
 has 'encoding' => (
     is      => 'ro',
-    default => sub { 'utf8' },
+    default => sub { ':utf8' },
 );
 
 has 'env' => (
@@ -201,12 +199,12 @@ sub BUILD {
         $self->_spawn;
     }
 
-    $log->debugf( '(PID %d) %s', $self->pid, scalar $self->cmdline );
+    my $enc = $self->encoding;
+    binmode( $self->stdin,  $enc ) or warn "binmode stdin: $!";
+    binmode( $self->stdout, $enc ) or warn "binmode stdout: $!";
+    binmode( $self->stderr, $enc ) or warn "binmode stderr: $!";
 
-    my $enc = ':encoding(' . $self->encoding . ')';
-    binmode $self->stdin,  $enc;
-    binmode $self->stdout, $enc;
-    binmode $self->stderr, $enc;
+    $log->debugf( '[%d][%s] %s', $self->pid, $enc, scalar $self->cmdline );
 
     # some input was provided
     if ( defined( my $input = $self->input ) ) {
@@ -299,47 +297,48 @@ sub _fork {
         die "fork: $why";
     }
 
-    if ( $self->pid == 0 ) {    # Child
-        $self->exit(0);         # stop DESTROY() from trying to reap
-
-        $child_out->autoflush(1);
-        $child_err->autoflush(1);
-
-        if ( !open STDERR, '>&=', fileno($child_err) ) {
-            print $child_err "open: $! at ", caller, "\n";
-            die "open: $!";
-        }
-        open STDIN,  '<&=', fileno($child_in)  || die "open: $!";
-        open STDOUT, '>&=', fileno($child_out) || die "open: $!";
-
-        close $self->stdin;
-        close $self->stdout;
-        close $self->stderr;
+    if ( $self->pid > 0 ) {    # parent
         close $child_in;
         close $child_out;
         close $child_err;
 
-        if ( ref $self->cmd->[0] eq 'CODE' ) {
-            my $enc = ':encoding(' . $self->encoding . ')';
-            binmode STDIN,  $enc;
-            binmode STDOUT, $enc;
-            binmode STDERR, $enc;
-            $self->cmd->[0]->();
-            _exit(0);
-        }
-
-        exec( @{ $self->cmd } );
-        die "exec: $!";
+        $self->stdin->autoflush(1);
+        return;
     }
 
-    # Parent continues from here
+    # Child
+
+    $self->exit(0);            # stop DESTROY() from trying to reap
+    $child_out->autoflush(1);
+    $child_err->autoflush(1);
+
+    my $enc = $self->encoding;
+
+    foreach my $h (
+        [ \*STDIN,  '<&=' . $enc, $child_in ],
+        [ \*STDOUT, '>&=' . $enc, $child_out ],
+        [ \*STDERR, '>&=' . $enc, $child_err ]
+      )
+    {
+        open( $h->[0], $h->[1], fileno( $h->[2] ) )
+          or print $child_err sprintf '[%d] open %s: %s', $self->pid,
+          $h->[0], $!;
+    }
+
+    close $self->stdin;
+    close $self->stdout;
+    close $self->stderr;
     close $child_in;
     close $child_out;
     close $child_err;
 
-    $self->stdin->autoflush(1);
+    if ( ref( my $code = $self->cmd->[0] ) eq 'CODE' ) {
+        $code->();
+        _exit(0);
+    }
 
-    return;
+    exec( @{ $self->cmd } );
+    die "exec: $!";
 }
 
 sub cmdline {
@@ -417,6 +416,10 @@ sub close {
         # may not be defined during global destruction
         my $fh = $self->$h or next;
         $fh->opened or next;
+        if ( $h eq 'stderr' ) {
+            warn sprintf( '[%d] uncollected stderr: %s', $self->pid, $_ )
+              for $self->stderr->getlines;
+        }
         $fh->close || Carp::carp "error closing $h: $!";
     }
 
@@ -440,7 +443,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.85.1_1 (2016-03-03)
+0.99.0_1 (2021-12-22)
 
 =head1 SYNOPSIS
 
@@ -454,7 +457,7 @@ Sys::Cmd - run a system command or spawn a system processes
     @output = run(@cmd, { input => 'feedme' });
 
     # Spawn and interact with a process somewhere else:
-    $proc = spawn( @cmd, { dir => '/' , encoding => 'iso-8859-3'} );
+    $proc = spawn( @cmd, { dir => '/' , encoding => 'encoding(iso-8859-3)'} );
 
     while (my $line = $proc->stdout->getline) {
         $proc->stdin->print("thanks");
@@ -485,10 +488,23 @@ Execute C<@cmd> and return what the command sent to its C<STDOUT>,
 raising an exception in the event of error. In array context returns a
 list instead of a plain string.
 
-The first element of C<@cmd> will be looked up using L<File::Which> if
-it doesn't exist as a relative file name is is a CODE reference (UNIX
-only).  The command input and environment can be modified with an
-optional hashref containing the following key/values:
+The first element of C<@cmd> determines what/how things are run:
+
+=over
+
+=item * If it is a relative file name it is executed directly using
+L<Proc::Spawn>.
+
+=item * If it is a CODE reference (subroutine) B<Sys::Cmd> forks before
+running it in the child process. This is not supported on Win32.
+
+=item * Everything else is looked up using L<File::Which> and then
+executed with L<Proc::Spawn>.
+
+=back
+
+The command input and environment can be modified with an optional
+hashref containing the following key/values:
 
 =over 4
 
@@ -523,9 +539,8 @@ appended to the C<STDOUT> output.
 
 Return a B<Sys::Cmd> object (documented below) representing the process
 running @cmd, with attributes set according to the optional \%opt
-hashref.  The first element of the C<@cmd> array is looked up using
-L<File::Which> if it cannot be found in the file-system as a relative
-file name or it is a CODE reference (UNIX only).
+hashref.  The first element of C<@cmd> determines the execution method
+just like the C<run()> function.
 
 =back
 
@@ -546,7 +561,8 @@ constructor if you prefer that to the C<spawn> function:
 
 Note that B<Sys::Cmd> objects created this way will not lookup the
 command using L<File::Which> the way the C<run>, C<runx> and C<spawn>
-functions do.
+functions do. CODE references in C<$cmd[0]> are however still
+recognized and forked off.
 
 B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes. An
 easy way to see the output is to add C<use Log::Any::Adapter 'Stdout'>
@@ -663,10 +679,11 @@ So you have to keep track of the Sys::Cmd object manually.
 
 =item wait_child() -> $exit_value
 
-Wait for the child to exit using L<waitpid>, collect the exit status
-and return it. This method sets the I<exit>, I<signal> and I<core>
-attributes and will also be called automatically when the B<Sys::Cmd>
-object is destroyed.
+Wait for the child to exit using
+L<waitpid|http://perldoc.perl.org/functions/waitpid.html>, collect the
+exit status and return it. This method sets the I<exit>, I<signal> and
+I<core> attributes and will also be called automatically when the
+B<Sys::Cmd> object is destroyed.
 
 =back
 

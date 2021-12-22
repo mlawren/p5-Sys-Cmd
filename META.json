@@ -1,23 +1,36 @@
 {
    "abstract" : "run a system command or spawn a system processes",
    "author" : [
-      "Mark Lawrence <mlawren@cpan.org>"
+      "Mark Lawrence <nomad@null.net>"
    ],
-   "dynamic_config" : 1,
-   "generated_by" : "Module::Build version 0.421",
-   "keywords" : [],
+   "dynamic_config" : 0,
+   "generated_by" : "ExtUtils::MakeMaker version 7.44, CPAN::Meta::Converter version 2.150010",
    "license" : [
-      "perl_5"
+      "gpl_3"
    ],
    "meta-spec" : {
       "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
-      "version" : "2"
+      "version" : 2
    },
    "name" : "Sys-Cmd",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "inc"
+      ],
+      "package" : [
+         "Sys::Cmd::Mo"
+      ]
+   },
    "prereqs" : {
+      "build" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "0"
+         }
+      },
       "configure" : {
          "requires" : {
-            "Module::Build" : "0.4004"
+            "ExtUtils::MakeMaker::CPANfile" : "0.08"
          }
       },
       "runtime" : {
@@ -41,28 +54,14 @@
          }
       }
    },
-   "provides" : {
-      "Sys::Cmd" : {
-         "file" : "lib/Sys/Cmd.pm",
-         "version" : "v0.85.1_1"
-      },
-      "Sys::Cmd::Template" : {
-         "file" : "lib/Sys/Cmd/Template.pm",
-         "version" : "v0.85.1_1"
-      }
-   },
-   "release_status" : "testing",
+   "release_status" : "unstable",
    "resources" : {
-      "bugtracker" : {
-         "web" : "https://github.com/mlawren/p5-Sys-Cmd/issues"
-      },
-      "homepage" : "https://github.com/mlawren/p5-Sys-Cmd",
-      "license" : [
-         "http://dev.perl.org/licenses/"
-      ],
+      "bugtracker" : {},
       "repository" : {
-         "url" : "git://github.com/mlawren/p5-sys-cmd.git"
+         "type" : "git",
+         "url" : "ssh://git@github.com/mlawren/p5-Sys-Cmd.git"
       }
    },
-   "version" : "v0.85.1_1"
+   "version" : "v0.99.0_1",
+   "x_serialization_backend" : "JSON::PP version 4.04"
 }

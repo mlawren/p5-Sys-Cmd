@@ -112,7 +112,7 @@ my @fail = (
     {
         test    => 'execute a directory',
         cmdline => ['t'],
-        fail    => qr/^command not a file/,
+        fail    => qr/^command not found/,
         options => {},
     },
 );
@@ -232,7 +232,7 @@ SKIP: {
         foreach my $i ( 1 .. 10, 'Zürich' ) {
             $proc->stdin->print( $i . "\n" );
             my $res = $proc->stdout->getline;
-            chomp $res;
+            chomp $res if defined $res;
             is $res, $i, "coderef: echo $i";
         }
 

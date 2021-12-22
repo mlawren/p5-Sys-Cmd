@@ -1,3 +1,20 @@
+0.99.0_1 (2021-12-22)
+
+    Enhancements:
+        - Warn on uncollected STDERR output from child
+
+    Bug Fixes:
+        - [Security] Do not search in "." for matching executables
+        - Do not force "encoding($X)" to allow for things like :raw
+
+    Packaging:
+        - Move to ExtUtils::MakeMaker away from Module::Build.
+
+0.85.2 (2016-03-11)
+
+    Enhancements:
+        - Minor documentation and distribution meta data fixes
+
 0.85.1_1 (2016-03-03)
 
     API / Behaviour Changes:

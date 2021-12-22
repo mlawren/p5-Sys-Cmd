@@ -9,7 +9,7 @@ use File::Which;
 use Sys::Cmd;
 use Sys::Cmd::Mo qw/is default/;
 
-our $VERSION = '0.85.1_1';
+our $VERSION = '0.99.0_1';
 our $CONFESS;
 
 sub cmd_template {
@@ -31,8 +31,8 @@ sub cmd_template {
 }
 
 has 'cmd' => (
-    is  => 'rw',
-    isa => sub { ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF" },
+    is      => 'rw',
+    isa     => sub { ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF" },
     default => sub { [] },
 );
 
@@ -152,7 +152,7 @@ Sys::Cmd::Template - command/process templates for Sys::Cmd
 
 =head1 VERSION
 
-0.85.1_1 (2016-03-03) Development release
+0.99.0_1 (2021-12-22) Development release
 
 =head1 SYNOPSIS
 
