@@ -232,7 +232,7 @@ SKIP: {
         foreach my $i ( 1 .. 10, 'Zürich' ) {
             $proc->stdin->print( $i . "\n" );
             my $res = $proc->stdout->getline;
-            chomp $res;
+            chomp $res if defined $res;
             is $res, $i, "coderef: echo $i";
         }
 
