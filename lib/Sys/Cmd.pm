@@ -115,6 +115,14 @@ has 'cmd' => (
     required => 1,
 );
 
+has _code => (
+    is      => 'ro',
+    default => sub {
+        my $c = $_[0]->cmd->[0];
+        ref($c) eq 'CODE' ? $c : undef;
+    },
+);
+
 has 'encoding' => (
     is      => 'ro',
     default => sub { ':utf8' },
@@ -192,12 +200,7 @@ sub BUILD {
         }
     }
 
-    if ( ref $self->cmd->[0] eq 'CODE' ) {
-        $self->_fork;
-    }
-    else {
-        $self->_spawn;
-    }
+    $self->_code ? $self->_fork : $self->_spawn;
 
     my $enc = $self->encoding;
     binmode( $self->stdin,  $enc ) or warn "binmode stdin: $!";
@@ -333,7 +336,7 @@ sub _fork {
     close $child_out;
     close $child_err;
 
-    if ( ref( my $code = $self->cmd->[0] ) eq 'CODE' ) {
+    if ( my $code = $self->_code ) {
         $code->();
         _exit(0);
     }
