@@ -1,12 +1,9 @@
 ^\.
-\.swp$
-Sys-Cmd-.*/
-blib/
-^Build$
-^_build/
 ~$
+blib/
 build-stamp
 extlib/
+install-stamp
 Makefile$
 Makefile\.old
 MANIFEST\.bak
@@ -14,4 +11,6 @@ MANIFEST\.SKIP
 MYMETA*
 old/
 pm_to_blib
+\.swp$
+Sys-Cmd-.*/
 xt/

@@ -10,10 +10,14 @@
         - Warn on uncollected STDERR output from child
 
     Bug Fixes:
-        - None.
+        - [Security] Do not search in "." for matching executables
+        - Do not force "encoding($X)" to allow for things like :raw
 
     Dependencies:
         - None.
+
+    Packaging:
+        - Move to ExtUtils::MakeMaker away from Module::Build.
 
 0.85.4 (2016-06-06)
 
