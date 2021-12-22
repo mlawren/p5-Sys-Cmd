@@ -416,6 +416,10 @@ sub close {
         # may not be defined during global destruction
         my $fh = $self->$h or next;
         $fh->opened or next;
+        if ( $h eq 'stderr' ) {
+            warn sprintf( '[%d] uncollected stderr: %s', $self->pid, $_ )
+              for $self->stderr->getlines;
+        }
         $fh->close || Carp::carp "error closing $h: $!";
     }
 

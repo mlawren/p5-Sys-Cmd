@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - Warn on uncollected STDERR output from child
 
     Bug Fixes:
         - None.
