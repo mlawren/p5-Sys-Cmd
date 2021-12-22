@@ -488,10 +488,23 @@ Execute C<@cmd> and return what the command sent to its C<STDOUT>,
 raising an exception in the event of error. In array context returns a
 list instead of a plain string.
 
-The first element of C<@cmd> will be looked up using L<File::Which> if
-it doesn't exist as a relative file name is is a CODE reference (UNIX
-only).  The command input and environment can be modified with an
-optional hashref containing the following key/values:
+The first element of C<@cmd> determines what/how things are run:
+
+=over
+
+=item * If it is a relative file name it is executed directly using
+L<Proc::Spawn>.
+
+=item * If it is a CODE reference (subroutine) B<Sys::Cmd> forks before
+running it in the child process. This is not supported on Win32.
+
+=item * Everything else is looked up using L<File::Which> and then
+executed with L<Proc::Spawn>.
+
+=back
+
+The command input and environment can be modified with an optional
+hashref containing the following key/values:
 
 =over 4
 
@@ -526,9 +539,8 @@ appended to the C<STDOUT> output.
 
 Return a B<Sys::Cmd> object (documented below) representing the process
 running @cmd, with attributes set according to the optional \%opt
-hashref.  The first element of the C<@cmd> array is looked up using
-L<File::Which> if it cannot be found in the file-system as a relative
-file name or it is a CODE reference (UNIX only).
+hashref.  The first element of C<@cmd> determines the execution method
+just like the C<run()> function.
 
 =back
 
@@ -549,7 +561,8 @@ constructor if you prefer that to the C<spawn> function:
 
 Note that B<Sys::Cmd> objects created this way will not lookup the
 command using L<File::Which> the way the C<run>, C<runx> and C<spawn>
-functions do.
+functions do. CODE references in C<$cmd[0]> are however still
+recognized and forked off.
 
 B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes. An
 easy way to see the output is to add C<use Log::Any::Adapter 'Stdout'>

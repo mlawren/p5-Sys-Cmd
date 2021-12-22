@@ -42,10 +42,20 @@ DESCRIPTION
         raising an exception in the event of error. In array context
         returns a list instead of a plain string.
 
-        The first element of @cmd will be looked up using File::Which if
-        it doesn't exist as a relative file name is is a CODE reference
-        (UNIX only). The command input and environment can be modified
-        with an optional hashref containing the following key/values:
+        The first element of @cmd determines what/how things are run:
+
+        *   If it is a relative file name it is executed directly using
+            Proc::Spawn.
+
+        *   If it is a CODE reference (subroutine) Sys::Cmd forks before
+            running it in the child process. This is not supported on
+            Win32.
+
+        *   Everything else is looked up using File::Which and then
+            executed with Proc::Spawn.
+
+        The command input and environment can be modified with an
+        optional hashref containing the following key/values:
 
         dir The working directory the command will be run in.
 
@@ -68,10 +78,8 @@ DESCRIPTION
     spawn( @cmd, [\%opt] ) => Sys::Cmd
         Return a Sys::Cmd object (documented below) representing the
         process running @cmd, with attributes set according to the
-        optional \%opt hashref. The first element of the @cmd array is
-        looked up using File::Which if it cannot be found in the
-        file-system as a relative file name or it is a CODE reference
-        (UNIX only).
+        optional \%opt hashref. The first element of @cmd determines the
+        execution method just like the "run()" function.
 
     Sys::Cmd objects can of course be created using the standard "new"
     constructor if you prefer that to the "spawn" function:
@@ -90,7 +98,8 @@ DESCRIPTION
 
     Note that Sys::Cmd objects created this way will not lookup the
     command using File::Which the way the "run", "runx" and "spawn"
-    functions do.
+    functions do. CODE references in $cmd[0] are however still
+    recognized and forked off.
 
     Sys::Cmd uses Log::Any "debug" calls for logging purposes. An easy
     way to see the output is to add "use Log::Any::Adapter 'Stdout'" in
