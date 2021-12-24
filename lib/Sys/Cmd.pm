@@ -465,7 +465,7 @@ Sys::Cmd - run a system command or spawn a system processes
     $proc = spawn( @cmd, { dir => '/' , encoding => 'encoding(iso-8859-3)'} );
 
     while (my $line = $proc->stdout->getline) {
-        $proc->stdin->print("thanks");
+        $proc->stdin->print("thanks\n");
     }
 
     my @errors = $proc->stderr->getlines;
