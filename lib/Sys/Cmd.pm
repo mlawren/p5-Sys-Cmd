@@ -311,6 +311,7 @@ sub _fork {
 
     # Child
     $self->exit(0);            # stop DESTROY() from trying to reap
+    $child_err->autoflush(1);
 
     my $enc = $self->encoding;
 
