@@ -324,7 +324,7 @@ sub _fork {
         my ( $fh, $mode, $fileno, $autoflush ) = @$quad;
 
         open( $fh, $mode, $fileno )
-          or print $child_err sprintf '[%d] open %s, %s: %s', $self->pid,
+          or print $child_err sprintf "[%d] open %s, %s: %s\n", $self->pid,
           $fh, $mode, $!;
 
         $fh->autoflush(1) if $autoflush;
