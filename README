@@ -12,24 +12,30 @@ SYNOPSIS
 
         # Feed command some input, get output as lines,
         # raise exception on failure:
-        @output = run(@cmd, { input => 'feedme' });
+        @output = run( @cmd, { input => 'feedme' } );
 
         # Spawn and interact with a process somewhere else:
-        $proc = spawn( @cmd, { dir => '/' , encoding => 'encoding(iso-8859-3)'} );
+        $proc = spawn(
+            @cmd,
+            {
+                dir      => '/',
+                encoding => 'encoding(iso-8859-3)'
+            },
+        );
 
-        while (my $line = $proc->stdout->getline) {
+        while ( my $line = $proc->stdout->getline ) {
             $proc->stdin->print("thanks\n");
         }
 
         my @errors = $proc->stderr->getlines;
 
-        $proc->close();       # Finished talking
-        $proc->wait_child();  # Cleanup
+        $proc->close();         # Finished talking to file handles
+        $proc->wait_child();    # Cleanup
 
         # read exit information
-        $proc->exit();      # exit status
-        $proc->signal();    # signal
-        $proc->core();      # core dumped? (boolean)
+        $proc->exit();          # exit status
+        $proc->signal();        # signal
+        $proc->core();          # core dumped? (boolean)
 
 DESCRIPTION
     Sys::Cmd lets you run system commands and capture their output, or
