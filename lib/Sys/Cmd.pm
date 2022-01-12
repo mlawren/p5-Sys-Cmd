@@ -201,6 +201,7 @@ sub BUILD {
     }
 
     $self->_code ? $self->_fork : $self->_spawn;
+    $self->stdin->autoflush(1);
 
     my $enc = $self->encoding;
     binmode( $self->stdin,  $enc ) or warn "binmode stdin: $!";
@@ -282,8 +283,6 @@ sub _spawn {
     close($_)
       for $old_fd0, $old_fd1, $old_fd2, $child_in, $child_out, $child_err;
 
-    $self->stdin->autoflush(1);
-
     return;
 }
 
@@ -304,8 +303,6 @@ sub _fork {
         close $child_in;
         close $child_out;
         close $child_err;
-
-        $self->stdin->autoflush(1);
         return;
     }
 
