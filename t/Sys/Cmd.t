@@ -185,7 +185,7 @@ for my $t ( @tests, @fail ) {
         $cmd->wait_child();
         is( $cmd->exit,   0, $t->{test} . ': exit 0' );
         is( $cmd->signal, 0, $t->{test} . ': no signal received' );
-        is( $cmd->core, $t->{core} || 0, $t->{test} . ': no core dumped' );
+        is( $cmd->core,   $t->{core} || 0, $t->{test} . ': no core dumped' );
     };
 }
 

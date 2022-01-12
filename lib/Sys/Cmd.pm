@@ -107,7 +107,7 @@ has 'cmd' => (
     is  => 'ro',
     isa => sub {
         ref $_[0] eq 'ARRAY' || Carp::confess "cmd must be ARRAYREF";
-        @{ $_[0] } || Carp::confess "Missing cmd elements";
+        @{ $_[0] }           || Carp::confess "Missing cmd elements";
         if ( grep { !defined $_ } @{ $_[0] } ) {
             Carp::confess 'cmd array cannot contain undef elements';
         }
@@ -184,7 +184,7 @@ sub BUILD {
     my $self = shift;
     my $dir  = $self->dir;
 
-    require File::chdir if $dir;
+    require File::chdir            if $dir;
     local $File::chdir::CWD = $dir if $dir;
 
     local %ENV = %ENV;
@@ -417,7 +417,7 @@ sub close {
 
         # may not be defined during global destruction
         my $fh = $self->$h or next;
-        $fh->opened or next;
+        $fh->opened        or next;
         if ( $h eq 'stderr' ) {
             warn sprintf( '[%d] uncollected stderr: %s', $self->pid, $_ )
               for $self->stderr->getlines;

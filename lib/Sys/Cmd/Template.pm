@@ -31,8 +31,8 @@ sub cmd_template {
 }
 
 has 'cmd' => (
-    is  => 'rw',
-    isa => sub { ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF" },
+    is      => 'rw',
+    isa     => sub { ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF" },
     default => sub { [] },
 );
 
