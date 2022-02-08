@@ -1,22 +1,11 @@
-0.99.0_2 (yyyy-mm-dd)
-
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
+0.99.0_2 (2022-02-08)
 
     Enhancements:
         - Set autoflush on actual output file handles (not sources)
-
-    Bug Fixes:
-        - None.
+        - Minor documentation and code cleanups
 
     Dependencies:
-        - None.
-
-    Packaging:
-        - None.
+        - Re-inlined Mo v0.40.
 
 0.99.0_1 (2021-12-22)
 
