@@ -9,7 +9,7 @@ use File::Which;
 use Sys::Cmd;
 use Sys::Cmd::Mo qw/is default/;
 
-our $VERSION = '0.99.0_1';
+our $VERSION = '0.99.0_2';
 our $CONFESS;
 
 sub cmd_template {
@@ -152,7 +152,7 @@ Sys::Cmd::Template - command/process templates for Sys::Cmd
 
 =head1 VERSION
 
-0.99.0_1 (2021-12-22) Development release
+0.99.0_2 (2022-02-08) Development release
 
 =head1 SYNOPSIS
 
@@ -375,7 +375,7 @@ Mark Lawrence E<lt>nomad@null.netE<gt>.
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011-2014 Mark Lawrence <nomad@null.net>
+Copyright (C) 2011-2021 Mark Lawrence <nomad@null.net>
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the

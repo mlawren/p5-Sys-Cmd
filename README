@@ -2,7 +2,7 @@ NAME
     Sys::Cmd - run a system command or spawn a system processes
 
 VERSION
-    0.99.0_1 (2021-12-22)
+    0.99.0_2 (2022-02-08)
 
 SYNOPSIS
         use Sys::Cmd qw/run spawn/;
@@ -12,24 +12,30 @@ SYNOPSIS
 
         # Feed command some input, get output as lines,
         # raise exception on failure:
-        @output = run(@cmd, { input => 'feedme' });
+        @output = run( @cmd, { input => 'feedme' } );
 
         # Spawn and interact with a process somewhere else:
-        $proc = spawn( @cmd, { dir => '/' , encoding => 'encoding(iso-8859-3)'} );
+        $proc = spawn(
+            @cmd,
+            {
+                dir      => '/',
+                encoding => 'encoding(iso-8859-3)'
+            },
+        );
 
-        while (my $line = $proc->stdout->getline) {
-            $proc->stdin->print("thanks");
+        while ( my $line = $proc->stdout->getline ) {
+            $proc->stdin->print("thanks\n");
         }
 
         my @errors = $proc->stderr->getlines;
 
-        $proc->close();       # Finished talking
-        $proc->wait_child();  # Cleanup
+        $proc->close();         # Finished talking to file handles
+        $proc->wait_child();    # Cleanup
 
         # read exit information
-        $proc->exit();      # exit status
-        $proc->signal();    # signal
-        $proc->core();      # core dumped? (boolean)
+        $proc->exit();          # exit status
+        $proc->signal();        # signal
+        $proc->core();          # core dumped? (boolean)
 
 DESCRIPTION
     Sys::Cmd lets you run system commands and capture their output, or
@@ -220,7 +226,7 @@ AUTHOR
     Git::Repository::Command by Philippe Bruhat (BooK).
 
 COPYRIGHT AND LICENSE
-    Copyright 2011-2014 Mark Lawrence <nomad@null.net>
+    Copyright 2011-2021 Mark Lawrence <nomad@null.net>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
