@@ -75,11 +75,20 @@ sub runx {
 }
 
 sub spawn {
-    my @cmd = grep { ref $_ ne 'HASH' } @_;
+    my ( @cmd, @opts );
+    map {
+        if ( ref($_) eq 'HASH' ) {
+            push( @opts, $_ );
+        }
+        else {
+            push( @cmd, $_ );
+        }
+    } @_;
 
-    defined $cmd[0] || Carp::confess '$cmd must be defined';
+    Carp::confess '$cmd must be defined' unless @cmd && defined $cmd[0];
+    Carp::confess __PACKAGE__ . ": only a single hashref allowed" if @opts > 1;
 
-    unless ( ref $cmd[0] eq 'CODE' ) {
+    unless ( 'CODE' eq ref $cmd[0] ) {
 
         if ( File::Spec->splitdir( $cmd[0] ) == 1 ) {
             require File::Which;
@@ -92,15 +101,8 @@ sub spawn {
         }
     }
 
-    my @opts = grep { ref $_ eq 'HASH' } @_;
-    if ( @opts > 2 ) {
-        Carp::confess __PACKAGE__ . ": only a single hashref allowed";
-    }
-
-    my %args = @opts ? %{ $opts[0] } : ();
-    $args{cmd} = \@cmd;
-
-    return Sys::Cmd->new(%args);
+    $opts[0]->{cmd} = \@cmd;
+    Sys::Cmd->new( %{ $opts[0] } );
 }
 
 has 'cmd' => (
