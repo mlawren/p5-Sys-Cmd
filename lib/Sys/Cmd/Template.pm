@@ -7,7 +7,32 @@ use Exporter::Tidy default => [qw/cmd_template/];
 use File::Spec::Functions qw/splitdir/;
 use File::Which;
 use Sys::Cmd;
-use Sys::Cmd::Mo qw/is default/;
+use Sys::Cmd::Template_CI has => {
+    cmd => {
+        is => 'rw',
+        isa =>
+          sub { ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF"; $_[0] },
+        default => sub { [] },
+    },
+    dir => {
+        is        => 'rw',
+        predicate => 'have_dir',
+    },
+    encoding => {
+        is        => 'rw',
+        predicate => 'have_encoding',
+    },
+    env => {
+        is => 'rw',
+        isa =>
+          sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF", $_[0] },
+        predicate => 'have_env',
+    },
+    input => {
+        is        => 'rw',
+        predicate => 'have_input',
+    },
+};
 
 our $VERSION = '0.99.0_3';
 our $CONFESS;
@@ -29,33 +54,6 @@ sub cmd_template {
 
     return Sys::Cmd::Template->new(%args);
 }
-
-has 'cmd' => (
-    is      => 'rw',
-    isa     => sub { ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF" },
-    default => sub { [] },
-);
-
-has 'dir' => (
-    is        => 'rw',
-    predicate => 'have_dir',
-);
-
-has 'encoding' => (
-    is        => 'rw',
-    predicate => 'have_encoding',
-);
-
-has 'env' => (
-    is        => 'rw',
-    isa       => sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF" },
-    predicate => 'have_env',
-);
-
-has 'input' => (
-    is        => 'rw',
-    predicate => 'have_input',
-);
 
 sub run {
     my $self = shift;
