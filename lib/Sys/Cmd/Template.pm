@@ -34,7 +34,7 @@ use Sys::Cmd::Template_CI has => {
     },
 };
 
-our $VERSION = '0.99.0';
+our $VERSION = '0.99.1_1';
 our $CONFESS;
 
 sub cmd_template {
@@ -150,7 +150,7 @@ Sys::Cmd::Template - command/process templates for Sys::Cmd
 
 =head1 VERSION
 
-0.99.0 (2022-10-05) Development release
+0.99.1_1 (yyyy-mm-dd) Development release
 
 =head1 SYNOPSIS
 

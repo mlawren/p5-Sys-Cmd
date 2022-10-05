@@ -72,7 +72,7 @@ use Sys::Cmd_CI has => {
     },
 };
 
-our $VERSION = '0.99.0';
+our $VERSION = '0.99.1_1';
 our $CONFESS;
 
 sub run {
@@ -419,7 +419,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.99.0 (2022-10-05)
+0.99.1_1 (yyyy-mm-dd)
 
 =head1 SYNOPSIS
 
