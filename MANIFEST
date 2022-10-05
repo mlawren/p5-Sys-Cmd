@@ -2,6 +2,8 @@ Changes
 cpanfile
 lib/Sys/Cmd.pm
 lib/Sys/Cmd/Template.pm
+lib/Sys/Cmd/Template_CI.pm
+lib/Sys/Cmd_CI.pm
 Makefile.PL
 MANIFEST			This list of files
 README

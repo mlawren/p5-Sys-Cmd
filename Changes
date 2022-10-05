@@ -1,3 +1,8 @@
+0.99.0 (2022-10-05)
+
+    Dependencies:
+        - (Internal) Convert to Class::Inline away from Mo
+
 0.99.0_2 (2022-02-08)
 
     Enhancements:

@@ -1,17 +1,3 @@
-package    # Trick xt/ tests into working
-  Sys::Cmd::Mo;
-
-BEGIN {
-#<<< No perltidy
-# use Mo qw/build is required default import/;
-#   The following line of code was produced from the previous line by
-#   Mo::Inline version 0.40
-no warnings;my$M=__PACKAGE__.'::';*{$M.Object::new}=sub{my$c=shift;my$s=bless{@_},$c;my%n=%{$c.'::'.':E'};map{$s->{$_}=$n{$_}->()if!exists$s->{$_}}keys%n;$s};*{$M.import}=sub{import warnings;$^H|=1538;my($P,%e,%o)=caller.'::';shift;eval"no Mo::$_",&{$M.$_.::e}($P,\%e,\%o,\@_)for@_;return if$e{M};%e=(extends,sub{eval"no $_[0]()";@{$P.ISA}=$_[0]},has,sub{my$n=shift;my$m=sub{$#_?$_[0]{$n}=$_[1]:$_[0]{$n}};@_=(default,@_)if!($#_%2);$m=$o{$_}->($m,$n,@_)for sort keys%o;*{$P.$n}=$m},%e,);*{$P.$_}=$e{$_}for keys%e;@{$P.ISA}=$M.Object};*{$M.'build::e'}=sub{my($P,$e)=@_;$e->{new}=sub{$c=shift;my$s=&{$M.Object::new}($c,@_);my@B;do{@B=($c.::BUILD,@B)}while($c)=@{$c.::ISA};exists&$_&&&$_($s)for@B;$s}};*{$M.'is::e'}=sub{my($P,$e,$o)=@_;$o->{is}=sub{my($m,$n,%a)=@_;$a{is}or return$m;sub{$#_&&$a{is}eq'ro'&&caller ne'Mo::coerce'?die$n.' is ro':$m->(@_)}}};*{$M.'required::e'}=sub{my($P,$e,$o)=@_;$o->{required}=sub{my($m,$n,%a)=@_;if($a{required}){my$C=*{$P."new"}{CODE}||*{$M.Object::new}{CODE};no warnings 'redefine';*{$P."new"}=sub{my$s=$C->(@_);my%a=@_[1..$#_];die$n." required"if!exists$a{$n};$s}}$m}};*{$M.'default::e'}=sub{my($P,$e,$o)=@_;$o->{default}=sub{my($m,$n,%a)=@_;exists$a{default}or return$m;my($d,$r)=$a{default};my$g='HASH'eq($r=ref$d)?sub{+{%$d}}:'ARRAY'eq$r?sub{[@$d]}:'CODE'eq$r?$d:sub{$d};my$i=exists$a{lazy}?$a{lazy}:!${$P.':N'};$i or ${$P.':E'}{$n}=$g and return$m;sub{$#_?$m->(@_):!exists$_[0]{$n}?$_[0]{$n}=$g->(@_):$m->(@_)}}};my$i=\&import;*{$M.import}=sub{(@_==2 and not$_[1])?pop@_:@_==1?push@_,grep!/import/,@f:();goto&$i};@f=qw[build is required default import];use strict;use warnings;
-$INC{'Sys/Cmd/Mo.pm'} = __FILE__;
-#>>>
-}
-1;
-
 package Sys::Cmd;
 use strict;
 use warnings;
@@ -21,9 +7,72 @@ use Exporter::Tidy all => [qw/spawn run runx/];
 use File::Spec;
 use IO::Handle;
 use Log::Any qw/$log/;
-use Sys::Cmd::Mo;
+use Sys::Cmd_CI has => {
+    cmd => {
+        isa => sub {
+            ref $_[0] eq 'ARRAY' || Carp::confess "cmd must be ARRAYREF";
+            @{ $_[0] }           || Carp::confess "Missing cmd elements";
+            if ( grep { !defined $_ } @{ $_[0] } ) {
+                Carp::confess 'cmd array cannot contain undef elements';
+            }
+            $_[0];
+        },
+        required => 1,
+    },
+    _code => {
+        default => sub {
+            my $c = $_[0]->cmd->[0];
+            ref($c) eq 'CODE' ? $c : undef;
+        },
+    },
+    encoding => {
+        default => sub { ':utf8' },
+    },
+    env => {
+        isa => sub {
+            ref $_[0] eq 'HASH' || Carp::confess "env must be HASHREF";
+            $_[0];
+        },
+    },
+    dir   => {},
+    input => {},
+    pid   => {
+        is       => 'rw',
+        init_arg => undef,
+    },
+    stdin => {
+        is       => 'rw',
+        init_arg => undef,
+        default  => sub { IO::Handle->new },
+    },
+    stdout => {
+        is       => 'rw',
+        init_arg => undef,
+        default  => sub { IO::Handle->new },
+    },
+    stderr => {
+        is       => 'rw',
+        init_arg => undef,
+        default  => sub { IO::Handle->new },
+    },
+    on_exit => {
+        is => 'rw',
+    },
+    exit => {
+        is       => 'rw',
+        init_arg => undef,
+    },
+    signal => {
+        is       => 'rw',
+        init_arg => undef,
+    },
+    core => {
+        is       => 'rw',
+        init_arg => undef,
+    },
+};
 
-our $VERSION = '0.99.0_2';
+our $VERSION = '0.99.0';
 our $CONFESS;
 
 sub run {
@@ -104,83 +153,6 @@ sub spawn {
     $opts[0]->{cmd} = \@cmd;
     Sys::Cmd->new( %{ $opts[0] } );
 }
-
-has 'cmd' => (
-    is  => 'ro',
-    isa => sub {
-        ref $_[0] eq 'ARRAY' || Carp::confess "cmd must be ARRAYREF";
-        @{ $_[0] }           || Carp::confess "Missing cmd elements";
-        if ( grep { !defined $_ } @{ $_[0] } ) {
-            Carp::confess 'cmd array cannot contain undef elements';
-        }
-    },
-    required => 1,
-);
-
-has _code => (
-    is      => 'ro',
-    default => sub {
-        my $c = $_[0]->cmd->[0];
-        ref($c) eq 'CODE' ? $c : undef;
-    },
-);
-
-has 'encoding' => (
-    is      => 'ro',
-    default => sub { ':utf8' },
-);
-
-has 'env' => (
-    is  => 'ro',
-    isa => sub { ref $_[0] eq 'HASH' || Carp::confess "env must be HASHREF" },
-);
-
-has 'dir' => ( is => 'ro', );
-
-has 'input' => ( is => 'ro', );
-
-has 'pid' => (
-    is       => 'rw',
-    init_arg => undef,
-);
-
-has 'stdin' => (
-    is       => 'rw',
-    init_arg => undef,
-    default  => sub { IO::Handle->new },
-);
-
-has 'stdout' => (
-    is       => 'rw',
-    init_arg => undef,
-    default  => sub { IO::Handle->new },
-);
-
-has 'stderr' => (
-    is       => 'rw',
-    init_arg => undef,
-    default  => sub { IO::Handle->new },
-);
-
-has on_exit => (
-    is       => 'rw',
-    init_arg => 'on_exit',
-);
-
-has 'exit' => (
-    is       => 'rw',
-    init_arg => undef,
-);
-
-has 'signal' => (
-    is       => 'rw',
-    init_arg => undef,
-);
-
-has 'core' => (
-    is       => 'rw',
-    init_arg => undef,
-);
 
 sub BUILD {
     my $self = shift;
@@ -447,7 +419,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.99.0_2 (2022-02-08)
+0.99.0 (2022-10-05)
 
 =head1 SYNOPSIS
 
