@@ -16,7 +16,7 @@
         - None.
 
     Dependencies:
-        - None.
+        - Add missing Class::Inline development dependency
 
     Packaging:
         - None.
