@@ -7,7 +7,7 @@ use Exporter::Tidy all => [qw/spawn run runx/];
 use File::Spec;
 use IO::Handle;
 use Log::Any qw/$log/;
-use Sys::Cmd_CI has => {
+use Class::Inline {
     cmd => {
         isa => sub {
             ref $_[0] eq 'ARRAY' || Carp::confess "cmd must be ARRAYREF";
@@ -25,10 +25,8 @@ use Sys::Cmd_CI has => {
             ref($c) eq 'CODE' ? $c : undef;
         },
     },
-    encoding => {
-        default => sub { ':utf8' },
-    },
-    env => {
+    encoding => { default => sub { ':utf8' }, },
+    env      => {
         isa => sub {
             ref $_[0] eq 'HASH' || Carp::confess "env must be HASHREF";
             $_[0];
@@ -55,10 +53,8 @@ use Sys::Cmd_CI has => {
         init_arg => undef,
         default  => sub { IO::Handle->new },
     },
-    on_exit => {
-        is => 'rw',
-    },
-    exit => {
+    on_exit => { is => 'rw', },
+    exit    => {
         is       => 'rw',
         init_arg => undef,
     },

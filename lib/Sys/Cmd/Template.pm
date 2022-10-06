@@ -7,9 +7,9 @@ use Exporter::Tidy default => [qw/cmd_template/];
 use File::Spec::Functions qw/splitdir/;
 use File::Which;
 use Sys::Cmd;
-use Sys::Cmd::Template_CI has => {
+use Class::Inline {
     cmd => {
-        is => 'rw',
+        is  => 'rw',
         isa =>
           sub { ref $_[0] eq 'ARRAY' || confess "cmd must be ARRAYREF"; $_[0] },
         default => sub { [] },
@@ -23,7 +23,7 @@ use Sys::Cmd::Template_CI has => {
         predicate => 'have_encoding',
     },
     env => {
-        is => 'rw',
+        is  => 'rw',
         isa =>
           sub { ref $_[0] eq 'HASH' || confess "env must be HASHREF", $_[0] },
         predicate => 'have_env',
