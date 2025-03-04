@@ -158,8 +158,11 @@ sub BUILD {
     my $self = shift;
     my $dir  = $self->dir;
 
-    require File::chdir            if $dir;
+    require File::chdir if $dir;
+
+    no warnings 'once';
     local $File::chdir::CWD = $dir if $dir;
+    use warnings 'once';
 
     local %ENV = %ENV;
 
