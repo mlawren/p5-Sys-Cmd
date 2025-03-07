@@ -77,9 +77,9 @@ our $CONFESS;
 
 sub run {
     my $proc = spawn(@_);
-    my @out  = $proc->stdout->getlines;
     my @err  = $proc->stderr->getlines;
-
+    warn @err if @err;
+    my @out = $proc->stdout->getlines;
     $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
@@ -89,8 +89,6 @@ sub run {
         Carp::croak(
             join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
-
-    warn @err if @err;
 
     if (wantarray) {
         return @out;
