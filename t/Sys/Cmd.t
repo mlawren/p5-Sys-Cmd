@@ -85,6 +85,11 @@ my @tests        = (
             input => ''
         }
     },
+    {
+        test    => 'error output',
+        cmdline => [ @perl_info_pl, { env => { SYS_CMD_ERR => 'Meh!' } } ],
+        result  => { err => "Meh!\n" },
+    },
 );
 my @fail = (
     {
@@ -154,7 +159,7 @@ for my $t ( @tests, @fail ) {
         # get the output
         my $output = join '', $cmd->stdout->getlines();
         my $errput = join '', $cmd->stderr->getlines();
-        is( $errput, '', $t->{test} . ': no errput' );
+        is( $errput, $t->{result}->{err} // '', $t->{test} . ': stderr match' );
 
         my $env = { %ENV, %{ $t->{result}{env} || {} } };
         if ( exists $t->{result}->{dir} and $^O eq 'MSWin32' ) {
