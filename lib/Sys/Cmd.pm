@@ -72,9 +72,16 @@ our $VERSION = '0.99.1_1';
 our $CONFESS;
 
 sub run {
+    my ( $ref_out, $ref_err );
+    foreach my $i (@_) {
+        if ( 'HASH' eq ref $i ) {
+            $ref_out = delete $i->{out};
+            $ref_err = delete $i->{err};
+        }
+    }
     my $proc = spawn(@_);
     my @err  = $proc->stderr->getlines;
-    warn @err if @err;
+    warn @err if @err and not $ref_err;
     my @out = $proc->stdout->getlines;
     $proc->wait_child;
 
@@ -86,7 +93,13 @@ sub run {
             join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
 
-    if (wantarray) {
+    if ($ref_err) {
+        $$ref_err = join '', @err;
+    }
+    if ($ref_out) {
+        $$ref_out = join '', @out;
+    }
+    elsif (wantarray) {
         return @out;
     }
     else {
@@ -422,21 +435,35 @@ Sys::Cmd - run a system command or spawn a system processes
 
     use Sys::Cmd qw/run spawn/;
 
-    # Get command output, raise exception on failure:
+    # Simplest scenario:
+    #   - returns standard output
+    #   - warns about standard error
+    #   - raises exception on failure
     $output = run(@cmd);
 
-    # Feed command some input, get output as lines,
-    # raise exception on failure:
+    # Alternative input / output:
+    #  - returns standard output lines
+    #  - after feedding it some input
     @output = run( @cmd, { input => 'feedme' } );
 
-    # Spawn and interact with a process somewhere else:
-    $proc = spawn(
+    # More flexibility:
+    #  - Capture stdout/stderr separately
+    #  - Modify the environment
+    #  - Run in alternative directory
+    run(
         @cmd,
         {
             dir      => '/',
-            encoding => 'encoding(iso-8859-3)'
-        },
+            env => { SECRET => $pass },
+            out => \$out,
+            err => \$err,
+        }
     );
+
+    # Spawn a process for asynchronous interaction
+    #  - Caller responsible for all input/output
+    #  - No exception on non-zero exit
+    $proc = spawn( @cmd, { encoding => ':encoding(iso-8859-3)' },);
 
     while ( my $line = $proc->stdout->getline ) {
         $proc->stdin->print("thanks\n");
@@ -447,7 +474,7 @@ Sys::Cmd - run a system command or spawn a system processes
     $proc->close();         # Finished talking to file handles
     $proc->wait_child();    # Cleanup
 
-    # read exit information
+    # read process termination information
     $proc->exit();          # exit status
     $proc->signal();        # signal
     $proc->core();          # core dumped? (boolean)
@@ -465,7 +492,7 @@ exported on demand by this module:
 
 Execute C<@cmd> and return what the command sent to its C<STDOUT>,
 raising an exception in the event of error. In array context returns a
-list instead of a plain string.
+list of lines instead of a scalar string.
 
 The first element of C<@cmd> determines what/how things are run:
 
@@ -482,30 +509,40 @@ executed with L<Proc::Spawn>.
 
 =back
 
-The command input and environment can be modified with an optional
-hashref containing the following key/values:
+The command environment, input and output can be modified by including
+a configuration hashref with the following keys (=> default):
 
 =over 4
 
-=item dir
+=item dir => $PWD
 
 The working directory the command will be run in.
 
-=item encoding
+=item encoding => ':utf8'
 
 An string value identifying the encoding of the input/output
-file-handles. Defaults to 'utf8'.
+file-handles. Defaults to ':utf8'.
 
-=item env
+=item env => {}
 
 A hashref containing key/values to be added to the current environment
 at run-time. If a key has an undefined value then the key is removed
 from the environment altogether.
 
-=item input
+=item input => ''
 
 A string which is fed to the command via its standard input, which is
 then closed.
+
+=item out
+
+A reference to a scalar which is populated with output. When used,
+C<run()> returns nothing.
+
+=item err
+
+A reference to a scalar which is populated with error output. When
+used, C<run()> does not warn of errors.
 
 =back
 
@@ -581,7 +618,7 @@ The working directory the command will be run in.
 =item encoding
 
 An string value identifying the encoding of the input/output
-file-handles. Defaults to 'utf8'.
+file-handles. Defaults to ':utf8'.
 
 =item env
 

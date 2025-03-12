@@ -244,4 +244,57 @@ SKIP: {
     };
 }
 
+subtest 'run', sub {
+    my ( $out, $err, $info );
+
+    $info = $out = $err = undef;
+    $out  = run(@perl_info_pl);
+    eval $out;
+    die $@ if $@;
+    is ref($info), 'HASH', 'run() returned $info = { ... }';
+
+    {
+        local $SIG{__WARN__} = sub {
+            $err = shift;
+        };
+        run(
+            @perl_info_pl,
+            {
+                env => { SYS_CMD_ERR => 'Complain!' },
+            }
+        );
+        eval $out;
+        die $@ if $@;
+        is ref($info), 'HASH',        'run() returned $info = { ... }';
+        is $err,       "Complain!\n", 'stderr raised as warnings';
+    }
+
+    $info = $out = $err = undef;
+    run(
+        @perl_info_pl,
+        {
+            out => \$out,
+            err => \$err,
+        }
+    );
+    eval $out;
+    die $@ if $@;
+    is ref($info), 'HASH', 'run() put $info into \$out';
+    is $err,       '',     'run() $err empty on zero warnings';
+
+    $info = $out = $err = undef;
+    run(
+        @perl_info_pl,
+        {
+            out => \$out,
+            err => \$err,
+            env => { SYS_CMD_ERR => 'Complain!' },
+        }
+    );
+    eval $out;
+    die $@ if $@;
+    is ref($info), 'HASH',        'run() put $info into \$out';
+    is $err,       "Complain!\n", '$err is set';
+};
+
 done_testing();
