@@ -1,4 +1,4 @@
-#!perl
+#!/usr/bin/env -S perl -CSDA
 use strict;
 use warnings;
 use Cwd qw( cwd );
