@@ -100,10 +100,6 @@ DESCRIPTION
         err A reference to a scalar which is populated with error
             output. When used, "run()" does not warn of errors.
 
-    runx( @cmd, [\%opt] ) => $outerrput | @outerrput
-        The same as the "run" function but with the command's "STDERR"
-        output appended to the "STDOUT" output.
-
     spawn( @cmd, [\%opt] ) => Sys::Cmd
         Return a Sys::Cmd object (documented below) representing the
         process running @cmd, with attributes set according to the
@@ -126,9 +122,9 @@ DESCRIPTION
         );
 
     Note that Sys::Cmd objects created this way will not lookup the
-    command using File::Which the way the "run", "runx" and "spawn"
-    functions do. CODE references in $cmd[0] are however still
-    recognized and forked off.
+    command using File::Which the way the "run" and "spawn" functions
+    do. CODE references in $cmd[0] are however still recognized and
+    forked off.
 
     Sys::Cmd uses Log::Any "debug" calls for logging purposes. An easy
     way to see the output is to add "use Log::Any::Adapter 'Stdout'" in

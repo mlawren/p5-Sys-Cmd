@@ -546,11 +546,6 @@ used, C<run()> does not warn of errors.
 
 =back
 
-=item runx( @cmd, [\%opt] ) => $outerrput | @outerrput
-
-The same as the C<run> function but with the command's C<STDERR> output
-appended to the C<STDOUT> output.
-
 =item spawn( @cmd, [\%opt] ) => Sys::Cmd
 
 Return a B<Sys::Cmd> object (documented below) representing the process
@@ -576,9 +571,9 @@ constructor if you prefer that to the C<spawn> function:
     );
 
 Note that B<Sys::Cmd> objects created this way will not lookup the
-command using L<File::Which> the way the C<run>, C<runx> and C<spawn>
-functions do. CODE references in C<$cmd[0]> are however still
-recognized and forked off.
+command using L<File::Which> the way the C<run> and C<spawn> functions
+do. CODE references in C<$cmd[0]> are however still recognized and
+forked off.
 
 B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes. An
 easy way to see the output is to add C<use Log::Any::Adapter 'Stdout'>
