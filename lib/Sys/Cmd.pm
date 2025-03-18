@@ -160,16 +160,29 @@ use Class::Inline {
         default  => sub { IO::Handle->new },
     },
     exit => {
-        is       => 'rw',
-        init_arg => undef,
+        is        => 'rw',
+        init_arg  => undef,
+        predicate => 1,
+        default   => sub {
+            local $Carp::CarpInternal{'Sys::Cmd::Process'} = 1;
+            Carp::confess('Process status values invalid before wait_child()');
+        },
     },
     signal => {
         is       => 'rw',
         init_arg => undef,
+        default  => sub {
+            local $Carp::CarpInternal{'Sys::Cmd::Process'} = 1;
+            Carp::confess('Process status values invalid before wait_child()');
+        },
     },
     core => {
         is       => 'rw',
         init_arg => undef,
+        default  => sub {
+            local $Carp::CarpInternal{'Sys::Cmd::Process'} = 1;
+            Carp::confess('Process status values invalid before wait_child()');
+        },
     },
 };
 
@@ -361,7 +374,7 @@ sub wait_child {
     my $self = shift;
 
     return unless defined $self->pid;
-    return $self->exit if defined $self->exit;
+    return $self->exit if $self->has_exit;
 
     local $?;
     local $!;

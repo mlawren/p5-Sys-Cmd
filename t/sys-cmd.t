@@ -296,6 +296,20 @@ subtest 'run', sub {
     die $@ if $@;
     is ref($info), 'HASH',        'run() put $info into \$out';
     is $err,       "Complain!\n", '$err is set';
+
+    # Test early ->core. Cannot test ->exit here, as even on exception
+    # $proc->{exit} jumps into existance, and wait_child uses
+    # ->has_exit.
+    $info = $out = $err = undef;
+    my $proc = spawn(@perl_info_pl);
+    eval { $proc->core };
+    like(
+        $@,
+        qr/before wait_child/,
+        'exit,core,signal only valid after wait_child'
+    );
+    $proc->wait_child;
+    is $proc->core, 0, 'core status 0';
 };
 
 done_testing();
