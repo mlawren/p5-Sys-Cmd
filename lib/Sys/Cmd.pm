@@ -13,10 +13,10 @@ use Exporter::Tidy _map => {
 use Class::Inline {
     cmd => {
         isa => sub {
-            ref $_[0] eq 'ARRAY' || Carp::confess "cmd must be ARRAYREF";
-            @{ $_[0] }           || Carp::confess "Missing cmd elements";
+            ref $_[0] eq 'ARRAY' || _croak("cmd must be ARRAYREF");
+            @{ $_[0] }           || _croak("Missing cmd elements");
             if ( grep { !defined $_ } @{ $_[0] } ) {
-                Carp::confess 'cmd array cannot contain undef elements';
+                _croak('cmd array cannot contain undef elements');
             }
             $_[0];
         },
@@ -25,7 +25,7 @@ use Class::Inline {
     encoding => { default => sub { ':utf8' }, },
     env      => {
         isa => sub {
-            ref $_[0] eq 'HASH' || Carp::confess "env must be HASHREF";
+            ref $_[0] eq 'HASH' || _croak("env must be HASHREF");
             $_[0];
         },
     },
@@ -34,13 +34,19 @@ use Class::Inline {
     on_exit => { is => 'rw', },
 };
 
+sub _croak {
+    local $Carp::CarpInternal{'Sys::Cmd'}          = 1;
+    local $Carp::CarpInternal{'Sys::Cmd::Process'} = 1;
+    Carp::croak(@_);
+}
+
 my sub merge_args {
     my $template = shift;
 
     my ( @cmd, $opts );
     foreach my $arg (@_) {
         if ( ref($arg) eq 'HASH' ) {
-            Carp::confess __PACKAGE__ . ": only a single hashref allowed"
+            _croak( __PACKAGE__ . ': only a single hashref allowed' )
               if $opts;
             $opts = $arg;
         }
@@ -61,7 +67,7 @@ my sub merge_args {
         };
     }
 
-    Carp::confess '$cmd must be defined' unless @cmd && defined $cmd[0];
+    _croak('$cmd must be defined') unless @cmd && defined $cmd[0];
 
     if ( 'CODE' ne ref( $cmd[0] ) ) {
 
@@ -69,11 +75,11 @@ my sub merge_args {
         if ( File::Spec->splitdir( $cmd[0] ) == 1 ) {
             require File::Which;
             $cmd[0] = File::Which::which( $cmd[0] )
-              || Carp::confess 'command not found: ' . $cmd[0];
+              || _croak( 'command not found: ' . $cmd[0] );
         }
 
         if ( !-x $cmd[0] ) {
-            Carp::confess 'command not executable: ' . $cmd[0];
+            _croak( 'command not executable: ' . $cmd[0] );
         }
     }
     $opts->{cmd} = \@cmd;
@@ -104,8 +110,7 @@ sub run {
     $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
-        Carp::croak(
-            join( '', @err ) . 'Command exited with value ' . $proc->exit );
+        _croak( join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
 
     if ($ref_err) {
@@ -130,7 +135,6 @@ sub spawn {
 package Sys::Cmd::Process;
 our $VERSION = '0.99.1_1';
 use parent -norequire, 'Sys::Cmd';
-use Carp ();
 use IO::Handle;
 use Log::Any qw/$log/;
 use Class::Inline {
@@ -164,24 +168,24 @@ use Class::Inline {
         init_arg  => undef,
         predicate => 1,
         default   => sub {
-            local $Carp::CarpInternal{'Sys::Cmd::Process'} = 1;
-            Carp::confess('Process status values invalid before wait_child()');
+            Sys::Cmd::_croak(
+                'Process status values invalid before wait_child()');
         },
     },
     signal => {
         is       => 'rw',
         init_arg => undef,
         default  => sub {
-            local $Carp::CarpInternal{'Sys::Cmd::Process'} = 1;
-            Carp::confess('Process status values invalid before wait_child()');
+            Sys::Cmd::_croak(
+                'Process status values invalid before wait_child()');
         },
     },
     core => {
         is       => 'rw',
         init_arg => undef,
         default  => sub {
-            local $Carp::CarpInternal{'Sys::Cmd::Process'} = 1;
-            Carp::confess('Process status values invalid before wait_child()');
+            Sys::Cmd::_croak(
+                'Process status values invalid before wait_child()');
         },
     },
 };
@@ -239,8 +243,8 @@ sub _spawn {
     open $fd2, '>&', fileno($old_fd2);
 
     # Complain if the spawn failed for some reason
-    Carp::croak $err if $err;
-    Carp::croak 'Unable to spawn child' unless defined $self->pid;
+    Sys::Cmd::_croak($err) if $err;
+    Sys::Cmd::_croak('Unable to spawn child') unless defined $self->pid;
 
     # Parent doesn't need to see the child or backup descriptors anymore
     close($_)
