@@ -19,7 +19,7 @@ my sub merge_args {
     my ( @cmd, $opts );
     foreach my $arg (@_) {
         if ( ref($arg) eq 'HASH' ) {
-            Carp::confess __PACKAGE__ . ": only a single hashopts allowed"
+            Carp::confess __PACKAGE__ . ": only a single hashref allowed"
               if $opts;
             $opts = $arg;
         }
@@ -344,14 +344,22 @@ sub BUILD {
     return;
 }
 
-sub cmdline {
+sub close {
     my $self = shift;
-    if (wantarray) {
-        return @{ $self->cmd };
+
+    foreach my $h (qw/stdin stdout stderr/) {
+
+        # may not be defined during global destruction
+        my $fh = $self->$h or next;
+        $fh->opened        or next;
+        if ( $h eq 'stderr' ) {
+            warn sprintf( '[%d] uncollected stderr: %s', $self->pid, $_ )
+              for $self->stderr->getlines;
+        }
+        $fh->close || Carp::carp "error closing $h: $!";
     }
-    else {
-        return join( ' ', @{ $self->cmd } );
-    }
+
+    return;
 }
 
 sub wait_child {
@@ -409,24 +417,6 @@ sub wait_child {
     }
 
     return $self->exit;
-}
-
-sub close {
-    my $self = shift;
-
-    foreach my $h (qw/stdin stdout stderr/) {
-
-        # may not be defined during global destruction
-        my $fh = $self->$h or next;
-        $fh->opened        or next;
-        if ( $h eq 'stderr' ) {
-            warn sprintf( '[%d] uncollected stderr: %s', $self->pid, $_ )
-              for $self->stderr->getlines;
-        }
-        $fh->close || Carp::carp "error closing $h: $!";
-    }
-
-    return;
 }
 
 sub DESTROY {
