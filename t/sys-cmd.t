@@ -91,6 +91,7 @@ my @tests        = (
         result  => { err => "Meh!\n" },
     },
 );
+
 my @fail = (
     {
         test    => 'chdir fail',
@@ -119,76 +120,76 @@ my @fail = (
     },
 );
 
+sub do_test {
+    my $t = shift;
+
+    # run the command
+    my $cmd = eval { spawn( @{ $t->{cmdline} } ) };
+    if ( $t->{fail} ) {
+        ok( !$cmd,
+            $t->{test} . ': command failed: ' . ( defined $cmd ? $cmd : '' ) );
+        like( $@, $t->{fail}, $t->{test} . ': expected error message' );
+        return;
+    }
+    die $@ if $@;
+
+    isa_ok( $cmd, 'Sys::Cmd' );
+
+    # test the handles
+    for my $handle (qw( stdin stdout stderr )) {
+        isa_ok( $cmd->$handle, 'IO::Handle' );
+        if ( $handle eq 'stdin' ) {
+            my $opened = !exists $t->{result}{input};
+            is( $cmd->$handle->opened, $opened,
+                "$t->{test}: $handle @{[ !$opened && 'not ']}opened" );
+        }
+        else {
+            ok( $cmd->$handle->opened, "$t->{test}: $handle opened" );
+        }
+    }
+
+    is_deeply(
+        [ $cmd->cmdline ],
+        [ grep { !ref } @{ $t->{cmdline} } ],
+        $t->{test} . ': cmdline'
+    );
+
+    # get the output
+    my $output = join '', $cmd->stdout->getlines();
+    my $errput = join '', $cmd->stderr->getlines();
+    is( $errput, $t->{result}->{err} // '', $t->{test} . ': stderr match' );
+
+    my $env = { %ENV, %{ $t->{result}{env} || {} } };
+    if ( exists $t->{result}->{dir} and $^O eq 'MSWin32' ) {
+        $env->{PWD} = $t->{result}->{dir};
+    }
+    delete $env->{$_}
+      for grep { !defined $t->{result}{env}{$_} }
+      keys %{ $t->{result}{env} || {} };
+    my $info;
+    eval $output;
+    is_deeply(
+        $info,
+        {
+            argv  => [],
+            cwd   => lc( $t->{result}{dir} || $cwd ),
+            env   => $env,
+            input => $t->{result}{input} || '',
+            pid   => $cmd->pid,
+        },
+        "$t->{test}: perl $info_pl"
+    );
+
+    # close and check
+    $cmd->close();
+    $cmd->wait_child();
+    is( $cmd->exit,   0,               $t->{test} . ': exit 0' );
+    is( $cmd->signal, 0,               $t->{test} . ': no signal received' );
+    is( $cmd->core,   $t->{core} || 0, $t->{test} . ': no core dumped' );
+}
+
 for my $t ( @tests, @fail ) {
-
-    subtest $t->{test}, sub {
-
-        # run the command
-        my $cmd = eval { spawn( @{ $t->{cmdline} } ) };
-        if ( $t->{fail} ) {
-            ok( !$cmd,
-                    $t->{test}
-                  . ': command failed: '
-                  . ( defined $cmd ? $cmd : '' ) );
-            like( $@, $t->{fail}, $t->{test} . ': expected error message' );
-            return;
-        }
-        die $@ if $@;
-
-        isa_ok( $cmd, 'Sys::Cmd' );
-
-        # test the handles
-        for my $handle (qw( stdin stdout stderr )) {
-            isa_ok( $cmd->$handle, 'IO::Handle' );
-            if ( $handle eq 'stdin' ) {
-                my $opened = !exists $t->{result}{input};
-                is( $cmd->$handle->opened, $opened,
-                    "$t->{test}: $handle @{[ !$opened && 'not ']}opened" );
-            }
-            else {
-                ok( $cmd->$handle->opened, "$t->{test}: $handle opened" );
-            }
-        }
-
-        is_deeply(
-            [ $cmd->cmdline ],
-            [ grep { !ref } @{ $t->{cmdline} } ],
-            $t->{test} . ': cmdline'
-        );
-
-        # get the output
-        my $output = join '', $cmd->stdout->getlines();
-        my $errput = join '', $cmd->stderr->getlines();
-        is( $errput, $t->{result}->{err} // '', $t->{test} . ': stderr match' );
-
-        my $env = { %ENV, %{ $t->{result}{env} || {} } };
-        if ( exists $t->{result}->{dir} and $^O eq 'MSWin32' ) {
-            $env->{PWD} = $t->{result}->{dir};
-        }
-        delete $env->{$_}
-          for grep { !defined $t->{result}{env}{$_} }
-          keys %{ $t->{result}{env} || {} };
-        my $info;
-        eval $output;
-        is_deeply(
-            $info,
-            {
-                argv  => [],
-                cwd   => lc( $t->{result}{dir} || $cwd ),
-                env   => $env,
-                input => $t->{result}{input} || '',
-                pid   => $cmd->pid,
-            },
-            "$t->{test}: perl $info_pl"
-        );
-
-        # close and check
-        $cmd->close();
-        $cmd->wait_child();
-        is( $cmd->exit,   0, $t->{test} . ': exit 0' );
-        is( $cmd->signal, 0, $t->{test} . ': no signal received' );
-        is( $cmd->core,   $t->{core} || 0, $t->{test} . ': no core dumped' );
-    };
+    subtest $t->{test}, \&do_test, $t;
 }
 
 subtest 'reaper', sub {

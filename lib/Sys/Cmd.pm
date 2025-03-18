@@ -2,93 +2,82 @@ package Sys::Cmd;
 use strict;
 use warnings;
 use 5.006;
-use Carp;
-use Exporter::Tidy all => [qw/spawn run runx/];
-use File::Spec;
-use IO::Handle;
-use Log::Any qw/$log/;
-use Class::Inline {
-    cmd => {
-        isa => sub {
-            ref $_[0] eq 'ARRAY' || Carp::confess "cmd must be ARRAYREF";
-            @{ $_[0] }           || Carp::confess "Missing cmd elements";
-            if ( grep { !defined $_ } @{ $_[0] } ) {
-                Carp::confess 'cmd array cannot contain undef elements';
-            }
-            $_[0];
-        },
-        required => 1,
-    },
-    _code => {
-        default => sub {
-            my $c = $_[0]->cmd->[0];
-            ref($c) eq 'CODE' ? $c : undef;
-        },
-    },
-    encoding => { default => sub { ':utf8' }, },
-    env      => {
-        isa => sub {
-            ref $_[0] eq 'HASH' || Carp::confess "env must be HASHREF";
-            $_[0];
-        },
-    },
-    dir   => {},
-    input => {},
-    pid   => {
-        is       => 'rw',
-        init_arg => undef,
-    },
-    stdin => {
-        is       => 'rw',
-        init_arg => undef,
-        default  => sub { IO::Handle->new },
-    },
-    stdout => {
-        is       => 'rw',
-        init_arg => undef,
-        default  => sub { IO::Handle->new },
-    },
-    stderr => {
-        is       => 'rw',
-        init_arg => undef,
-        default  => sub { IO::Handle->new },
-    },
-    on_exit => { is => 'rw', },
-    exit    => {
-        is       => 'rw',
-        init_arg => undef,
-    },
-    signal => {
-        is       => 'rw',
-        init_arg => undef,
-    },
-    core => {
-        is       => 'rw',
-        init_arg => undef,
-    },
+use Carp ();
+use Exporter::Tidy _map => {
+    run   => sub { run( undef, @_ ) },
+    spawn => sub { spawn( undef, @_ ) },
 };
 
 our $VERSION = '0.99.1_1';
-our $CONFESS;
 
-sub run {
-    my ( $ref_out, $ref_err );
-    foreach my $i (@_) {
-        if ( 'HASH' eq ref $i ) {
-            $ref_out = delete $i->{out};
-            $ref_err = delete $i->{err};
+no warnings "experimental::lexical_subs";
+use feature 'lexical_subs';
+
+my sub merge_args {
+    my $template = shift;
+
+    my ( @cmd, $opts );
+    foreach my $arg (@_) {
+        if ( ref($arg) eq 'HASH' ) {
+            Carp::confess __PACKAGE__ . ": only a single hashopts allowed"
+              if $opts;
+            $opts = $arg;
+        }
+        else {
+            push( @cmd, $arg );
         }
     }
-    my $proc = spawn(@_);
-    my @err  = $proc->stderr->getlines;
+    $opts //= {};
+
+    if ($template) {
+        return {
+            cmd      => [ $template->cmdline, @cmd ],
+            encoding => $opts->{encoding} // $template->encoding,
+            env      => { each %{ $template->env }, %{ $opts->{env} // {} } },
+            dir      => $opts->{dir}     // $template->dir,
+            input    => $opts->{input}   // $template->input,
+            on_exit  => $opts->{on_exit} // $template->on_exit,
+        };
+    }
+
+    Carp::confess '$cmd must be defined' unless @cmd && defined $cmd[0];
+
+    if ( 'CODE' ne ref( $cmd[0] ) ) {
+
+        require File::Spec;
+        if ( File::Spec->splitdir( $cmd[0] ) == 1 ) {
+            require File::Which;
+            $cmd[0] = File::Which::which( $cmd[0] )
+              || Carp::confess 'command not found: ' . $cmd[0];
+        }
+
+        if ( !-x $cmd[0] ) {
+            Carp::confess 'command not executable: ' . $cmd[0];
+        }
+    }
+    $opts->{cmd} = \@cmd;
+    $opts;
+}
+
+sub spawn {
+    my $self = shift;
+    Sys::Cmd::Process->new( merge_args( $self, @_ ) );
+}
+
+sub run {
+    my $self    = shift;
+    my $opts    = merge_args( $self, @_ );
+    my $ref_out = delete $opts->{out};
+    my $ref_err = delete $opts->{err};
+    my $proc    = Sys::Cmd::Process->new($opts);
+
+    my @err = $proc->stderr->getlines;
     warn @err if @err and not $ref_err;
+
     my @out = $proc->stdout->getlines;
     $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
-        Carp::confess(
-            join( '', @err ) . 'Command exited with value ' . $proc->exit )
-          if $CONFESS;
         Carp::croak(
             join( '', @err ) . 'Command exited with value ' . $proc->exit );
     }
@@ -107,105 +96,87 @@ sub run {
     }
 }
 
-sub runx {
-    my $proc = spawn(@_);
-    my @out  = $proc->stdout->getlines;
-    my @err  = $proc->stderr->getlines;
-
-    $proc->wait_child;
-
-    if ( $proc->exit != 0 ) {
-        Carp::confess(
-            join( '', @err ) . 'Command exited with value ' . $proc->exit )
-          if $CONFESS;
-        Carp::croak(
-            join( '', @err ) . 'Command exited with value ' . $proc->exit );
-    }
-
+sub cmdline {
+    my $self = shift;
     if (wantarray) {
-        return @out, @err;
+        return @{ $self->cmd };
     }
     else {
-        return join( '', @out, @err );
+        return join( ' ', @{ $self->cmd } );
     }
 }
 
-sub spawn {
-    my ( @cmd, @opts );
-    map {
-        if ( ref($_) eq 'HASH' ) {
-            push( @opts, $_ );
-        }
-        else {
-            push( @cmd, $_ );
-        }
-    } @_;
-
-    Carp::confess '$cmd must be defined' unless @cmd && defined $cmd[0];
-    Carp::confess __PACKAGE__ . ": only a single hashref allowed" if @opts > 1;
-
-    unless ( 'CODE' eq ref $cmd[0] ) {
-
-        if ( File::Spec->splitdir( $cmd[0] ) == 1 ) {
-            require File::Which;
-            $cmd[0] = File::Which::which( $cmd[0] )
-              || Carp::confess 'command not found: ' . $cmd[0];
-        }
-
-        if ( !-x $cmd[0] ) {
-            Carp::confess 'command not executable: ' . $cmd[0];
-        }
-    }
-
-    $opts[0]->{cmd} = \@cmd;
-    Sys::Cmd->new( %{ $opts[0] } );
-}
-
-sub BUILD {
-    my $self = shift;
-    my $dir  = $self->dir;
-
-    require File::chdir if $dir;
-
-    no warnings 'once';
-    local $File::chdir::CWD = $dir if $dir;
-    use warnings 'once';
-
-    local %ENV = %ENV;
-
-    if ( defined( my $x = $self->env ) ) {
-        while ( my ( $key, $val ) = each %$x ) {
-            if ( defined $val ) {
-                $ENV{$key} = $val;
+use Class::Inline {
+    cmd => {
+        isa => sub {
+            ref $_[0] eq 'ARRAY' || Carp::confess "cmd must be ARRAYREF";
+            @{ $_[0] }           || Carp::confess "Missing cmd elements";
+            if ( grep { !defined $_ } @{ $_[0] } ) {
+                Carp::confess 'cmd array cannot contain undef elements';
             }
-            else {
-                delete $ENV{$key};
-            }
-        }
-    }
+            $_[0];
+        },
+        required => 1,
+    },
+    encoding => { default => sub { ':utf8' }, },
+    env      => {
+        isa => sub {
+            ref $_[0] eq 'HASH' || Carp::confess "env must be HASHREF";
+            $_[0];
+        },
+    },
+    dir     => {},
+    input   => {},
+    on_exit => { is => 'rw', },
+};
 
-    $self->_code ? $self->_fork : $self->_spawn;
-    $self->stdin->autoflush(1);
+package Sys::Cmd::Process;
+use parent -norequire, 'Sys::Cmd';
+use Carp ();
+use IO::Handle;
+use Log::Any qw/$log/;
 
-    my $enc = $self->encoding;
-    binmode( $self->stdin,  $enc ) or warn "binmode stdin: $!";
-    binmode( $self->stdout, $enc ) or warn "binmode stdout: $!";
-    binmode( $self->stderr, $enc ) or warn "binmode stderr: $!";
+our $VERSION = '0.99.1_1';
 
-    $log->debugf( '[%d][%s] %s', $self->pid, $enc, scalar $self->cmdline );
-
-    # some input was provided
-    if ( defined( my $input = $self->input ) ) {
-        local $SIG{PIPE} =
-          sub { warn "Broken pipe when writing to:" . $self->cmdline };
-
-        $self->stdin->print($input) if length $input;
-
-        $self->stdin->close;
-    }
-
-    return;
-}
+use Class::Inline {
+    _coderef => {
+        default => sub {
+            my $c = $_[0]->cmd->[0];
+            ref($c) eq 'CODE' ? $c : undef;
+        },
+    },
+    pid => {
+        is       => 'rw',
+        init_arg => undef,
+    },
+    stdin => {
+        is       => 'rw',
+        init_arg => undef,
+        default  => sub { IO::Handle->new },
+    },
+    stdout => {
+        is       => 'rw',
+        init_arg => undef,
+        default  => sub { IO::Handle->new },
+    },
+    stderr => {
+        is       => 'rw',
+        init_arg => undef,
+        default  => sub { IO::Handle->new },
+    },
+    exit => {
+        is       => 'rw',
+        init_arg => undef,
+    },
+    signal => {
+        is       => 'rw',
+        init_arg => undef,
+    },
+    core => {
+        is       => 'rw',
+        init_arg => undef,
+    },
+};
 
 sub _spawn {
     my $self = shift;
@@ -318,13 +289,59 @@ sub _fork {
     close $child_out;
     close $child_err;
 
-    if ( my $code = $self->_code ) {
+    if ( my $code = $self->_coderef ) {
         $code->();
         _exit(0);
     }
 
     exec( @{ $self->cmd } );
     die "exec: $!";
+}
+
+sub BUILD {
+    my $self = shift;
+    my $dir  = $self->dir;
+
+    require File::chdir if $dir;
+
+    no warnings 'once';
+    local $File::chdir::CWD = $dir if $dir;
+    use warnings 'once';
+
+    local %ENV = %ENV;
+
+    if ( defined( my $x = $self->env ) ) {
+        while ( my ( $key, $val ) = each %$x ) {
+            if ( defined $val ) {
+                $ENV{$key} = $val;
+            }
+            else {
+                delete $ENV{$key};
+            }
+        }
+    }
+
+    $self->_coderef ? $self->_fork : $self->_spawn;
+    $self->stdin->autoflush(1);
+
+    my $enc = $self->encoding;
+    binmode( $self->stdin,  $enc ) or warn "binmode stdin: $!";
+    binmode( $self->stdout, $enc ) or warn "binmode stdout: $!";
+    binmode( $self->stderr, $enc ) or warn "binmode stderr: $!";
+
+    $log->debugf( '[%d][%s] %s', $self->pid, $enc, scalar $self->cmdline );
+
+    # some input was provided
+    if ( defined( my $input = $self->input ) ) {
+        local $SIG{PIPE} =
+          sub { warn "Broken pipe when writing to:" . $self->cmdline };
+
+        $self->stdin->print($input) if length $input;
+
+        $self->stdin->close;
+    }
+
+    return;
 }
 
 sub cmdline {
@@ -443,13 +460,13 @@ Sys::Cmd - run a system command or spawn a system processes
 
     # Alternative input / output:
     #  - returns standard output lines
-    #  - after feedding it some input
-    @output = run( @cmd, { input => 'feedme' } );
+    #  - after feeding its standard input
+    @output = run( @cmd, { input => 'food' } );
 
     # More flexibility:
-    #  - Capture stdout/stderr separately
-    #  - Modify the environment
     #  - Run in alternative directory
+    #  - With a modified environment
+    #  - Capturing stdout/stderr into variables
     run(
         @cmd,
         {
@@ -461,8 +478,8 @@ Sys::Cmd - run a system command or spawn a system processes
     );
 
     # Spawn a process for asynchronous interaction
-    #  - Caller responsible for all input/output
-    #  - No exception on non-zero exit
+    #  - Caller responsible for exec path, all input & output
+    #  - No exception raised on non-zero exit
     $proc = spawn( @cmd, { encoding => ':encoding(iso-8859-3)' },);
 
     while ( my $line = $proc->stdout->getline ) {
@@ -484,22 +501,22 @@ Sys::Cmd - run a system command or spawn a system processes
 B<Sys::Cmd> lets you run system commands and capture their output, or
 spawn and interact with a system process through its C<STDIN>,
 C<STDOUT>, and C<STDERR> file handles. The following functions are
-exported on demand by this module:
+exported on demand:
 
 =over 4
 
 =item run( @cmd, [\%opt] ) => $output | @output
 
-Execute C<@cmd> and return what the command sent to its C<STDOUT>,
-raising an exception in the event of error. In array context returns a
-list of lines instead of a scalar string.
+Execute C<@cmd> and return what the command sends to its C<STDOUT>,
+raising an exception in the event of non-zero exit value. In array
+context returns a list of lines instead of a scalar string.
 
 The first element of C<@cmd> determines what/how things are run:
 
 =over
 
-=item * If it is a relative file name it is executed directly using
-L<Proc::Spawn>.
+=item * If it has a path component (absolute or relative) it is
+executed directly using L<Proc::Spawn>.
 
 =item * If it is a CODE reference (subroutine) B<Sys::Cmd> forks before
 running it in the child process. This is not supported on Win32.
@@ -509,10 +526,10 @@ executed with L<Proc::Spawn>.
 
 =back
 
-The command environment, input and output can be modified by including
-a configuration hashref with the following keys (=> default):
+The optional C<\%opts> hashref lets you modify the execution via the
+following configuration keys (=> default):
 
-=over 4
+=over
 
 =item dir => $PWD
 
@@ -521,7 +538,7 @@ The working directory the command will be run in.
 =item encoding => ':utf8'
 
 An string value identifying the encoding of the input/output
-file-handles. Defaults to ':utf8'.
+file-handles, passed to C<binmode>. Defaults to ':utf8'.
 
 =item env => {}
 
@@ -529,10 +546,15 @@ A hashref containing key/values to be added to the current environment
 at run-time. If a key has an undefined value then the key is removed
 from the environment altogether.
 
-=item input => ''
+=item input
 
 A string which is fed to the command via its standard input, which is
-then closed.
+then closed.  An empty value will close the command's standard input
+immediately. An undefined value (the default) leaves it open until the
+command terminates.
+
+Some commands close their standard input on startup, which causes a
+SIGPIPE when trying to write to it, for which B<Sys::Cmd> will warn.
 
 =item out
 
@@ -544,138 +566,29 @@ C<run()> returns nothing.
 A reference to a scalar which is populated with error output. When
 used, C<run()> does not warn of errors.
 
+=item on_exit
+
+A subref to be called at the time that process termination is detected.
+
 =back
+
 
 =item spawn( @cmd, [\%opt] ) => Sys::Cmd
 
-Return a B<Sys::Cmd> object (documented below) representing the process
-running @cmd, with attributes set according to the optional \%opt
-hashref.  The first element of C<@cmd> determines the execution method
-just like the C<run()> function.
+Executes C<@cmd>, similarly to C<run()> above, but without any input
+handling, output collection, or process waiting, and returns a
+B<Sys::Cmd::Process> object representing the running process.  The
+C<input>, C<out> and C<err> keys in C<\%opt> are invalid.
 
-=back
+The following can be used on the running process:
 
-B<Sys::Cmd> objects can of course be created using the standard C<new>
-constructor if you prefer that to the C<spawn> function:
-
-    $proc = Sys::Cmd->new(
-        cmd => \@cmd,
-        dir => '/',
-        env => { SOME => 'VALUE' },
-        enc => 'iso-8859-3',
-        input => 'feedme',
-        on_exit => sub {
-            my $proc = shift;
-            print $proc->pid .' exited with '. $proc->exit;
-        },
-    );
-
-Note that B<Sys::Cmd> objects created this way will not lookup the
-command using L<File::Which> the way the C<run> and C<spawn> functions
-do. CODE references in C<$cmd[0]> are however still recognized and
-forked off.
-
-B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes. An
-easy way to see the output is to add C<use Log::Any::Adapter 'Stdout'>
-in your program.
-
-=head1 CONSTRUCTOR
-
-=over 4
-
-=item new(%args) => Sys::Cmd
-
-Spawns a process based on %args. %args must contain at least a C<cmd>
-value, and optionally C<encoding>, C<env>, C<dir> and C<input> values
-as defined as attributes below.
-
-If an C<on_exit> subref argument is provided it will be called by the
-C<wait_child> method, which can either be called manually or will be
-automatically called when the object is destroyed.
-
-=back
-
-=head1 ATTRIBUTES
-
-All attributes are read-only.
-
-=over 4
-
-=item cmd
-
-An array ref containing the command or CODE reference (UNIX only) and
-its arguments.
-
-=item dir
-
-The working directory the command will be run in.
-
-=item encoding
-
-An string value identifying the encoding of the input/output
-file-handles. Defaults to ':utf8'.
-
-=item env
-
-A hashref containing key/values to be added to the current environment
-at run-time. If a key has an undefined value then the key is removed
-from the environment altogether.
-
-=item input
-
-A string which is fed to the command via its standard input, which is
-then closed. This is a shortcut for printing to, and closing the
-command's I<stdin> file-handle. An empty string will close the
-command's standard input without writing to it. On some systems, some
-commands may close standard input on startup, which will cause a
-SIGPIPE when trying to write to it for which B<Sys::Cmd> will warn.
-
-=item pid
-
-The command's process ID.
-
-=item stdin
-
-The command's I<STDIN> file handle, based on L<IO::Handle> so you can
-call print() etc methods on it. Autoflush is automatically enabled on
-this handle.
-
-=item stdout
-
-The command's I<STDOUT> file handle, based on L<IO::Handle> so you can
-call getline() etc methods on it.
-
-=item stderr
-
-The command's I<STDERR> file handle, based on L<IO::Handle> so you can
-call getline() etc methods on it.
-
-=item exit
-
-The command's exit value, shifted by 8 (see "perldoc -f system"). Set
-by C<wait_child()>.
-
-=item signal
-
-The signal number (if any) that terminated the command, bitwise-added
-with 127 (see "perldoc -f system"). Set by C<wait_child()>.
-
-=item core
-
-A boolean indicating the process core was dumped. Set by
-C<wait_child()>.
-
-=back
-
-=head1 METHODS
-
-=over 4
+=over
 
 =item cmdline => @list | $str
 
 In array context returns a list of the command and its arguments.  In
 scalar context returns a string of the command and its arguments joined
-together by spaces.
+together by spaces. [Actually a method from B<Sys::Cmd>]
 
 =item close()
 
@@ -688,19 +601,85 @@ closed when you tried to use it:
 
 So you have to keep track of the Sys::Cmd object manually.
 
+=item pid
+
+The command's process ID.
+
+=item stderr
+
+The command's I<STDERR> file handle, based on L<IO::Handle> so you can
+call getline() etc methods on it.
+
+=item stdin
+
+The command's I<STDIN> file handle, based on L<IO::Handle> so you can
+call print() etc methods on it. Autoflush is automatically enabled on
+this handle.
+
+=item stdout
+
+The command's I<STDOUT> file handle, based on L<IO::Handle> so you can
+call getline() etc methods on it.
+
 =item wait_child() -> $exit_value
 
 Wait for the child to exit using
 L<waitpid|http://perldoc.perl.org/functions/waitpid.html>, collect the
 exit status and return it. This method sets the I<exit>, I<signal> and
-I<core> attributes and will also be called automatically when the
-B<Sys::Cmd> object is destroyed.
+I<core> attributes and is called automatically when the
+B<Sys::Cmd::Process> object is destroyed.
 
 =back
 
-=head1 SEE ALSO
+Once C<wait_child> has been used, the following are also valid:
 
-L<Sys::Cmd::Template>
+=over
+
+=item core
+
+A boolean indicating the process core was dumped. Set by
+C<wait_child()>.
+
+=item exit
+
+The command's exit value, shifted by 8 (see "perldoc -f system"). Set
+by C<wait_child()>.
+
+=item signal
+
+The signal number (if any) that terminated the command, bitwise-added
+with 127 (see "perldoc -f system"). Set by C<wait_child()>.
+
+=back
+
+B<Sys::Cmd::Process> uses L<Log::Any> C<debug> calls for logging
+purposes. An easy way to see the output is to add C<use
+Log::Any::Adapter 'Stdout'> in your program.
+
+=back
+
+=head1 TEMPLATES
+
+When making multiple calls to the same command, a kind of "template"
+mechanism can be useful, to avoid repeatedly specifying configuration
+values and wearing a path lookup penalty each call.
+
+So a B<Sys::Cmd> objet can be used directly to represent a command or
+code to be executed. The additional C<cmd> arrayref is a required
+additional argument when instantiating B<Sys::Cmd> directly.
+
+    my $git    = Sys::Cmd->new(
+        cmd => ['git'],
+        dir => 'my/repo',
+    );
+
+You can then repeatedly call C<run()> or C<spawn()> I<methods> for the
+actual work. The methods work the same way in terms of input, output,
+and return values as the exported package functions. However,
+additional arguments and option are I<merged>:
+
+    my @list   = $git->run('ls-files');
+    my $commit = $git->run('show', { dir => 'other/repo' } );
 
 =head1 ALTERNATIVES
 
@@ -716,7 +695,7 @@ L<Proc::Spawn>, L<Spawn::Safe>, L<System::Command>
 
 This distribution is managed via github:
 
-    https://github.com/mlawren/sys-cmd/tree/devel
+    https://github.com/mlawren/p5-Sys-Cmd
 
 This distribution follows the semantic versioning model:
 
@@ -728,12 +707,12 @@ Code is tidied up on Git commit using githook-perltidy:
 
 =head1 AUTHOR
 
-Mark Lawrence E<lt>nomad@null.netE<gt>, based heavily on
+Mark Lawrence E<lt>mark@rekudos.netE<gt>, based heavily on
 L<Git::Repository::Command> by Philippe Bruhat (BooK).
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2011-2021 Mark Lawrence <nomad@null.net>
+Copyright 2011-2025 Mark Lawrence <nomad@null.net>
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
