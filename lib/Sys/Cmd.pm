@@ -1,17 +1,38 @@
 package Sys::Cmd;
 use strict;
 use warnings;
+our $VERSION = '0.99.1_1';
 use 5.006;
+no warnings "experimental::lexical_subs";
+use feature 'lexical_subs';
 use Carp ();
 use Exporter::Tidy _map => {
     run   => sub { run( undef, @_ ) },
     spawn => sub { spawn( undef, @_ ) },
 };
-
-our $VERSION = '0.99.1_1';
-
-no warnings "experimental::lexical_subs";
-use feature 'lexical_subs';
+use Class::Inline {
+    cmd => {
+        isa => sub {
+            ref $_[0] eq 'ARRAY' || Carp::confess "cmd must be ARRAYREF";
+            @{ $_[0] }           || Carp::confess "Missing cmd elements";
+            if ( grep { !defined $_ } @{ $_[0] } ) {
+                Carp::confess 'cmd array cannot contain undef elements';
+            }
+            $_[0];
+        },
+        required => 1,
+    },
+    encoding => { default => sub { ':utf8' }, },
+    env      => {
+        isa => sub {
+            ref $_[0] eq 'HASH' || Carp::confess "env must be HASHREF";
+            $_[0];
+        },
+    },
+    dir     => {},
+    input   => {},
+    on_exit => { is => 'rw', },
+};
 
 my sub merge_args {
     my $template = shift;
@@ -59,9 +80,14 @@ my sub merge_args {
     $opts;
 }
 
-sub spawn {
+sub cmdline {
     my $self = shift;
-    Sys::Cmd::Process->new( merge_args( $self, @_ ) );
+    if (wantarray) {
+        return @{ $self->cmd };
+    }
+    else {
+        return join( ' ', @{ $self->cmd } );
+    }
 }
 
 sub run {
@@ -96,48 +122,17 @@ sub run {
     }
 }
 
-sub cmdline {
+sub spawn {
     my $self = shift;
-    if (wantarray) {
-        return @{ $self->cmd };
-    }
-    else {
-        return join( ' ', @{ $self->cmd } );
-    }
+    Sys::Cmd::Process->new( merge_args( $self, @_ ) );
 }
 
-use Class::Inline {
-    cmd => {
-        isa => sub {
-            ref $_[0] eq 'ARRAY' || Carp::confess "cmd must be ARRAYREF";
-            @{ $_[0] }           || Carp::confess "Missing cmd elements";
-            if ( grep { !defined $_ } @{ $_[0] } ) {
-                Carp::confess 'cmd array cannot contain undef elements';
-            }
-            $_[0];
-        },
-        required => 1,
-    },
-    encoding => { default => sub { ':utf8' }, },
-    env      => {
-        isa => sub {
-            ref $_[0] eq 'HASH' || Carp::confess "env must be HASHREF";
-            $_[0];
-        },
-    },
-    dir     => {},
-    input   => {},
-    on_exit => { is => 'rw', },
-};
-
 package Sys::Cmd::Process;
+our $VERSION = '0.99.1_1';
 use parent -norequire, 'Sys::Cmd';
 use Carp ();
 use IO::Handle;
 use Log::Any qw/$log/;
-
-our $VERSION = '0.99.1_1';
-
 use Class::Inline {
     _coderef => {
         default => sub {
@@ -563,18 +558,18 @@ A subref to be called at the time that process termination is detected.
 =back
 
 
-=item spawn( @cmd, [\%opt] ) => Sys::Cmd
+=item spawn( @cmd, [\%opt] ) => Sys::Cmd::Process
 
 Executes C<@cmd>, similarly to C<run()> above, but without any input
 handling, output collection, or process waiting, and returns a
 B<Sys::Cmd::Process> object representing the running process.  The
 C<input>, C<out> and C<err> keys in C<\%opt> are invalid.
 
-The following can be used on the running process:
+The following methods can be used on B<Sys::Cmd::Process>:
 
 =over
 
-=item cmdline => @list | $str
+=item cmdline() => @list | $str
 
 In array context returns a list of the command and its arguments.  In
 scalar context returns a string of the command and its arguments joined
@@ -591,22 +586,22 @@ closed when you tried to use it:
 
 So you have to keep track of the Sys::Cmd object manually.
 
-=item pid
+=item pid()
 
 The command's process ID.
 
-=item stderr
+=item stderr()
 
 The command's I<STDERR> file handle, based on L<IO::Handle> so you can
 call getline() etc methods on it.
 
-=item stdin
+=item stdin()
 
 The command's I<STDIN> file handle, based on L<IO::Handle> so you can
 call print() etc methods on it. Autoflush is automatically enabled on
 this handle.
 
-=item stdout
+=item stdout()
 
 The command's I<STDOUT> file handle, based on L<IO::Handle> so you can
 call getline() etc methods on it.
@@ -625,17 +620,17 @@ Once C<wait_child> has been used, the following are also valid:
 
 =over
 
-=item core
+=item core()
 
 A boolean indicating the process core was dumped. Set by
 C<wait_child()>.
 
-=item exit
+=item exit()
 
 The command's exit value, shifted by 8 (see "perldoc -f system"). Set
 by C<wait_child()>.
 
-=item signal
+=item signal()
 
 The signal number (if any) that terminated the command, bitwise-added
 with 127 (see "perldoc -f system"). Set by C<wait_child()>.
@@ -654,9 +649,9 @@ When making multiple calls to the same command, a kind of "template"
 mechanism can be useful, to avoid repeatedly specifying configuration
 values and wearing a path lookup penalty each call.
 
-So a B<Sys::Cmd> objet can be used directly to represent a command or
-code to be executed. The additional C<cmd> arrayref is a required
-additional argument when instantiating B<Sys::Cmd> directly.
+A B<Sys::Cmd> object is used to represent a command or code I<to be>
+executed. The additional C<cmd> arrayref is a required additional
+argument when instantiating B<Sys::Cmd> directly.
 
     my $git    = Sys::Cmd->new(
         cmd => ['git'],
