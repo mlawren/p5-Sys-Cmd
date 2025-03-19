@@ -552,7 +552,7 @@ The working directory the command will be run in.
 An string value identifying the encoding of the input/output
 file-handles, passed to C<binmode>. Defaults to ':utf8'.
 
-=item env => {}
+=item env
 
 A hashref containing key/values to be added to the current environment
 at run-time. If a key has an undefined value then the key is removed
@@ -584,15 +584,14 @@ A subref to be called at the time that process termination is detected.
 
 =back
 
-
 =item spawn( @cmd, [\%opt] ) => Sys::Cmd::Process
 
 Executes C<@cmd>, similarly to C<run()> above, but without any input
-handling, output collection, or process waiting, and returns a
-B<Sys::Cmd::Process> object representing the running process.  The
-C<input>, C<out> and C<err> keys in C<\%opt> are invalid.
+handling, output collection, or process waiting; the C<input>, C<out>
+and C<err> keys in C<\%opt> are I<invalid>.
 
-The following methods can be used on B<Sys::Cmd::Process>:
+This returns a B<Sys::Cmd::Process> object representing the running
+process, which has the following methods:
 
 =over
 
@@ -600,7 +599,7 @@ The following methods can be used on B<Sys::Cmd::Process>:
 
 In array context returns a list of the command and its arguments.  In
 scalar context returns a string of the command and its arguments joined
-together by spaces. [Actually a method from B<Sys::Cmd>]
+together by spaces.
 
 =item close()
 
@@ -643,24 +642,22 @@ B<Sys::Cmd::Process> object is destroyed.
 
 =back
 
-Once C<wait_child> has been used, the following are also valid:
+After C<wait_child> has been called the following are also valid:
 
 =over
 
 =item core()
 
-A boolean indicating the process core was dumped. Set by
-C<wait_child()>.
+A boolean indicating the process core was dumped.
 
 =item exit()
 
-The command's exit value, shifted by 8 (see "perldoc -f system"). Set
-by C<wait_child()>.
+The command's exit value, shifted by 8 (see "perldoc -f system").
 
 =item signal()
 
 The signal number (if any) that terminated the command, bitwise-added
-with 127 (see "perldoc -f system"). Set by C<wait_child()>.
+with 127 (see "perldoc -f system").
 
 =back
 

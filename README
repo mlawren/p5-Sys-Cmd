@@ -85,8 +85,7 @@ DESCRIPTION
             An string value identifying the encoding of the input/output
             file-handles, passed to "binmode". Defaults to ':utf8'.
 
-        env => {}
-            A hashref containing key/values to be added to the current
+        env A hashref containing key/values to be added to the current
             environment at run-time. If a key has an undefined value
             then the key is removed from the environment altogether.
 
@@ -112,17 +111,16 @@ DESCRIPTION
 
     spawn( @cmd, [\%opt] ) => Sys::Cmd::Process
         Executes @cmd, similarly to "run()" above, but without any input
-        handling, output collection, or process waiting, and returns a
-        Sys::Cmd::Process object representing the running process. The
-        "input", "out" and "err" keys in "\%opt" are invalid.
+        handling, output collection, or process waiting; the "input",
+        "out" and "err" keys in "\%opt" are *invalid*.
 
-        The following methods can be used on Sys::Cmd::Process:
+        This returns a Sys::Cmd::Process object representing the running
+        process, which has the following methods:
 
         cmdline() => @list | $str
             In array context returns a list of the command and its
             arguments. In scalar context returns a string of the command
-            and its arguments joined together by spaces. [Actually a
-            method from Sys::Cmd]
+            and its arguments joined together by spaces.
 
         close()
             Close all filehandles to the child process. Note that file
@@ -157,20 +155,18 @@ DESCRIPTION
             *signal* and *core* attributes and is called automatically
             when the Sys::Cmd::Process object is destroyed.
 
-        Once "wait_child" has been used, the following are also valid:
+        After "wait_child" has been called the following are also valid:
 
         core()
-            A boolean indicating the process core was dumped. Set by
-            "wait_child()".
+            A boolean indicating the process core was dumped.
 
         exit()
             The command's exit value, shifted by 8 (see "perldoc -f
-            system"). Set by "wait_child()".
+            system").
 
         signal()
             The signal number (if any) that terminated the command,
-            bitwise-added with 127 (see "perldoc -f system"). Set by
-            "wait_child()".
+            bitwise-added with 127 (see "perldoc -f system").
 
         Sys::Cmd::Process uses Log::Any "debug" calls for logging
         purposes. An easy way to see the output is to add "use
