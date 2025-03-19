@@ -7,9 +7,11 @@ no warnings "experimental::lexical_subs";
 use feature 'lexical_subs';
 use Carp ();
 use Exporter::Tidy _map => {
-    run    => sub { run( undef, @_ ) },
-    spawn  => sub { spawn( undef, @_ ) },
-    syscmd => sub { syscmd( undef, @_ ) },
+    run      => sub { run( undef, @_ ) },
+    spawn    => sub { spawn( undef, @_ ) },
+    syscmd   => sub { syscmd( undef, @_ ) },
+    runsub   => sub { syscmd( undef, @_ )->runsub },
+    spawnsub => sub { syscmd( undef, @_ )->spawnsub },
 };
 use Class::Inline {
     cmd => {
@@ -147,6 +149,16 @@ sub spawn {
 sub syscmd {
     my $self = shift;
     Sys::Cmd->new( merge_args( $self, @_ ) );
+}
+
+sub runsub {
+    my $self = shift;
+    sub { $self->run(@_) };
+}
+
+sub spawnsub {
+    my $self = shift;
+    sub { $self->spawn(@_) };
 }
 
 package Sys::Cmd::Process;
@@ -676,7 +688,7 @@ arguments or environments, a kind of "templating" mechanism can be
 useful, to avoid repeatedly specifying configuration values and wearing
 a path lookup penalty each call.
 
-A B<Sys::Cmd> object is used to represent a command or code I<to be>
+A B<Sys::Cmd> object represents a command (or coderef) I<to be>
 executed, which you can create with the C<syscmd> function:
 
     my $git  = syscmd('git',
@@ -691,8 +703,43 @@ object for the actual work. The methods work the same way in terms of
 input, output, and return values as the exported package functions.
 However, additional arguments and options are I<merged>:
 
-    my @list   = $git->run('ls-files'); # $PWD
-    my $commit = $git->run('show', { dir => 'other/repo' } );
+    my @list = $git->run('ls-files');    # $PWD
+    my $commit = $git->run( 'commit', {
+        env => { GIT_AUTHOR_NAME => 'Sysgeek' }
+    });
+
+For even less syntax you can use the C<runsub> or C<spawnsub> methods
+to get a subroutine you can call directly:
+
+    my $git    = syscmd('git')->runsub;
+    my @list   = $git->('ls-files');
+    my $commit = $git->('show');
+
+=item runsub( @cmd, [\%opt] ) => CODEref
+
+Equivalent to manually calling C<syscmd(...)> followed by the C<runsub>
+method.
+
+    #!perl
+    use Sys::Cmd 'runsub';
+    my $ls = runsub('ls');
+    $ls->('here');
+    $ls->('there');
+
+=item spawnsub( @cmd, [\%opt] ) => CODEref
+
+Equivalent to manually calling C<syscmd(...)> followed by the
+C<spawnsub> method.
+
+    #!perl
+    use Sys::Cmd 'spawnsub';
+    my $spawn = spawnsub('command');
+    foreach my $i (0..9) {
+        my $proc = $spawn->('arg', $i);
+        $proc->stdin->print("Hello\n");
+        print $proc->stdout->getlines;
+        $proc->wait_child
+    }
 
 =back
 

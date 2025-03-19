@@ -5,7 +5,8 @@
         - Deprecate Sys::Cmd::Template as Sys::Cmd now does it better
 
     New Features:
-        - Template function "syscmd" for repeated calls
+        - Template functions "syscmd", "runsub" and "spawnsub" for
+          repeated calls.
 
     Enhancements:
         - The "run()" function now lets the caller capture process

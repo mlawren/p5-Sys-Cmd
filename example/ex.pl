@@ -5,16 +5,16 @@ use lib 'lib';
 
 #use OptArgs2::Pager 'start_pager';
 #use Log::Any::Adapter 'Stderr';
-use Sys::Cmd 'syscmd';
+use Sys::Cmd 'runsub';
 
 #start_pager()
 
-my $git = syscmd('git');
+my $git = runsub('git');
 print "lib/\n";
-my @list = $git->run( 'ls-files', { dir => 'lib' } );
+my @list = $git->( 'ls-files', { dir => 'lib' } );
 print @list;
 print "t/\n";
-my $commit = $git->run( 'ls-files', { dir => 't' } );
+my $commit = $git->( 'ls-files', { dir => 't' } );
 print $commit;
 
 __END__
