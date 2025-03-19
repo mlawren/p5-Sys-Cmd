@@ -115,7 +115,14 @@ sub run {
     $proc->wait_child;
 
     if ( $proc->exit != 0 ) {
-        _croak( join( '', @err ) . 'Command exited with value ' . $proc->exit );
+        _croak(
+            sprintf(
+                '%s[%d] %s [exit:%d signal:%d core:%d]',
+                ( $ref_err ? join( '', @err ) : '' ), $proc->pid,
+                scalar $proc->cmdline,                $proc->exit,
+                $proc->signal,                        $proc->core
+            )
+        );
     }
 
     if ($ref_err) {
@@ -346,7 +353,7 @@ sub BUILD {
     binmode( $self->stdout, $enc ) or warn "binmode stdout: $!";
     binmode( $self->stderr, $enc ) or warn "binmode stderr: $!";
 
-    $log->debugf( '[%d][%s] %s', $self->pid, $enc, scalar $self->cmdline );
+    $log->tracef( '[%d][%s] %s', $self->pid, $enc, scalar $self->cmdline );
 
     # some input was provided
     if ( defined( my $input = $self->input ) ) {
@@ -421,8 +428,8 @@ sub wait_child {
 
     }
 
-    $log->debugf(
-        '(PID %d) exit: %d signal: %d core: %d',
+    $log->tracef(
+        '[%d]   exit: %d signal: %d core: %d',
         $pid,
         $self->exit( $ret >> 8 ),
         $self->signal( $ret & 127 ),
