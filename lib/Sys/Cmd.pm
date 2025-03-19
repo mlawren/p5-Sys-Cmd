@@ -62,14 +62,12 @@ my sub merge_args {
     $opts //= {};
 
     if ($template) {
-        return {
-            cmd      => [ $template->cmdline, @cmd ],
-            encoding => $opts->{encoding} // $template->encoding,
-            env      => { each %{ $template->env }, %{ $opts->{env} // {} } },
-            dir      => $opts->{dir}     // $template->dir,
-            input    => $opts->{input}   // $template->input,
-            on_exit  => $opts->{on_exit} // $template->on_exit,
-        };
+        $opts->{cmd} = [ $template->cmdline, @cmd ];
+        if ( exists $opts->{env} ) {
+            my %env = ( each %{ $template->env }, each %{ $opts->{env} } );
+            $opts->{env} = \%env;
+        }
+        return { %$template, %$opts };
     }
 
     _croak('$cmd must be defined') unless @cmd && defined $cmd[0];
