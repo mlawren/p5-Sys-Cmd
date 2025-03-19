@@ -97,7 +97,7 @@ my @fail = (
         test    => 'chdir fail',
         cmdline =>
           [ @perl_info_pl, { dir => File::Spec->catdir( $dir, 'nothere' ) } ],
-        fail   => qr/^Failed to change directory/,
+        fail   => qr/directory not found/,
         result => {},
     },
     {

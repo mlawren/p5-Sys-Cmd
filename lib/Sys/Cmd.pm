@@ -29,7 +29,12 @@ use Class::Inline {
             $_[0];
         },
     },
-    dir     => {},
+    dir => {
+        isa => sub {
+            -d $_[0] || _croak("directory not found: $_[0]");
+            $_[0];
+        },
+    },
     input   => {},
     on_exit => { is => 'rw', },
 };
