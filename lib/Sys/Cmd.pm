@@ -108,8 +108,6 @@ sub run {
     my $proc    = Sys::Cmd::Process->new($opts);
 
     my @err = $proc->stderr->getlines;
-    warn @err if @err and not $ref_err;
-
     my @out = $proc->stdout->getlines;
     $proc->wait_child;
 
@@ -117,9 +115,8 @@ sub run {
         _croak(
             sprintf(
                 '%s[%d] %s [exit:%d signal:%d core:%d]',
-                ( $ref_err ? join( '', @err ) : '' ), $proc->pid,
-                scalar $proc->cmdline,                $proc->exit,
-                $proc->signal,                        $proc->core
+                join( '', @err ), $proc->pid,    scalar $proc->cmdline,
+                $proc->exit,      $proc->signal, $proc->core
             )
         );
     }
@@ -127,6 +124,10 @@ sub run {
     if ($ref_err) {
         $$ref_err = join '', @err;
     }
+    elsif (@err) {
+        warn @err;
+    }
+
     if ($ref_out) {
         $$ref_out = join '', @out;
     }
