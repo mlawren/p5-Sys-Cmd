@@ -66,20 +66,22 @@ DESCRIPTION
         The first element of @cmd determines what/how things are run:
 
         *   If it has a path component (absolute or relative) it is
-            executed directly using Proc::Spawn.
+            executed as is, using Proc::Spawn.
 
-        *   If it is a CODE reference (subroutine) Sys::Cmd forks before
-            running it in the child process. This is not supported on
+        *   If it is a CODE reference (subroutine) then the funtion
+            forks before running it in a child process. Unsupported on
             Win32.
 
-        *   Everything else is looked up using File::Which and then
-            executed with Proc::Spawn.
+        *   Everything else is looked up using File::Which and the
+            result is executed with Proc::Spawn.
 
         The optional "\%opts" hashref lets you modify the execution via
         the following configuration keys (=> default):
 
         dir => $PWD
-            The working directory the command will be run in.
+            The working directory the command will be run in. Note that
+            if @cmd is a relative path, it may not be found from the new
+            location.
 
         encoding => ':utf8'
             An string value identifying the encoding of the input/output
@@ -111,11 +113,12 @@ DESCRIPTION
 
     spawn( @cmd, [\%opt] ) => Sys::Cmd::Process
         Executes @cmd, similarly to "run()" above, but without any input
-        handling, output collection, or process waiting; the "input",
-        "out" and "err" keys in "\%opt" are *invalid*.
+        handling, output collection, or process waiting; the "\%opt"
+        keys "input", "out" and "err" keys are *invalid* for this
+        function.
 
-        This returns a Sys::Cmd::Process object representing the running
-        process, which has the following methods:
+        This returns a (Sys::Cmd::Process) object representing the
+        running process, which has the following methods:
 
         cmdline() => @list | $str
             In array context returns a list of the command and its
@@ -177,12 +180,17 @@ DESCRIPTION
         A Sys::Cmd object is used to represent a command or code *to be*
         executed, which you can create with the "syscmd" function:
 
-            my $git  = syscmd('git');
+            my $git  = syscmd('git',
+                env => {
+                    GIT_AUTHOR_NAME  => 'Geekette',
+                    GIT_AUTHOR_EMAIL => 'xyz@example.com',
+                }
+            );
 
         You can then repeatedly call "run()" or "spawn()" *methods* on
         the object for the actual work. The methods work the same way in
         terms of input, output, and return values as the exported
-        package functions. However, additional arguments and option are
+        package functions. However, additional arguments and options are
         *merged*:
 
             my @list   = $git->run('ls-files'); # $PWD

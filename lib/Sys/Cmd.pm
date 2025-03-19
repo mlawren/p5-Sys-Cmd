@@ -534,13 +534,13 @@ The first element of C<@cmd> determines what/how things are run:
 =over
 
 =item * If it has a path component (absolute or relative) it is
-executed directly using L<Proc::Spawn>.
+executed as is, using L<Proc::Spawn>.
 
-=item * If it is a CODE reference (subroutine) B<Sys::Cmd> forks before
-running it in the child process. This is not supported on Win32.
+=item * If it is a CODE reference (subroutine) then the funtion forks
+before running it in a child process. Unsupported on Win32.
 
-=item * Everything else is looked up using L<File::Which> and then
-executed with L<Proc::Spawn>.
+=item * Everything else is looked up using L<File::Which> and the
+result is executed with L<Proc::Spawn>.
 
 =back
 
@@ -551,7 +551,8 @@ following configuration keys (=> default):
 
 =item dir => $PWD
 
-The working directory the command will be run in.
+The working directory the command will be run in. Note that if C<@cmd>
+is a relative path, it may not be found from the new location.
 
 =item encoding => ':utf8'
 
@@ -593,10 +594,10 @@ A subref to be called at the time that process termination is detected.
 =item spawn( @cmd, [\%opt] ) => Sys::Cmd::Process
 
 Executes C<@cmd>, similarly to C<run()> above, but without any input
-handling, output collection, or process waiting; the C<input>, C<out>
-and C<err> keys in C<\%opt> are I<invalid>.
+handling, output collection, or process waiting; the C<\%opt> keys
+C<input>, C<out> and C<err> keys are I<invalid> for this function.
 
-This returns a B<Sys::Cmd::Process> object representing the running
+This returns a (Sys::Cmd::Process) object representing the running
 process, which has the following methods:
 
 =over
@@ -677,12 +678,17 @@ a path lookup penalty each call.
 A B<Sys::Cmd> object is used to represent a command or code I<to be>
 executed, which you can create with the C<syscmd> function:
 
-    my $git  = syscmd('git');
+    my $git  = syscmd('git',
+        env => {
+            GIT_AUTHOR_NAME  => 'Geekette',
+            GIT_AUTHOR_EMAIL => 'xyz@example.com',
+        }
+    );
 
 You can then repeatedly call C<run()> or C<spawn()> I<methods> on the
 object for the actual work. The methods work the same way in terms of
 input, output, and return values as the exported package functions.
-However, additional arguments and option are I<merged>:
+However, additional arguments and options are I<merged>:
 
     my @list   = $git->run('ls-files'); # $PWD
     my $commit = $git->run('show', { dir => 'other/repo' } );
