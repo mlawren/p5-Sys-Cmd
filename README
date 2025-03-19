@@ -168,31 +168,29 @@ DESCRIPTION
             The signal number (if any) that terminated the command,
             bitwise-added with 127 (see "perldoc -f system").
 
-        Sys::Cmd::Process uses Log::Any "debug" calls for logging
-        purposes. An easy way to see the output is to add "use
-        Log::Any::Adapter 'Stdout'" in your program.
+    syscmd( @cmd, [\%opt] ) => Sys::Cmd
+        When calling a command multiple times, possibly with different
+        arguments or environments, a kind of "templating" mechanism can
+        be useful, to avoid repeatedly specifying configuration values
+        and wearing a path lookup penalty each call.
 
-TEMPLATES
-    When making multiple calls to the same command, a kind of "template"
-    mechanism can be useful, to avoid repeatedly specifying
-    configuration values and wearing a path lookup penalty each call.
+        A Sys::Cmd object is used to represent a command or code *to be*
+        executed, which you can create with the "syscmd" function:
 
-    A Sys::Cmd object is used to represent a command or code *to be*
-    executed. The additional "cmd" arrayref is a required additional
-    argument when instantiating Sys::Cmd directly.
+            my $git  = syscmd('git');
 
-        my $git    = Sys::Cmd->new(
-            cmd => ['git'],
-            dir => 'my/repo',
-        );
+        You can then repeatedly call "run()" or "spawn()" *methods* on
+        the object for the actual work. The methods work the same way in
+        terms of input, output, and return values as the exported
+        package functions. However, additional arguments and option are
+        *merged*:
 
-    You can then repeatedly call "run()" or "spawn()" *methods* for the
-    actual work. The methods work the same way in terms of input,
-    output, and return values as the exported package functions.
-    However, additional arguments and option are *merged*:
+            my @list   = $git->run('ls-files'); # $PWD
+            my $commit = $git->run('show', { dir => 'other/repo' } );
 
-        my @list   = $git->run('ls-files');
-        my $commit = $git->run('show', { dir => 'other/repo' } );
+    Sys::Cmd uses Log::Any "debug" calls for logging purposes. An easy
+    way to see the output is to add "use Log::Any::Adapter 'Stdout'" in
+    your program.
 
 ALTERNATIVES
     AnyEvent::Run, AnyEvent::Util, Argv, Capture::Tiny, Child,

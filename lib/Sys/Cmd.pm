@@ -7,8 +7,9 @@ no warnings "experimental::lexical_subs";
 use feature 'lexical_subs';
 use Carp ();
 use Exporter::Tidy _map => {
-    run   => sub { run( undef, @_ ) },
-    spawn => sub { spawn( undef, @_ ) },
+    run    => sub { run( undef, @_ ) },
+    spawn  => sub { spawn( undef, @_ ) },
+    syscmd => sub { syscmd( undef, @_ ) },
 };
 use Class::Inline {
     cmd => {
@@ -140,6 +141,11 @@ sub run {
 sub spawn {
     my $self = shift;
     Sys::Cmd::Process->new( merge_args( $self, @_ ) );
+}
+
+sub syscmd {
+    my $self = shift;
+    Sys::Cmd->new( merge_args( $self, @_ ) );
 }
 
 package Sys::Cmd::Process;
@@ -661,34 +667,32 @@ with 127 (see "perldoc -f system").
 
 =back
 
-B<Sys::Cmd::Process> uses L<Log::Any> C<debug> calls for logging
-purposes. An easy way to see the output is to add C<use
-Log::Any::Adapter 'Stdout'> in your program.
+=item syscmd( @cmd, [\%opt] ) => Sys::Cmd
+
+When calling a command multiple times, possibly with different
+arguments or environments, a kind of "templating" mechanism can be
+useful, to avoid repeatedly specifying configuration values and wearing
+a path lookup penalty each call.
+
+A B<Sys::Cmd> object is used to represent a command or code I<to be>
+executed, which you can create with the C<syscmd> function:
+
+    my $git  = syscmd('git');
+
+You can then repeatedly call C<run()> or C<spawn()> I<methods> on the
+object for the actual work. The methods work the same way in terms of
+input, output, and return values as the exported package functions.
+However, additional arguments and option are I<merged>:
+
+    my @list   = $git->run('ls-files'); # $PWD
+    my $commit = $git->run('show', { dir => 'other/repo' } );
 
 =back
 
-=head1 TEMPLATES
+B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes. An
+easy way to see the output is to add C<use L<Log::Any::Adapter>
+'Stdout'> in your program.
 
-When making multiple calls to the same command, a kind of "template"
-mechanism can be useful, to avoid repeatedly specifying configuration
-values and wearing a path lookup penalty each call.
-
-A B<Sys::Cmd> object is used to represent a command or code I<to be>
-executed. The additional C<cmd> arrayref is a required additional
-argument when instantiating B<Sys::Cmd> directly.
-
-    my $git    = Sys::Cmd->new(
-        cmd => ['git'],
-        dir => 'my/repo',
-    );
-
-You can then repeatedly call C<run()> or C<spawn()> I<methods> for the
-actual work. The methods work the same way in terms of input, output,
-and return values as the exported package functions. However,
-additional arguments and option are I<merged>:
-
-    my @list   = $git->run('ls-files');
-    my $commit = $git->run('show', { dir => 'other/repo' } );
 
 =head1 ALTERNATIVES
 

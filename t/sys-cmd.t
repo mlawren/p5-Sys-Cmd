@@ -6,7 +6,7 @@ use utf8;
 use Cwd qw/cwd abs_path/;
 use File::Spec;
 use File::Temp qw/tempdir/;
-use Sys::Cmd   qw/spawn run/;
+use Sys::Cmd ':all';
 use Test::More;
 
 use constant MSWin32 => $^O eq 'MSWin32';
@@ -311,5 +311,21 @@ subtest 'run', sub {
     $proc->wait_child;
     is $proc->core, 0, 'core status 0';
 };
+
+SKIP: {
+    my $ls = eval { syscmd( 'ls', { dir => 't' } ) };
+    skip "No ls?: $@", 1 if $@;
+
+    subtest 'Sys::Cmd', sub {
+        my ( $out, @out );
+        @out = $ls->run();
+        is scalar @out, 2, 'ls in t';
+
+        @out = ();
+        $ls->run( '../lib', { out => \$out } );
+        @out = split /\n/, $out;
+        is scalar @out, 1, 'ls ../lib -> $out';
+    };
+}
 
 done_testing();
