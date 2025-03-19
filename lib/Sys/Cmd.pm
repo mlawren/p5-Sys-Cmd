@@ -358,7 +358,7 @@ sub BUILD {
     binmode( $self->stdout, $enc ) or warn "binmode stdout: $!";
     binmode( $self->stderr, $enc ) or warn "binmode stderr: $!";
 
-    $log->tracef( '[%d][%s] %s', $self->pid, $enc, scalar $self->cmdline );
+    $log->tracef( '[%d] %s [%s]', $self->pid, scalar $self->cmdline, $enc );
 
     # some input was provided
     if ( defined( my $input = $self->input ) ) {
