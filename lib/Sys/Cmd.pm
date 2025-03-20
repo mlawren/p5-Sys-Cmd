@@ -38,7 +38,15 @@ use Class::Inline {
             $_[0];
         },
     },
-    input   => {},
+    input => {},
+    mock  => {
+        is  => 'rw',
+        isa => sub {
+            ( ( not defined $_[0] ) || 'CODE' eq ref $_[0] )
+              || _croak('must be CODEref');
+            $_[0];
+        },
+    },
     on_exit => { is => 'rw', },
 };
 
@@ -75,7 +83,7 @@ my sub merge_args {
 
     _croak('$cmd must be defined') unless @cmd && defined $cmd[0];
 
-    if ( 'CODE' ne ref( $cmd[0] ) ) {
+    if ( 'CODE' ne ref( $cmd[0] ) and not exists $opts->{mock} ) {
 
         require File::Spec;
         if ( File::Spec->splitdir( $cmd[0] ) == 1 ) {
@@ -127,7 +135,8 @@ sub run {
         $$ref_err = join '', @err;
     }
     elsif (@err) {
-        warn @err;
+        local @Carp::CARP_NOT = (__PACKAGE__);
+        Carp::carp @err;
     }
 
     if ($ref_out) {
@@ -341,8 +350,22 @@ sub _fork {
 
 sub BUILD {
     my $self = shift;
-    my $dir  = $self->dir;
+    if ( my $mock = $self->mock ) {
+        my ( $out, $err, $exit, $signal, $core ) = @{ $mock->($self) };
+        open my $outfd, '<', \$out || die "open \$out: $!";
+        open my $errfd, '<', \$err || die "open \$err: $!";
+        $self->pid( -$$ );
+        $self->stdout($outfd);
+        $self->stderr($errfd);
+        $self->mock( sub { [ $exit, $signal, $core ] } );
+        $log->tracef(
+            '[%d] %s [%s]',        $self->pid,
+            scalar $self->cmdline, $self->encoding
+        );
+        return;
+    }
 
+    my $dir = $self->dir;
     require File::chdir if $dir;
 
     no warnings 'once';
@@ -403,11 +426,30 @@ sub close {
     return;
 }
 
+sub _wait_mock {
+    my $self = shift;
+
+    my ( $exit, $signal, $core ) = @{ $self->mock->() };
+    $self->exit( $exit     // 0 );
+    $self->signal( $signal // 0 );
+    $self->core( $core     // 0 );
+
+    $log->tracef( '[%d]   exit: %d signal: %d core: %d',
+        $self->pid, $self->exit(), $self->signal(), $self->core(), );
+
+    if ( my $subref = $self->on_exit ) {
+        $subref->($self);
+    }
+
+    $self->exit();
+}
+
 sub wait_child {
     my $self = shift;
 
     return unless defined $self->pid;
-    return $self->exit if $self->has_exit;
+    return $self->exit       if $self->has_exit;
+    return $self->_wait_mock if $self->mock;
 
     local $?;
     local $!;
@@ -418,7 +460,6 @@ sub wait_child {
     if ( $pid != $self->pid ) {
         warn sprintf( 'Could not reap child process %d (waitpid returned: %d)',
             $self->pid, $pid );
-        $pid = $self->pid;
         $ret = 0;
     }
 
@@ -439,7 +480,7 @@ sub wait_child {
         # dodgy is going on.
         warn __PACKAGE__
           . ' received invalid child exit status for pid '
-          . $pid
+          . $self->pid
           . ' Setting to 0';
         $ret = 0;
 
@@ -447,7 +488,7 @@ sub wait_child {
 
     $log->tracef(
         '[%d]   exit: %d signal: %d core: %d',
-        $pid,
+        $self->pid,
         $self->exit( $ret >> 8 ),
         $self->signal( $ret & 127 ),
         $self->core( $ret & 128 )
@@ -531,8 +572,12 @@ Sys::Cmd - run a system command or spawn a system processes
 
 B<Sys::Cmd> lets you run system commands and capture their output, or
 spawn and interact with a system process through its C<STDIN>,
-C<STDOUT>, and C<STDERR> file handles. The following functions are
-exported on demand:
+C<STDOUT>, and C<STDERR> file handles.
+
+It also provides mock process support, where the caller defines their
+own outputs and error values.  L<Log::Any> is used for logging.
+
+The following functions are exported on demand:
 
 =over 4
 
@@ -587,6 +632,12 @@ command terminates.
 
 Some commands close their standard input on startup, which causes a
 SIGPIPE when trying to write to it, for which B<Sys::Cmd> will warn.
+
+=item mock
+
+A subroutine reference which runs instead of the actual command, which
+provides the fake outputs and exit values. See L</"MOCKING"> below for
+details.
 
 =item out
 
@@ -743,10 +794,39 @@ C<spawnsub> method.
 
 =back
 
-B<Sys::Cmd> uses L<Log::Any> C<debug> calls for logging purposes. An
-easy way to see the output is to add C<use L<Log::Any::Adapter>
-'Stdout'> in your program.
+=head1 MOCKING
 
+The C<mock> subroutine, when given, runs instead of the command line
+process. It is passed the B<Sys::Cmd::Process> object as its first
+argument, which gives it access to the cmdline, dir, env, encoding,
+attributes as methods.
+
+    run(
+        'junk',
+        {
+            input => 'food',
+            mock  => sub {
+                my $proc  = shift;
+                my $input = shift;
+                [ $proc->cmdline . ":Thanks for $input!\n", '', 0 ];
+            }
+        }
+    );
+
+It is required to return an ARRAY reference (possibly empty), with the
+following elements:
+
+    [
+        "standard output\n",    # default ''
+        "standard error\n",     # default ''
+        $exit,                  # default 0
+        $signal,                # default 0
+        $core,                  # default 0
+    ]
+
+Those values are then returned from C<run> as usual. At present this
+feature is not useful for interactive (i.e. spawned) use, as it does
+not dynamically respond to calls to C<$proc->stdin->print()>.
 
 =head1 ALTERNATIVES
 

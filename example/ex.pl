@@ -2,19 +2,31 @@
 use strict;
 use warnings;
 use lib 'lib';
-
-#use OptArgs2::Pager 'start_pager';
-#use Log::Any::Adapter 'Stderr';
+use Log::Any::Adapter 'Stdout';
 use Sys::Cmd 'runsub';
 
-#start_pager()
-
 my $git = runsub('git');
+
 print "lib/\n";
 my @list = $git->( 'ls-files', { dir => 'lib' } );
-print @list;
+print @list, "\n";
+
 print "t/\n";
 my $commit = $git->( 'ls-files', { dir => 't' } );
-print $commit;
+print $commit, "\n";
 
+my $dummy = runsub(
+    'junk-cmd',
+    {
+        input => "Gotcha!\n",
+        mock  => sub {
+            print 'mocked: ' . $_[0]->cmdline . ': ' . $_[0]->input . "\n";
+            [ "out\n", "err", 0, 6553, 9876 ];
+        },
+    }
+);
+
+print $dummy->( 'some', 'args' ), "\n";
+
+$git->('bad-cmd');
 __END__

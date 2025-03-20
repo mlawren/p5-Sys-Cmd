@@ -54,8 +54,12 @@ SYNOPSIS
 DESCRIPTION
     Sys::Cmd lets you run system commands and capture their output, or
     spawn and interact with a system process through its "STDIN",
-    "STDOUT", and "STDERR" file handles. The following functions are
-    exported on demand:
+    "STDOUT", and "STDERR" file handles.
+
+    It also provides mock process support, where the caller defines
+    their own outputs and error values. Log::Any is used for logging.
+
+    The following functions are exported on demand:
 
     run( @cmd, [\%opt] ) => $output | @output
         Execute @cmd and return what the command sends to its "STDOUT",
@@ -100,6 +104,11 @@ DESCRIPTION
             Some commands close their standard input on startup, which
             causes a SIGPIPE when trying to write to it, for which
             Sys::Cmd will warn.
+
+        mock
+            A subroutine reference which runs instead of the actual
+            command, which provides the fake outputs and exit values.
+            See "MOCKING" below for details.
 
         out A reference to a scalar which is populated with output. When
             used, "run()" returns nothing.
@@ -229,9 +238,38 @@ DESCRIPTION
                 $proc->wait_child
             }
 
-    Sys::Cmd uses Log::Any "debug" calls for logging purposes. An easy
-    way to see the output is to add "use Log::Any::Adapter 'Stdout'" in
-    your program.
+MOCKING
+    The "mock" subroutine, when given, runs instead of the command line
+    process. It is passed the Sys::Cmd::Process object as its first
+    argument, which gives it access to the cmdline, dir, env, encoding,
+    attributes as methods.
+
+        run(
+            'junk',
+            {
+                input => 'food',
+                mock  => sub {
+                    my $proc  = shift;
+                    my $input = shift;
+                    [ $proc->cmdline . ":Thanks for $input!\n", '', 0 ];
+                }
+            }
+        );
+
+    It is required to return an ARRAY reference (possibly empty), with
+    the following elements:
+
+        [
+            "standard output\n",    # default ''
+            "standard error\n",     # default ''
+            $exit,                  # default 0
+            $signal,                # default 0
+            $core,                  # default 0
+        ]
+
+    Those values are then returned from "run" as usual. At present this
+    feature is not useful for interactive (i.e. spawned) use, as it does
+    not dynamically respond to calls to "$proc-"stdin->print()>.
 
 ALTERNATIVES
     AnyEvent::Run, AnyEvent::Util, Argv, Capture::Tiny, Child,

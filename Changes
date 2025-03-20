@@ -7,6 +7,7 @@
     New Features:
         - Template functions "syscmd", "runsub" and "spawnsub" for
           repeated calls.
+        - Mock process support
 
     Enhancements:
         - The "run()" function now lets the caller capture process
