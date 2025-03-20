@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 use lib 'lib';
-use Log::Any::Adapter 'Stdout';
+use Log::Any::Adapter 'Stdout', log_level => 'info';
 use Sys::Cmd 'runsub';
 
 my $git = runsub('git');

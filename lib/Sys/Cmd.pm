@@ -351,14 +351,16 @@ sub _fork {
 sub BUILD {
     my $self = shift;
     if ( my $mock = $self->mock ) {
-        my ( $out, $err, $exit, $signal, $core ) = @{ $mock->($self) };
+        my $ref = $mock->($self);
+        my $out = shift @$ref // '';
+        my $err = shift @$ref // '';
         open my $outfd, '<', \$out || die "open \$out: $!";
         open my $errfd, '<', \$err || die "open \$err: $!";
         $self->pid( -$$ );
         $self->stdout($outfd);
         $self->stderr($errfd);
-        $self->mock( sub { [ $exit, $signal, $core ] } );
-        $log->tracef(
+        $self->mock( sub { $ref } );
+        $log->debugf(
             '[%d] %s [%s]',        $self->pid,
             scalar $self->cmdline, $self->encoding
         );
@@ -393,7 +395,7 @@ sub BUILD {
     binmode( $self->stdout, $enc ) or warn "binmode stdout: $!";
     binmode( $self->stderr, $enc ) or warn "binmode stderr: $!";
 
-    $log->tracef( '[%d] %s [%s]', $self->pid, scalar $self->cmdline, $enc );
+    $log->debugf( '[%d] %s [%s]', $self->pid, scalar $self->cmdline, $enc );
 
     # some input was provided
     if ( defined( my $input = $self->input ) ) {
@@ -430,12 +432,15 @@ sub _wait_mock {
     my $self = shift;
 
     my ( $exit, $signal, $core ) = @{ $self->mock->() };
-    $self->exit( $exit     // 0 );
-    $self->signal( $signal // 0 );
-    $self->core( $core     // 0 );
 
-    $log->tracef( '[%d]   exit: %d signal: %d core: %d',
-        $self->pid, $self->exit(), $self->signal(), $self->core(), );
+    $log->infof(
+        '[%d] %s [exit: %d signal: %d core: %d]',
+        $self->pid,
+        scalar $self->cmdline,
+        $self->exit( $exit     // 0 ),
+        $self->signal( $signal // 0 ),
+        $self->core( $core     // 0 ),
+    );
 
     if ( my $subref = $self->on_exit ) {
         $subref->($self);
@@ -486,9 +491,10 @@ sub wait_child {
 
     }
 
-    $log->tracef(
-        '[%d]   exit: %d signal: %d core: %d',
+    $log->infof(
+        '[%d] %s [exit: %d signal: %d core: %d]',
         $self->pid,
+        scalar $self->cmdline,
         $self->exit( $ret >> 8 ),
         $self->signal( $ret & 127 ),
         $self->core( $ret & 128 )
