@@ -83,8 +83,8 @@ my sub merge_args {
 
     _croak('$cmd must be defined') unless @cmd && defined $cmd[0];
 
-    if ( 'CODE' ne ref( $cmd[0] ) and not exists $opts->{mock} ) {
-
+    if ( 'CODE' ne ref( $cmd[0] ) and not $opts->{mock} ) {
+        delete $opts->{mock};
         require File::Spec;
         if ( File::Spec->splitdir( $cmd[0] ) == 1 ) {
             require File::Which;
