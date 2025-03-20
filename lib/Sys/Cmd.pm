@@ -39,6 +39,8 @@ use Class::Inline {
         },
     },
     input => {},
+    out   => {},
+    err   => {},
     mock  => {
         is  => 'rw',
         isa => sub {
@@ -151,10 +153,8 @@ sub run {
     if ($ref_out) {
         $$ref_out = join '', @out;
     }
-    elsif (wantarray) {
-        return @out;
-    }
-    else {
+    elsif ( defined( my $wa = wantarray ) ) {
+        return @out if $wa;
         return join( '', @out );
     }
 }
@@ -359,6 +359,10 @@ sub _fork {
 
 sub BUILD {
     my $self = shift;
+
+    Carp::carp '"out" attribute ignored' if defined $self->out;
+    Carp::carp '"err" attribute ignored' if defined $self->err;
+
     if ( my $mock = $self->mock ) {
         my $ref = $mock->($self);
         my $out = shift @$ref // '';
