@@ -121,12 +121,21 @@ sub run {
     my @out = $proc->stdout->getlines;
     $proc->wait_child;
 
-    if ( $proc->exit != 0 ) {
+    if ( $proc->signal != 0 ) {
         _croak(
             sprintf(
-                '%s[%d] %s [exit:%d signal:%d core:%d]',
-                join( '', @err ), $proc->pid,    scalar $proc->cmdline,
-                $proc->exit,      $proc->signal, $proc->core
+                '%s[%d] %s [signal: %d core: %d]',
+                join( '', @err ), $proc->pid, scalar $proc->cmdline,
+                $proc->signal,    $proc->core
+            )
+        );
+    }
+    elsif ( $proc->exit != 0 ) {
+        _croak(
+            sprintf(
+                '%s[%d] %s [exit: %d]',
+                join( '', @err ),      $proc->pid,
+                scalar $proc->cmdline, $proc->exit
             )
         );
     }
@@ -428,90 +437,86 @@ sub close {
     return;
 }
 
-sub _wait_mock {
-    my $self = shift;
-
-    my ( $exit, $signal, $core ) = @{ $self->mock->() };
-
-    $log->infof(
-        '[%d] %s [exit: %d signal: %d core: %d]',
-        $self->pid,
-        scalar $self->cmdline,
-        $self->exit( $exit     // 0 ),
-        $self->signal( $signal // 0 ),
-        $self->core( $core     // 0 ),
-    );
-
-    if ( my $subref = $self->on_exit ) {
-        $subref->($self);
-    }
-
-    $self->exit();
-}
-
 sub wait_child {
     my $self = shift;
 
     return unless defined $self->pid;
-    return $self->exit       if $self->has_exit;
-    return $self->_wait_mock if $self->mock;
+    return $self->exit if $self->has_exit;
 
-    local $?;
-    local $!;
+    if ( $self->mock ) {
+        my ( $exit, $signal, $core ) = @{ $self->mock->() };
+        $self->exit( $exit     // 0 );
+        $self->signal( $signal // 0 );
+        $self->core( $core     // 0 );
+    }
+    else {
 
-    my $pid = waitpid $self->pid, 0;
-    my $ret = $?;
+        local $?;
+        local $!;
 
-    if ( $pid != $self->pid ) {
-        warn sprintf( 'Could not reap child process %d (waitpid returned: %d)',
-            $self->pid, $pid );
-        $ret = 0;
+        my $pid = waitpid $self->pid, 0;
+        my $ret = $?;
+
+        if ( $pid != $self->pid ) {
+            warn
+              sprintf( 'Could not reap child process %d (waitpid returned: %d)',
+                $self->pid, $pid );
+            $ret = 0;
+        }
+
+        if ( $ret == -1 ) {
+
+            # So waitpid returned a PID but then sets $? to this
+            # strange value? (Strange in that tests randomly show it to
+            # be invalid.) Most likely a perl bug; I think that waitpid
+            # got interrupted and when it restarts/resumes the status
+            # is lost.
+            #
+            # See http://www.perlmonks.org/?node_id=641620 for a
+            # possibly related discussion.
+            #
+            # However, since I localised $? and $! above I haven't seen
+            # this problem again, so I hope that is a good enough work
+            # around. Lets warn any way so that we know when something
+            # dodgy is going on.
+            warn __PACKAGE__
+              . ' received invalid child exit status for pid '
+              . $self->pid
+              . ' Setting to 0';
+            $ret = 0;
+
+        }
+
+        $self->exit( $ret >> 8 );
+        $self->signal( $ret & 127 );
+        $self->core( $ret & 128 );
     }
 
-    if ( $ret == -1 ) {
-
-        # So waitpid returned a PID but then sets $? to this
-        # strange value? (Strange in that tests randomly show it to
-        # be invalid.) Most likely a perl bug; I think that waitpid
-        # got interrupted and when it restarts/resumes the status
-        # is lost.
-        #
-        # See http://www.perlmonks.org/?node_id=641620 for a
-        # possibly related discussion.
-        #
-        # However, since I localised $? and $! above I haven't seen
-        # this problem again, so I hope that is a good enough work
-        # around. Lets warn any way so that we know when something
-        # dodgy is going on.
-        warn __PACKAGE__
-          . ' received invalid child exit status for pid '
-          . $self->pid
-          . ' Setting to 0';
-        $ret = 0;
-
+    if ( $self->signal != 0 ) {
+        $log->infof(
+            '[%d] %s [signal: %d core: %d]',
+            $self->pid,    scalar $self->cmdline,
+            $self->signal, $self->core
+        );
     }
-
-    $log->infof(
-        '[%d] %s [exit: %d signal: %d core: %d]',
-        $self->pid,
-        scalar $self->cmdline,
-        $self->exit( $ret >> 8 ),
-        $self->signal( $ret & 127 ),
-        $self->core( $ret & 128 )
-    );
+    else {
+        $log->infof(
+            '[%d] %s [exit: %d]',  $self->pid,
+            scalar $self->cmdline, $self->exit,
+        );
+    }
 
     if ( my $subref = $self->on_exit ) {
         $subref->($self);
     }
 
-    return $self->exit;
+    $self->exit;
 }
 
 sub DESTROY {
     my $self = shift;
     $self->close;
     $self->wait_child;
-    return;
 }
 
 1;

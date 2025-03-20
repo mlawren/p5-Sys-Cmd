@@ -20,13 +20,16 @@ my $dummy = runsub(
     {
         input => "Gotcha!\n",
         mock  => sub {
-            print 'mocked: ' . $_[0]->cmdline . ': ' . $_[0]->input . "\n";
-            [ "out\n", "err", 0, 6553, 9876 ];
+            [
+                'mocked: ' . $_[0]->cmdline . ': ' . $_[0]->input . "\n",
+                "err\n", 0, 9, 1
+            ];
         },
     }
 );
 
-print $dummy->( 'some', 'args' ), "\n";
+eval { $dummy->( 'some', 'args' ) };
+print "\n";
 
 $git->('bad-cmd');
 __END__
