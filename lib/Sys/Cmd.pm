@@ -415,7 +415,12 @@ sub BUILD {
         local $SIG{PIPE} =
           sub { warn "Broken pipe when writing to:" . $self->cmdline };
 
-        $self->stdin->print($input) if length $input;
+        if ( 'ARRAY' eq ref $input && @$input ) {
+            $self->stdin->print(@$input);
+        }
+        elsif ( length $input ) {
+            $self->stdin->print($input);
+        }
 
         $self->stdin->close;
     }
@@ -640,10 +645,10 @@ from the environment altogether.
 
 =item input
 
-A string which is fed to the command via its standard input, which is
-then closed.  An empty value will close the command's standard input
-immediately. An undefined value (the default) leaves it open until the
-command terminates.
+A scalar (string), or ARRAY reference, which is fed to the command via
+its standard input, which is then closed.  An empty value ('') or empty
+list will close the command's standard input without printing. An
+undefined value (the default) leaves the handle open.
 
 Some commands close their standard input on startup, which causes a
 SIGPIPE when trying to write to it, for which B<Sys::Cmd> will warn.

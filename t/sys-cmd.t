@@ -64,14 +64,6 @@ my @tests        = (
         },
     },
     {
-        test    => 'input',
-        cmdline => [
-            @perl_info_pl,
-            { env => { 'SYS_CMD_INPUT' => 1 }, input => 'test input' }
-        ],
-        result => { env => { 'SYS_CMD_INPUT' => 1 }, input => 'test input' }
-    },
-    {
         test    => 'empty input',
         cmdline => [
             @perl_info_pl,
@@ -83,6 +75,31 @@ my @tests        = (
         result => {
             env   => { 'SYS_CMD_INPUT' => 1, 'TO_BE_DELETED' => undef },
             input => ''
+        }
+    },
+    {
+        test    => 'input scalar',
+        cmdline => [
+            @perl_info_pl,
+            { env => { 'SYS_CMD_INPUT' => 1 }, input => 'test input' }
+        ],
+        result => {
+            env   => { 'SYS_CMD_INPUT' => 1 },
+            input => 'test input',
+        }
+    },
+    {
+        test    => 'input list',
+        cmdline => [
+            @perl_info_pl,
+            {
+                env   => { 'SYS_CMD_INPUT' => 1 },
+                input => [ "line1\n", "line2\n" ],
+            }
+        ],
+        result => {
+            env   => { 'SYS_CMD_INPUT' => 1 },
+            input => "line1\nline2\n",
         }
     },
     {

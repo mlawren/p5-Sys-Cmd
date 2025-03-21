@@ -96,10 +96,11 @@ DESCRIPTION
             then the key is removed from the environment altogether.
 
         input
-            A string which is fed to the command via its standard input,
-            which is then closed. An empty value will close the
-            command's standard input immediately. An undefined value
-            (the default) leaves it open until the command terminates.
+            A scalar (string), or ARRAY reference, which is fed to the
+            command via its standard input, which is then closed. An
+            empty value ('') or empty list will close the command's
+            standard input without printing. An undefined value (the
+            default) leaves the handle open.
 
             Some commands close their standard input on startup, which
             causes a SIGPIPE when trying to write to it, for which
