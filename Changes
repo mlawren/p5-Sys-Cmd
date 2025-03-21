@@ -1,3 +1,22 @@
+0.99.1_1 (2025-03-21)
+
+    API / Behaviour Changes:
+        - Deprecate runx() since run() now does the same but better.
+        - Deprecate Sys::Cmd::Template as Sys::Cmd now does it better
+
+    New Features:
+        - Template functions "syscmd", "runsub" and "spawnsub" for
+          repeated calls.
+        - Mock process support
+
+    Enhancements:
+        - The "run()" function now lets the caller capture process
+          stdout and stderr separately.
+
+    Code Maintenance
+        - Major code restructure and documentation update
+        - Minor test cleanups
+
 0.99.0 (2022-10-05)
 
     Dependencies:

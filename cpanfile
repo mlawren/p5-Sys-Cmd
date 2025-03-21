@@ -15,7 +15,7 @@ on runtime => sub {
 };
 
 on develop => sub {
-    requires 'App::githook::perltidy';
+    requires 'App::githook::perltidy' => 0;
 };
 
 on test => sub {
