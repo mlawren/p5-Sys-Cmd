@@ -1,4 +1,4 @@
-0.99.1_1 (yyyy-mm-dd)
+0.99.1_1 (2025-03-21)
 
     API / Behaviour Changes:
         - Deprecate runx() since run() now does the same but better.
@@ -13,18 +13,9 @@
         - The "run()" function now lets the caller capture process
           stdout and stderr separately.
 
-    Bug Fixes:
-        - None.
-
     Code Maintenance
         - Major code restructure and documentation update
         - Minor test cleanups
-
-    Dependencies:
-        - None.
-
-    Packaging:
-        - None.
 
 0.99.0 (2022-10-05)
 
