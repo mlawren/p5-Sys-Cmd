@@ -1,3 +1,15 @@
+0.99.1_2 (2025-03-25)
+
+    Bug Fixes:
+        - Correctly process utf8 arguments.
+
+    Code Maintenance
+        - Do not use an undefined `pid` when warning of uncollected
+          error output.
+
+    Packaging:
+        - Fix broken homepage and bugtracker urls
+
 0.99.1_1 (2025-03-21)
 
     API / Behaviour Changes:
@@ -7,7 +19,7 @@
     New Features:
         - Template functions "syscmd", "runsub" and "spawnsub" for
           repeated calls.
-        - Mock process support
+        - Experimental mock process support
 
     Enhancements:
         - The "run()" function now lets the caller capture process

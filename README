@@ -2,7 +2,7 @@ NAME
     Sys::Cmd - run a system command or spawn a system processes
 
 VERSION
-    0.99.1_1 (2025-03-21)
+    0.99.1_2 (2025-03-25)
 
 SYNOPSIS
         use Sys::Cmd qw/run spawn/;
@@ -96,10 +96,11 @@ DESCRIPTION
             then the key is removed from the environment altogether.
 
         input
-            A string which is fed to the command via its standard input,
-            which is then closed. An empty value will close the
-            command's standard input immediately. An undefined value
-            (the default) leaves it open until the command terminates.
+            A scalar (string), or ARRAY reference, which is fed to the
+            command via its standard input, which is then closed. An
+            empty value ('') or empty list will close the command's
+            standard input without printing. An undefined value (the
+            default) leaves the handle open.
 
             Some commands close their standard input on startup, which
             causes a SIGPIPE when trying to write to it, for which
@@ -238,7 +239,7 @@ DESCRIPTION
                 $proc->wait_child
             }
 
-MOCKING
+MOCKING (EXPERIMENTAL!)
     The "mock" subroutine, when given, runs instead of the command line
     process. It is passed the Sys::Cmd::Process object as its first
     argument, which gives it access to the cmdline, dir, env, encoding,
@@ -270,6 +271,9 @@ MOCKING
     Those values are then returned from "run" as usual. At present this
     feature is not useful for interactive (i.e. spawned) use, as it does
     not dynamically respond to calls to "$proc-"stdin->print()>.
+
+    Note that this interface is EXPERIMENTAL and subject to change!
+    Don't use it anywhere you can't deal with breakage!
 
 ALTERNATIVES
     AnyEvent::Run, AnyEvent::Util, Argv, Capture::Tiny, Child,

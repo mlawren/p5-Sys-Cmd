@@ -1,7 +1,7 @@
 package Sys::Cmd;
 use strict;
 use warnings;
-our $VERSION = '0.99.1_1';
+our $VERSION = '0.99.1_2';
 use 5.006;
 no warnings "experimental::lexical_subs";
 use feature 'lexical_subs';
@@ -13,7 +13,7 @@ use Exporter::Tidy _map => {
     runsub   => sub { syscmd( undef, @_ )->runsub },
     spawnsub => sub { syscmd( undef, @_ )->spawnsub },
 };
-### START Class::Inline ### v0.0.1 Fri Mar 21 08:50:29 2025
+### START Class::Inline ### v0.0.1 Tue Mar 25 12:49:25 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -288,11 +288,11 @@ sub spawnsub {
 }
 
 package Sys::Cmd::Process;
-our $VERSION = '0.99.1_1';
+our $VERSION = '0.99.1_2';
 use parent -norequire, 'Sys::Cmd';
 use IO::Handle;
 use Log::Any qw/$log/;
-### START Class::Inline ### v0.0.1 Fri Mar 21 08:50:29 2025
+### START Class::Inline ### v0.0.1 Tue Mar 25 12:49:25 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -482,6 +482,10 @@ sub _spawn {
       for $old_fd0, $old_fd1, $old_fd2, $child_in, $child_out, $child_err,
       $self->stdin, $self->stdout, $self->stderr;
 
+    my $cmd_as_octets =
+      [ map { my $s = $_; utf8::is_utf8($s) ? utf8::encode($s) || $s : $s }
+          @{ $self->cmd } ];
+
     eval {
         # Re-open 0,1,2 by duping the child pipe ends
         open $fd0, '<&', fileno($child_in);
@@ -491,8 +495,8 @@ sub _spawn {
         # Kick off the new process
         $self->pid(
             Proc::FastSpawn::spawn(
-                $self->cmd->[0],
-                $self->cmd,
+                $cmd_as_octets->[0],
+                $cmd_as_octets,
                 [
                     map { $_ . '=' . ( defined $ENV{$_} ? $ENV{$_} : '' ) }
                       keys %ENV
@@ -633,7 +637,12 @@ sub BUILD {
         local $SIG{PIPE} =
           sub { warn "Broken pipe when writing to:" . $self->cmdline };
 
-        $self->stdin->print($input) if length $input;
+        if ( 'ARRAY' eq ref $input && @$input ) {
+            $self->stdin->print(@$input);
+        }
+        elsif ( length $input ) {
+            $self->stdin->print($input);
+        }
 
         $self->stdin->close;
     }
@@ -650,7 +659,7 @@ sub close {
         my $fh = $self->$h or next;
         $fh->opened        or next;
         if ( $h eq 'stderr' ) {
-            warn sprintf( '[%d] uncollected stderr: %s', $self->pid, $_ )
+            warn sprintf( '[%d] uncollected stderr: %s', $self->pid // -1, $_ )
               for $self->stderr->getlines;
         }
         $fh->close || Carp::carp "error closing $h: $!";
@@ -751,7 +760,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.99.1_1 (2025-03-21)
+0.99.1_2 (2025-03-25)
 
 =head1 SYNOPSIS
 
@@ -858,10 +867,10 @@ from the environment altogether.
 
 =item input
 
-A string which is fed to the command via its standard input, which is
-then closed.  An empty value will close the command's standard input
-immediately. An undefined value (the default) leaves it open until the
-command terminates.
+A scalar (string), or ARRAY reference, which is fed to the command via
+its standard input, which is then closed.  An empty value ('') or empty
+list will close the command's standard input without printing. An
+undefined value (the default) leaves the handle open.
 
 Some commands close their standard input on startup, which causes a
 SIGPIPE when trying to write to it, for which B<Sys::Cmd> will warn.
@@ -1027,7 +1036,7 @@ C<spawnsub> method.
 
 =back
 
-=head1 MOCKING
+=head1 MOCKING (EXPERIMENTAL!)
 
 The C<mock> subroutine, when given, runs instead of the command line
 process. It is passed the B<Sys::Cmd::Process> object as its first
@@ -1060,6 +1069,9 @@ following elements:
 Those values are then returned from C<run> as usual. At present this
 feature is not useful for interactive (i.e. spawned) use, as it does
 not dynamically respond to calls to C<$proc->stdin->print()>.
+
+Note that this interface is B<EXPERIMENTAL> and subject to change!
+Don't use it anywhere you can't deal with breakage!
 
 =head1 ALTERNATIVES
 
