@@ -437,7 +437,7 @@ sub close {
         my $fh = $self->$h or next;
         $fh->opened        or next;
         if ( $h eq 'stderr' ) {
-            warn sprintf( '[%d] uncollected stderr: %s', $self->pid, $_ )
+            warn sprintf( '[%d] uncollected stderr: %s', $self->pid // -1, $_ )
               for $self->stderr->getlines;
         }
         $fh->close || Carp::carp "error closing $h: $!";

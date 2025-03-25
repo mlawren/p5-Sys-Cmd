@@ -13,7 +13,8 @@
         - None.
 
     Code Maintenance
-        - None.
+        - Do not use an undefined `pid` when closing filehandles and
+          warning of uncollected error output.
 
     Dependencies:
         - None.
