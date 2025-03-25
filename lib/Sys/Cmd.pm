@@ -264,6 +264,10 @@ sub _spawn {
       for $old_fd0, $old_fd1, $old_fd2, $child_in, $child_out, $child_err,
       $self->stdin, $self->stdout, $self->stderr;
 
+    my $cmd_as_octets =
+      [ map { my $s = $_; utf8::is_utf8($s) ? utf8::encode($s) || $s : $s }
+          @{ $self->cmd } ];
+
     eval {
         # Re-open 0,1,2 by duping the child pipe ends
         open $fd0, '<&', fileno($child_in);
@@ -273,8 +277,8 @@ sub _spawn {
         # Kick off the new process
         $self->pid(
             Proc::FastSpawn::spawn(
-                $self->cmd->[0],
-                $self->cmd,
+                $cmd_as_octets->[0],
+                $cmd_as_octets,
                 [
                     map { $_ . '=' . ( defined $ENV{$_} ? $ENV{$_} : '' ) }
                       keys %ENV

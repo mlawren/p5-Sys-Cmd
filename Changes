@@ -10,7 +10,7 @@
         - None.
 
     Bug Fixes:
-        - None.
+        - Correctly process utf8 arguments.
 
     Code Maintenance
         - Do not use an undefined `pid` when closing filehandles and

@@ -19,25 +19,29 @@ $ENV{TO_BE_DELETED} = 'LATER';
     $ENV{UTF8_CHECK} = 'Défaut';
 }
 
-my $dir          = abs_path( tempdir( CLEANUP => 1 ) );
-my $cwd          = cwd;
-my $info_pl      = File::Spec->catfile( $cwd, 't', 'info.pl' );
-my @perl_info_pl = ( $^X, '-CSDA', $info_pl );
-my @tests        = (
+my $dir     = abs_path( tempdir( CLEANUP => 1 ) );
+my $cwd     = cwd;
+my $info_pl = File::Spec->catfile( $cwd, 't', 'info.pl' );
+my @tests   = (
     {
         test    => 'standard',
-        cmdline => [@perl_info_pl],
+        cmdline => [$info_pl],
+        result  => {},
+    },
+    {
+        test    => 'utf8 arguments',
+        cmdline => [ $info_pl, 'ß' ],
         result  => {},
     },
     {
         test    => 'env',
-        cmdline => [ @perl_info_pl, { env => { SYS_CMD => 'Sys::Cmd' } } ],
+        cmdline => [ $info_pl, { env => { SYS_CMD => 'Sys::Cmd' } } ],
         result  => { env => { SYS_CMD => 'Sys::Cmd' } },
     },
     {
         test    => 'dir',
         cmdline =>
-          [ @perl_info_pl, { dir => $dir, env => { SYS_CMD => 'Sys::Cmd' } }, ],
+          [ $info_pl, { dir => $dir, env => { SYS_CMD => 'Sys::Cmd' } }, ],
         result => {
             env => { SYS_CMD => 'Sys::Cmd' },
             dir => $dir,
@@ -46,7 +50,7 @@ my @tests        = (
     {
         test    => 'delete env',
         cmdline => [
-            @perl_info_pl,
+            $info_pl,
             {
                 env => {
                     SYS_CMD       => 'Sys::Cmd',
@@ -66,7 +70,7 @@ my @tests        = (
     {
         test    => 'empty input',
         cmdline => [
-            @perl_info_pl,
+            $info_pl,
             {
                 env   => { 'SYS_CMD_INPUT' => 1, 'TO_BE_DELETED' => undef },
                 input => ''
@@ -80,8 +84,7 @@ my @tests        = (
     {
         test    => 'input scalar',
         cmdline => [
-            @perl_info_pl,
-            { env => { 'SYS_CMD_INPUT' => 1 }, input => 'test input' }
+            $info_pl, { env => { 'SYS_CMD_INPUT' => 1 }, input => 'test input' }
         ],
         result => {
             env   => { 'SYS_CMD_INPUT' => 1 },
@@ -91,7 +94,7 @@ my @tests        = (
     {
         test    => 'input list',
         cmdline => [
-            @perl_info_pl,
+            $info_pl,
             {
                 env   => { 'SYS_CMD_INPUT' => 1 },
                 input => [ "line1\n", "line2\n" ],
@@ -104,7 +107,7 @@ my @tests        = (
     },
     {
         test    => 'error output',
-        cmdline => [ @perl_info_pl, { env => { SYS_CMD_ERR => 'Meh!' } } ],
+        cmdline => [ $info_pl, { env => { SYS_CMD_ERR => 'Meh!' } } ],
         result  => { err => "Meh!\n" },
     },
 );
@@ -113,7 +116,7 @@ my @fail = (
     {
         test    => 'chdir fail',
         cmdline =>
-          [ @perl_info_pl, { dir => File::Spec->catdir( $dir, 'nothere' ) } ],
+          [ $info_pl, { dir => File::Spec->catdir( $dir, 'nothere' ) } ],
         fail   => qr/directory not found/,
         result => {},
     },
@@ -165,11 +168,11 @@ sub do_test {
         }
     }
 
-    is_deeply(
-        [ $cmd->cmdline ],
-        [ grep { !ref } @{ $t->{cmdline} } ],
-        $t->{test} . ': cmdline'
-    );
+    my @argv = grep { !ref } @{ $t->{cmdline} };
+    is_deeply( [ $cmd->cmdline ], \@argv, $t->{test} . ': cmdline' );
+
+    # Set @argv to just the script arguments
+    shift @argv;
 
     # get the output
     my $output = join '', $cmd->stdout->getlines();
@@ -185,10 +188,11 @@ sub do_test {
       keys %{ $t->{result}{env} || {} };
     my $info;
     eval $output;
+
     is_deeply(
         $info,
         {
-            argv  => [],
+            argv  => \@argv,
             cwd   => lc( $t->{result}{dir} || $cwd ),
             env   => $env,
             input => $t->{result}{input} || '',
@@ -266,7 +270,7 @@ subtest 'run', sub {
     my ( $out, $err, $info );
 
     $info = $out = $err = undef;
-    $out  = run(@perl_info_pl);
+    $out  = run($info_pl);
     eval $out;
     die $@ if $@;
     is ref($info), 'HASH', 'run() returned $info = { ... }';
@@ -276,7 +280,7 @@ subtest 'run', sub {
             $err = shift;
         };
         run(
-            @perl_info_pl,
+            $info_pl,
             {
                 env => { SYS_CMD_ERR => 'Complain!' },
             }
@@ -289,7 +293,7 @@ subtest 'run', sub {
 
     $info = $out = $err = undef;
     run(
-        @perl_info_pl,
+        $info_pl,
         {
             out => \$out,
             err => \$err,
@@ -302,7 +306,7 @@ subtest 'run', sub {
 
     $info = $out = $err = undef;
     run(
-        @perl_info_pl,
+        $info_pl,
         {
             out => \$out,
             err => \$err,
@@ -318,7 +322,7 @@ subtest 'run', sub {
     # $proc->{exit} jumps into existance, and wait_child uses
     # ->has_exit.
     $info = $out = $err = undef;
-    my $proc = spawn(@perl_info_pl);
+    my $proc = spawn($info_pl);
     eval { $proc->core };
     like(
         $@,
