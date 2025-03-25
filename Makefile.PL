@@ -24,8 +24,8 @@ WriteMakefile(
         },
         resources => {
             bugtracker =>
-              { web => 'https//github.com/mlawren/p5-Sys-Cmd/issues', },
-            homepage   => 'https//github.com/mlawren/p5-Sys-Cmd',
+              { web => 'https://github.com/mlawren/p5-Sys-Cmd/issues' },
+            homepage   => 'https://github.com/mlawren/p5-Sys-Cmd',
             repository => {
                 type => 'git',
                 url  => 'ssh://git@github.com/mlawren/p5-Sys-Cmd.git',

@@ -20,7 +20,7 @@
         - None.
 
     Packaging:
-        - None.
+        - Fix broken homepage and bugtracker urls
 
 0.99.1_1 (2025-03-21)
 
