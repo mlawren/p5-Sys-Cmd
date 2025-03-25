@@ -818,7 +818,7 @@ C<spawnsub> method.
 
 =back
 
-=head1 MOCKING
+=head1 MOCKING (EXPERIMENTAL!)
 
 The C<mock> subroutine, when given, runs instead of the command line
 process. It is passed the B<Sys::Cmd::Process> object as its first
@@ -851,6 +851,9 @@ following elements:
 Those values are then returned from C<run> as usual. At present this
 feature is not useful for interactive (i.e. spawned) use, as it does
 not dynamically respond to calls to C<$proc->stdin->print()>.
+
+Note that this interface is B<EXPERIMENTAL> and subject to change!
+Don't use it anywhere you can't deal with breakage!
 
 =head1 ALTERNATIVES
 

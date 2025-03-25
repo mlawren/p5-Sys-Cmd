@@ -239,7 +239,7 @@ DESCRIPTION
                 $proc->wait_child
             }
 
-MOCKING
+MOCKING (EXPERIMENTAL!)
     The "mock" subroutine, when given, runs instead of the command line
     process. It is passed the Sys::Cmd::Process object as its first
     argument, which gives it access to the cmdline, dir, env, encoding,
@@ -271,6 +271,9 @@ MOCKING
     Those values are then returned from "run" as usual. At present this
     feature is not useful for interactive (i.e. spawned) use, as it does
     not dynamically respond to calls to "$proc-"stdin->print()>.
+
+    Note that this interface is EXPERIMENTAL and subject to change!
+    Don't use it anywhere you can't deal with breakage!
 
 ALTERNATIVES
     AnyEvent::Run, AnyEvent::Util, Argv, Capture::Tiny, Child,
