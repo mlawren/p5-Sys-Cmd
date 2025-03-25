@@ -1,23 +1,11 @@
-0.99.1_2 (yyyy-mm-dd)
-
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
-
-    Enhancements:
-        - None.
+0.99.1_2 (2025-03-25)
 
     Bug Fixes:
         - Correctly process utf8 arguments.
 
     Code Maintenance
-        - Do not use an undefined `pid` when closing filehandles and
-          warning of uncollected error output.
-
-    Dependencies:
-        - None.
+        - Do not use an undefined `pid` when warning of uncollected
+          error output.
 
     Packaging:
         - Fix broken homepage and bugtracker urls
