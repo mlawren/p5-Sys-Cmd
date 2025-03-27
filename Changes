@@ -1,3 +1,16 @@
+0.99.1_3 (2025-03-27)
+
+    Enhancements:
+        - Replace default UTF-8 encoding assumption with Encode::Locale
+
+    Bug Fixes:
+        - Use an explicit "binmode" on parent and child handles when
+          forking.
+
+    Dependencies:
+        - Moved from Test::More to Test2::V0
+        - New: Encode, Encode::Locale
+
 0.99.1_2 (2025-03-25)
 
     Bug Fixes:

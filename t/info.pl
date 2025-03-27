@@ -3,36 +3,32 @@ use strict;
 use warnings;
 use Cwd qw( cwd );
 use Data::Dumper;
+use Encode::Locale 'decode_argv';
 use Encode 'decode';
 
-$Data::Dumper::Sortkeys++;
+decode_argv(Encode::FB_CROAK);
 
-binmode STDIN,  ':encoding(utf8)';
-binmode STDOUT, ':encoding(utf8)';
-binmode STDERR, ':encoding(utf8)';
+binmode STDIN,  ':encoding(locale)';
+binmode STDOUT, ':encoding(locale)';
+binmode STDERR, ':encoding(locale)';
 
-my $CODESET = eval { require I18N::Langinfo; I18N::Langinfo::CODESET() };
+my %env;
+$env{ decode( locale => $_ ) } = decode( locale => $ENV{$_} ) for keys %ENV;
 
-if ($CODESET) {
-    my $codeset = I18N::Langinfo::langinfo($CODESET);
-    $_ = decode( $codeset, $_ ) for @ARGV;
-}
-
-my $input = $ENV{SYS_CMD_INPUT} ? join( '', <> ) : '';
-my $err   = $ENV{SYS_CMD_ERR} // undef;
-
+my $err = $env{SYS_CMD_ERR} // undef;
 if ( length $err ) {
-    delete $ENV{SYS_CMD_ERR};
+    delete $env{SYS_CMD_ERR};
     print STDERR $err, "\n";
 }
 
+$Data::Dumper::Sortkeys++;
 print Data::Dumper->Dump(
     [
         {
             argv  => \@ARGV,
-            env   => \%ENV,
+            env   => \%env,
             cwd   => lc( cwd() ),
-            input => $input,
+            input => $env{SYS_CMD_INPUT} ? join( '', <> ) : '',
             pid   => $$,
         }
     ],

@@ -7,17 +7,11 @@ use Cwd qw/cwd abs_path/;
 use File::Spec;
 use File::Temp qw/tempdir/;
 use Sys::Cmd ':all';
-use Test::More;
+use Test2::V0;
 
 use constant MSWin32 => $^O eq 'MSWin32';
 
 $ENV{TO_BE_DELETED} = 'LATER';
-{
-    # Environment variables are not passed in and out of Perl like
-    # string scalars so make sure they stay as bytes.
-    no utf8;
-    $ENV{UTF8_CHECK} = 'Défaut';
-}
 
 my $dir     = abs_path( tempdir( CLEANUP => 1 ) );
 my $cwd     = cwd;
@@ -35,8 +29,21 @@ my @tests   = (
     },
     {
         test    => 'env',
-        cmdline => [ $info_pl, { env => { SYS_CMD => 'Sys::Cmd' } } ],
-        result  => { env => { SYS_CMD => 'Sys::Cmd' } },
+        cmdline => [
+            $info_pl,
+            {
+                env => {
+                    SYS_CMD    => 'Sys::Cmd',
+                    UTF8_CHECK => 'Défaut',
+                }
+            }
+        ],
+        result => {
+            env => {
+                SYS_CMD    => 'Sys::Cmd',
+                UTF8_CHECK => 'Défaut',
+            }
+        },
     },
     {
         test    => 'dir',
@@ -72,12 +79,18 @@ my @tests   = (
         cmdline => [
             $info_pl,
             {
-                env   => { 'SYS_CMD_INPUT' => 1, 'TO_BE_DELETED' => undef },
+                env => {
+                    'SYS_CMD_INPUT' => 1,
+                    'TO_BE_DELETED' => undef,
+                },
                 input => ''
             }
         ],
         result => {
-            env   => { 'SYS_CMD_INPUT' => 1, 'TO_BE_DELETED' => undef },
+            env => {
+                'SYS_CMD_INPUT' => 1,
+                'TO_BE_DELETED' => undef,
+            },
             input => ''
         }
     },
@@ -169,15 +182,22 @@ sub do_test {
     }
 
     my @argv = grep { !ref } @{ $t->{cmdline} };
-    is_deeply( [ $cmd->cmdline ], \@argv, $t->{test} . ': cmdline' );
+    is( [ $cmd->cmdline ], \@argv, $t->{test} . ': cmdline' );
 
     # Set @argv to just the script arguments
     shift @argv;
 
-    # get the output
-    my $output = join '', $cmd->stdout->getlines();
+    # get the outputs
     my $errput = join '', $cmd->stderr->getlines();
     is( $errput, $t->{result}->{err} // '', $t->{test} . ': stderr match' );
+
+    my $output = join '', $cmd->stdout->getlines();
+    ok( !!$output, $t->{test} . ': stdout returned something' ) || return;
+
+    my $info;
+    eval $output;
+    die $@ if $@;
+    ok( !!$info, $t->{test} . ': output parses to $info' );
 
     my $env = { %ENV, %{ $t->{result}{env} || {} } };
     if ( exists $t->{result}->{dir} and $^O eq 'MSWin32' ) {
@@ -186,19 +206,19 @@ sub do_test {
     delete $env->{$_}
       for grep { !defined $t->{result}{env}{$_} }
       keys %{ $t->{result}{env} || {} };
-    my $info;
-    eval $output;
 
-    is_deeply(
-        $info,
-        {
-            argv  => \@argv,
-            cwd   => lc( $t->{result}{dir} || $cwd ),
-            env   => $env,
-            input => $t->{result}{input} || '',
-            pid   => $cmd->pid,
-        },
-        "$t->{test}: perl $info_pl"
+    is( $info->{argv}, \@argv, $t->{test} . ': argument match' );
+    is( $info->{env},  $env,   $t->{test} . ': environment match' );
+    is(
+        $info->{input},
+        $t->{result}{input} || '',
+        $t->{test} . ': input match'
+    );
+    is( $info->{pid}, $cmd->pid, $t->{test} . ': pid match' );
+    is(
+        $info->{cwd},
+        lc( $t->{result}{dir} || $cwd ),
+        $t->{test} . ': dir match'
     );
 
     # close and check

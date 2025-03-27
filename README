@@ -2,7 +2,7 @@ NAME
     Sys::Cmd - run a system command or spawn a system processes
 
 VERSION
-    0.99.1_2 (2025-03-25)
+    0.99.1_3 (2025-03-27)
 
 SYNOPSIS
         use Sys::Cmd qw/run spawn/;
@@ -35,7 +35,7 @@ SYNOPSIS
         # Spawn a process for asynchronous interaction
         #  - Caller responsible for exec path, all input & output
         #  - No exception raised on non-zero exit
-        $proc = spawn( @cmd, { encoding => ':encoding(iso-8859-3)' },);
+        $proc = spawn( @cmd, { encoding => 'iso-8859-3' },);
 
         while ( my $line = $proc->stdout->getline ) {
             $proc->stdin->print("thanks\n");
@@ -87,9 +87,11 @@ DESCRIPTION
             if @cmd is a relative path, it may not be found from the new
             location.
 
-        encoding => ':utf8'
-            An string value identifying the encoding of the input/output
-            file-handles, passed to "binmode". Defaults to ':utf8'.
+        encoding => $Encode::Locale::ENCODING_LOCALE
+            A string value identifying the encoding that applies to
+            input/output file-handles, command arguments, and
+            environment variables. Defaults to the 'locale' alias from
+            Encode::Locale.
 
         env A hashref containing key/values to be added to the current
             environment at run-time. If a key has an undefined value
