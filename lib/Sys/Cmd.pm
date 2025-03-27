@@ -1,7 +1,7 @@
 package Sys::Cmd;
 use strict;
 use warnings;
-our $VERSION = '0.99.1_3';
+our $VERSION = '0.99.1_4';
 use 5.006;
 no warnings "experimental::lexical_subs";
 use feature 'lexical_subs';
@@ -189,7 +189,7 @@ sub spawnsub {
 }
 
 package Sys::Cmd::Process;
-our $VERSION = '0.99.1_3';
+our $VERSION = '0.99.1_4';
 use parent -norequire, 'Sys::Cmd';
 use Encode 'encode';
 use IO::Handle;
@@ -563,7 +563,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.99.1_3 (2025-03-27)
+0.99.1_4 (yyyy-mm-dd)
 
 =head1 SYNOPSIS
 
