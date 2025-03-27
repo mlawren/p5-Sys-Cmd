@@ -7,7 +7,7 @@ use Cwd qw/cwd abs_path/;
 use File::Spec;
 use File::Temp qw/tempdir/;
 use Sys::Cmd ':all';
-use Test::More;
+use Test2::V0;
 
 use constant MSWin32 => $^O eq 'MSWin32';
 
@@ -169,7 +169,7 @@ sub do_test {
     }
 
     my @argv = grep { !ref } @{ $t->{cmdline} };
-    is_deeply( [ $cmd->cmdline ], \@argv, $t->{test} . ': cmdline' );
+    is( [ $cmd->cmdline ], \@argv, $t->{test} . ': cmdline' );
 
     # Set @argv to just the script arguments
     shift @argv;
@@ -189,7 +189,7 @@ sub do_test {
     my $info;
     eval $output;
 
-    is_deeply(
+    is(
         $info,
         {
             argv  => \@argv,

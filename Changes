@@ -16,7 +16,7 @@
         - None.
 
     Dependencies:
-        - None.
+        - Replaced Test::More with Test2::V0
 
     Packaging:
         - None.
