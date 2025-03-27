@@ -331,9 +331,9 @@ sub _fork {
     my $enc = $self->encoding;
 
     foreach my $quad (
-        [ \*STDIN,  '<&=' . $enc, fileno($child_in),  0 ],
-        [ \*STDOUT, '>&=' . $enc, fileno($child_out), 1 ],
-        [ \*STDERR, '>&=' . $enc, fileno($child_err), 1 ]
+        [ \*STDIN,  '<&=', fileno($child_in),  0 ],
+        [ \*STDOUT, '>&=', fileno($child_out), 1 ],
+        [ \*STDERR, '>&=', fileno($child_err), 1 ]
       )
     {
         my ( $fh, $mode, $fileno, $autoflush ) = @$quad;
@@ -342,6 +342,7 @@ sub _fork {
           or print $child_err sprintf "[%d] open %s, %s: %s\n", $self->pid,
           $fh, $mode, $!;
 
+        binmode $fh, $enc;
         $fh->autoflush(1) if $autoflush;
     }
 

@@ -10,7 +10,8 @@
         - None.
 
     Bug Fixes:
-        - None.
+        - Use an explicit "binmode" on parent and child handles when
+          forking.
 
     Code Maintenance
         - None.
