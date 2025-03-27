@@ -6,6 +6,8 @@ on configure => sub {
 
 on runtime => sub {
     requires 'Carp'            => 0;
+    requires 'Encode'          => 0;
+    requires 'Encode::Locale'  => 0;
     requires 'Exporter::Tidy'  => 0;
     requires 'File::Which'     => 0;
     requires 'File::chdir'     => 0;

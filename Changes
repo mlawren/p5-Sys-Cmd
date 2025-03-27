@@ -7,7 +7,7 @@
         - None.
 
     Enhancements:
-        - None.
+        - Replace default UTF-8 encoding assumption with Encode::Locale
 
     Bug Fixes:
         - Use an explicit "binmode" on parent and child handles when
@@ -17,7 +17,8 @@
         - None.
 
     Dependencies:
-        - Replaced Test::More with Test2::V0
+        - Moved from Test::More to Test2::V0
+        - New: Encode, Encode::Locale
 
     Packaging:
         - None.

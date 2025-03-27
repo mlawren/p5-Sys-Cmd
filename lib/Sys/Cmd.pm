@@ -5,7 +5,9 @@ our $VERSION = '0.99.1_3';
 use 5.006;
 no warnings "experimental::lexical_subs";
 use feature 'lexical_subs';
-use Carp ();
+use Carp           ();
+use Encode::Locale ();    # Creates the 'locale' alias
+use Encode 'resolve_alias';
 use Exporter::Tidy _map => {
     run      => sub { run( undef, @_ ) },
     spawn    => sub { spawn( undef, @_ ) },
@@ -25,8 +27,15 @@ use Class::Inline {
         },
         required => 1,
     },
-    encoding => { default => sub { ':utf8' }, },
-    env      => {
+    encoding => {
+        default => 'locale',
+        isa     => sub {
+            my $e = resolve_alias( $_[0] )
+              || _croak("Unknown Encoding: $_[0]");
+            $e;
+        },
+    },
+    env => {
         isa => sub {
             ref $_[0] eq 'HASH' || _croak("env must be HASHREF");
             $_[0];
@@ -182,6 +191,7 @@ sub spawnsub {
 package Sys::Cmd::Process;
 our $VERSION = '0.99.1_3';
 use parent -norequire, 'Sys::Cmd';
+use Encode 'encode';
 use IO::Handle;
 use Log::Any qw/$log/;
 use Class::Inline {
@@ -264,8 +274,9 @@ sub _spawn {
       for $old_fd0, $old_fd1, $old_fd2, $child_in, $child_out, $child_err,
       $self->stdin, $self->stdout, $self->stderr;
 
+    my $locale = $self->encoding;
     my $cmd_as_octets =
-      [ map { my $s = $_; utf8::is_utf8($s) ? utf8::encode($s) || $s : $s }
+      [ map { encode( $locale => $_, Encode::FB_CROAK | Encode::LEAVE_SRC ) }
           @{ $self->cmd } ];
 
     eval {
@@ -285,6 +296,7 @@ sub _spawn {
                 ]
             )
         );
+
     };
     my $err = $@;
 
@@ -328,7 +340,7 @@ sub _fork {
     $self->exit(0);            # stop DESTROY() from trying to reap
     $child_err->autoflush(1);
 
-    my $enc = $self->encoding;
+    my $enc = ':encoding(' . $self->encoding . ')';
 
     foreach my $quad (
         [ \*STDIN,  '<&=', fileno($child_in),  0 ],
@@ -395,12 +407,14 @@ sub BUILD {
     local %ENV = %ENV;
 
     if ( defined( my $x = $self->env ) ) {
+        my $locale = $self->encoding;
         while ( my ( $key, $val ) = each %$x ) {
+            my $keybytes = encode( $locale, $key, Encode::FB_CROAK );
             if ( defined $val ) {
-                $ENV{$key} = $val;
+                $ENV{$keybytes} = encode( $locale, $val, Encode::FB_CROAK );
             }
             else {
-                delete $ENV{$key};
+                delete $ENV{$keybytes};
             }
         }
     }
@@ -408,7 +422,7 @@ sub BUILD {
     $self->_coderef ? $self->_fork : $self->_spawn;
     $self->stdin->autoflush(1);
 
-    my $enc = $self->encoding;
+    my $enc = ':encoding(' . $self->encoding . ')';
     binmode( $self->stdin,  $enc ) or warn "binmode stdin: $!";
     binmode( $self->stdout, $enc ) or warn "binmode stdout: $!";
     binmode( $self->stderr, $enc ) or warn "binmode stderr: $!";
@@ -453,8 +467,7 @@ sub close {
 
 sub wait_child {
     my $self = shift;
-
-    return unless defined $self->pid;
+    my $pid  = $self->pid // return;
     return $self->exit if $self->has_exit;
 
     if ( $self->mock ) {
@@ -463,7 +476,7 @@ sub wait_child {
         $self->signal( $signal // 0 );
         $self->core( $core     // 0 );
     }
-    else {
+    elsif ( $pid > 0 ) {
 
         local $?;
         local $!;
@@ -504,6 +517,13 @@ sub wait_child {
         $self->exit( $ret >> 8 );
         $self->signal( $ret & 127 );
         $self->core( $ret & 128 );
+    }
+
+    # $pid <= 0, so... bad execution by spawn
+    else {
+        $self->exit(-1);
+        $self->signal(0);
+        $self->core(0);
     }
 
     if ( $self->signal != 0 ) {
@@ -577,7 +597,7 @@ Sys::Cmd - run a system command or spawn a system processes
     # Spawn a process for asynchronous interaction
     #  - Caller responsible for exec path, all input & output
     #  - No exception raised on non-zero exit
-    $proc = spawn( @cmd, { encoding => ':encoding(iso-8859-3)' },);
+    $proc = spawn( @cmd, { encoding => 'iso-8859-3' },);
 
     while ( my $line = $proc->stdout->getline ) {
         $proc->stdin->print("thanks\n");
@@ -637,10 +657,11 @@ following configuration keys (=> default):
 The working directory the command will be run in. Note that if C<@cmd>
 is a relative path, it may not be found from the new location.
 
-=item encoding => ':utf8'
+=item encoding => $Encode::Locale::ENCODING_LOCALE
 
-An string value identifying the encoding of the input/output
-file-handles, passed to C<binmode>. Defaults to ':utf8'.
+A string value identifying the encoding that applies to input/output
+file-handles, command arguments, and environment variables.  Defaults
+to the 'locale' alias from L<Encode::Locale>.
 
 =item env
 
