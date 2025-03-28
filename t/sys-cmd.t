@@ -123,6 +123,31 @@ my @tests   = (
         cmdline => [ $info_pl, { env => { SYS_CMD_ERR => 'Meh!' } } ],
         result  => { err => "Meh!\n" },
     },
+    {
+        test    => 'kitchen sink',
+        cmdline => [
+            $info_pl, 'å', 'b', 1300,
+            {
+                env => {
+                    'SYS_CMD_INPUT' => 1,
+                    TO_BE_DELETED   => undef,
+                    SYS_CMD_ERR     => 'Meh!',
+                },
+                input => 'test input',
+                dir   => $dir,
+            }
+        ],
+        result => {
+            argv => [ 'å', 'b', 1300 ],
+            dir  => $dir,
+            env  => {
+                'SYS_CMD_INPUT' => 1,
+                TO_BE_DELETED   => undef,
+            },
+            err   => "Meh!\n",
+            input => 'test input',
+        }
+    },
 );
 
 my @fail = (
@@ -207,7 +232,7 @@ sub do_test {
       for grep { !defined $t->{result}{env}{$_} }
       keys %{ $t->{result}{env} || {} };
 
-    is( $info->{argv}, \@argv, $t->{test} . ': argument match' );
+    is( $info->{argv}, \@argv, $t->{test} . ": argument match @argv" );
     is( $info->{env},  $env,   $t->{test} . ': environment match' );
     is(
         $info->{input},
