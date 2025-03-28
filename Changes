@@ -1,3 +1,14 @@
+0.99.1 (2025-03-28)
+
+    Code Maintenance
+        - Correct broken info.pl test script
+        - Add missing kitchen sink test for multiple features at a
+          time.
+
+    Dependencies:
+        - Minimum Perl version is now 5.18, for lexical subs and the
+          "fc" function.
+
 0.99.1_3 (2025-03-27)
 
     Enhancements:

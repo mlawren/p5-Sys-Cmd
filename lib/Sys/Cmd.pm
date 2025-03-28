@@ -1,8 +1,7 @@
+use v5.18;
+
 package Sys::Cmd;
-use strict;
 use warnings;
-our $VERSION = '0.99.1_3';
-use 5.006;
 no warnings "experimental::lexical_subs";
 use feature 'lexical_subs';
 use Carp           ();
@@ -15,7 +14,10 @@ use Exporter::Tidy _map => {
     runsub   => sub { syscmd( undef, @_ )->runsub },
     spawnsub => sub { syscmd( undef, @_ )->spawnsub },
 };
-### START Class::Inline ### v0.0.1 Thu Mar 27 20:28:54 2025
+
+our $VERSION = '0.99.1';
+
+### START Class::Inline ### v0.0.1 Fri Mar 28 14:23:37 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -305,12 +307,12 @@ sub spawnsub {
 }
 
 package Sys::Cmd::Process;
-our $VERSION = '0.99.1_3';
+our $VERSION = '0.99.1';
 use parent -norequire, 'Sys::Cmd';
 use Encode 'encode';
 use IO::Handle;
 use Log::Any qw/$log/;
-### START Class::Inline ### v0.0.1 Thu Mar 27 20:28:54 2025
+### START Class::Inline ### v0.0.1 Fri Mar 28 14:23:37 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -789,7 +791,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.99.1_3 (2025-03-27)
+0.99.1 (2025-03-28)
 
 =head1 SYNOPSIS
 

@@ -1,6 +1,6 @@
 # Derived from System-Command/t/10-command.t which is
 # copyright Phillipe Bruhat (BooK).
-use strict;
+use v5.18;
 use warnings;
 use utf8;
 use Cwd qw/cwd abs_path/;
@@ -123,6 +123,31 @@ my @tests   = (
         cmdline => [ $info_pl, { env => { SYS_CMD_ERR => 'Meh!' } } ],
         result  => { err => "Meh!\n" },
     },
+    {
+        test    => 'kitchen sink',
+        cmdline => [
+            $info_pl, 'å', 'b', 1300,
+            {
+                env => {
+                    'SYS_CMD_INPUT' => 1,
+                    TO_BE_DELETED   => undef,
+                    SYS_CMD_ERR     => 'Meh!',
+                },
+                input => 'test input',
+                dir   => $dir,
+            }
+        ],
+        result => {
+            argv => [ 'å', 'b', 1300 ],
+            dir  => $dir,
+            env  => {
+                'SYS_CMD_INPUT' => 1,
+                TO_BE_DELETED   => undef,
+            },
+            err   => "Meh!\n",
+            input => 'test input',
+        }
+    },
 );
 
 my @fail = (
@@ -207,7 +232,7 @@ sub do_test {
       for grep { !defined $t->{result}{env}{$_} }
       keys %{ $t->{result}{env} || {} };
 
-    is( $info->{argv}, \@argv, $t->{test} . ': argument match' );
+    is( $info->{argv}, \@argv, $t->{test} . ": argument match @argv" );
     is( $info->{env},  $env,   $t->{test} . ': environment match' );
     is(
         $info->{input},
@@ -217,7 +242,7 @@ sub do_test {
     is( $info->{pid}, $cmd->pid, $t->{test} . ': pid match' );
     is(
         $info->{cwd},
-        lc( $t->{result}{dir} || $cwd ),
+        fc( $t->{result}{dir} || $cwd ),
         $t->{test} . ': dir match'
     );
 

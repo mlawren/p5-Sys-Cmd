@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-use strict;
+use v5.18;
 use warnings;
 use Cwd qw( cwd );
 use Data::Dumper;
@@ -27,8 +27,8 @@ print Data::Dumper->Dump(
         {
             argv  => \@ARGV,
             env   => \%env,
-            cwd   => lc( cwd() ),
-            input => $env{SYS_CMD_INPUT} ? join( '', <> ) : '',
+            cwd   => fc( cwd() ),
+            input => $env{SYS_CMD_INPUT} ? join( '', <STDIN> ) : '',
             pid   => $$,
         }
     ],
