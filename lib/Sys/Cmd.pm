@@ -1,8 +1,7 @@
+use v5.18;
+
 package Sys::Cmd;
-use strict;
 use warnings;
-our $VERSION = '0.99.1_4';
-use 5.006;
 no warnings "experimental::lexical_subs";
 use feature 'lexical_subs';
 use Carp           ();
@@ -15,6 +14,9 @@ use Exporter::Tidy _map => {
     runsub   => sub { syscmd( undef, @_ )->runsub },
     spawnsub => sub { syscmd( undef, @_ )->spawnsub },
 };
+
+our $VERSION = '0.99.1_4';
+
 use Class::Inline {
     cmd => {
         isa => sub {

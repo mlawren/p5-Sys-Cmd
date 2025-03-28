@@ -1,7 +1,6 @@
 #!/usr/bin/env perl
-use strict;
+use v5.18;
 use warnings;
-use 5.010;
 use ExtUtils::MakeMaker::CPANfile;
 
 WriteMakefile(

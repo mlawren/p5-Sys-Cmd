@@ -18,7 +18,8 @@
           time.
 
     Dependencies:
-        - None.
+        - Minimum Perl version is now 5.18, for lexical subs and the
+          "fc" function.
 
     Packaging:
         - None.

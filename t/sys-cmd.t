@@ -1,6 +1,6 @@
 # Derived from System-Command/t/10-command.t which is
 # copyright Phillipe Bruhat (BooK).
-use strict;
+use v5.18;
 use warnings;
 use utf8;
 use Cwd qw/cwd abs_path/;
@@ -242,7 +242,7 @@ sub do_test {
     is( $info->{pid}, $cmd->pid, $t->{test} . ': pid match' );
     is(
         $info->{cwd},
-        lc( $t->{result}{dir} || $cwd ),
+        fc( $t->{result}{dir} || $cwd ),
         $t->{test} . ': dir match'
     );
 
