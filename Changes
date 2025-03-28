@@ -1,16 +1,4 @@
-0.99.1_4 (yyyy-mm-dd)
-
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
-
-    Enhancements:
-        - None.
-
-    Bug Fixes:
-        - None.
+0.99.1 (yyyy-mm-dd)
 
     Code Maintenance
         - Correct broken info.pl test script
@@ -20,9 +8,6 @@
     Dependencies:
         - Minimum Perl version is now 5.18, for lexical subs and the
           "fc" function.
-
-    Packaging:
-        - None.
 
 0.99.1_3 (2025-03-27)
 
