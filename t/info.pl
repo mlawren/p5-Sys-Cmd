@@ -28,7 +28,7 @@ print Data::Dumper->Dump(
             argv  => \@ARGV,
             env   => \%env,
             cwd   => lc( cwd() ),
-            input => $env{SYS_CMD_INPUT} ? join( '', <> ) : '',
+            input => $env{SYS_CMD_INPUT} ? join( '', <STDIN> ) : '',
             pid   => $$,
         }
     ],
