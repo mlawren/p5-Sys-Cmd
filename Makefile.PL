@@ -18,7 +18,7 @@ WriteMakefile(
         no_index    => {
             package => [
                 qw/
-                  Sys::Cmd::Mo
+                  Sys::Cmd::Process
                   /
             ],
         },

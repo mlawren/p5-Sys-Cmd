@@ -21,6 +21,7 @@
     Packaging:
         - Skip tests involving non-ascii characters under ascii
           (ANSI_X3...) locales.
+        - Do not index Sys::Cmd::Process
 
 0.99.1 (2025-03-28)
 
