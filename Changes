@@ -19,7 +19,8 @@
         - None.
 
     Packaging:
-        - None.
+        - Skip tests involving non-ascii characters under ascii
+          (ANSI_X3...) locales.
 
 0.99.1 (2025-03-28)
 
