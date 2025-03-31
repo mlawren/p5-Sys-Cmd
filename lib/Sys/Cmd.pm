@@ -565,7 +565,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-0.985.0 (yyyy-mm-dd)
+0.985.0 (2025-03-31)
 
 =head1 SYNOPSIS
 
