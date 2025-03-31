@@ -1,6 +1,14 @@
+0.985.0 (2025-03-31) (TRIAL RELEASE)
+
+    Packaging:
+        - Skip tests involving non-ascii characters under ascii
+          (ANSI_X3...) locales.
+        - Do not index Sys::Cmd::Process
+        - Version jump due to previous incorrect use of "X.Y_Z".
+
 0.99.1 (2025-03-28)
 
-    Code Maintenance
+    Packaging:
         - Correct broken info.pl test script
         - Add missing kitchen sink test for multiple features at a
           time.

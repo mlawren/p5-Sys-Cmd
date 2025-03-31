@@ -4,6 +4,7 @@ use v5.18;
 use warnings;
 use utf8;
 use Cwd qw/cwd abs_path/;
+use Encode::Locale '$ENCODING_LOCALE';
 use File::Spec;
 use File::Temp qw/tempdir/;
 use Sys::Cmd ':all';
@@ -11,8 +12,11 @@ use Test2::V0;
 
 use constant MSWin32 => $^O eq 'MSWin32';
 
+diag "Test locale is '$ENCODING_LOCALE'";
+
 $ENV{TO_BE_DELETED} = 'LATER';
 
+my $no_wide = $ENCODING_LOCALE =~ m/(ANSI_X3|ascii)/;
 my $dir     = abs_path( tempdir( CLEANUP => 1 ) );
 my $cwd     = cwd;
 my $info_pl = File::Spec->catfile( $cwd, 't', 'info.pl' );
@@ -23,7 +27,8 @@ my @tests   = (
         result  => {},
     },
     {
-        test    => 'utf8 arguments',
+        test    => 'arguments UTF-8',
+        no_wide => $no_wide,
         cmdline => [ $info_pl, 'ß' ],
         result  => {},
     },
@@ -33,14 +38,29 @@ my @tests   = (
             $info_pl,
             {
                 env => {
-                    SYS_CMD    => 'Sys::Cmd',
+                    SYS_CMD => 'Sys::Cmd',
+                }
+            }
+        ],
+        result => {
+            env => {
+                SYS_CMD => 'Sys::Cmd',
+            }
+        },
+    },
+    {
+        test    => 'env UTF-8',
+        no_wide => $no_wide,
+        cmdline => [
+            $info_pl,
+            {
+                env => {
                     UTF8_CHECK => 'Défaut',
                 }
             }
         ],
         result => {
             env => {
-                SYS_CMD    => 'Sys::Cmd',
                 UTF8_CHECK => 'Défaut',
             }
         },
@@ -126,7 +146,7 @@ my @tests   = (
     {
         test    => 'kitchen sink',
         cmdline => [
-            $info_pl, 'å', 'b', 1300,
+            $info_pl, 'a', 'b', 1300,
             {
                 env => {
                     'SYS_CMD_INPUT' => 1,
@@ -138,7 +158,7 @@ my @tests   = (
             }
         ],
         result => {
-            argv => [ 'å', 'b', 1300 ],
+            argv => [ 'a', 'b', 1300 ],
             dir  => $dir,
             env  => {
                 'SYS_CMD_INPUT' => 1,
@@ -255,7 +275,10 @@ sub do_test {
 }
 
 for my $t ( @tests, @fail ) {
-    subtest $t->{test}, \&do_test, $t;
+  SKIP: {
+        skip $t->{test} . ' skipped under this locale' if $t->{no_wide};
+        subtest $t->{test}, \&do_test, $t;
+    }
 }
 
 subtest 'reaper', sub {
@@ -298,7 +321,14 @@ SKIP: {
             }
         );
 
-        foreach my $i ( 1 .. 10, 'Zürich' ) {
+        foreach my $i ( 1 .. 10 ) {
+            $proc->stdin->print( $i . "\n" );
+            my $res = $proc->stdout->getline;
+            chomp $res if defined $res;
+            is $res, $i, "coderef: echo $i";
+        }
+        unless ($no_wide) {
+            my $i = 'Zürich';
             $proc->stdin->print( $i . "\n" );
             my $res = $proc->stdout->getline;
             chomp $res if defined $res;

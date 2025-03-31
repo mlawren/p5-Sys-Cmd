@@ -23,7 +23,7 @@ no_index:
     - t
     - inc
   package:
-    - Sys::Cmd::Mo
+    - Sys::Cmd::Process
 requires:
   Carp: '0'
   Encode: '0'
@@ -34,9 +34,10 @@ requires:
   IO::Handle: '0'
   Log::Any: '0'
   Proc::FastSpawn: '0'
+  perl: '5.018'
 resources:
   bugtracker: https://github.com/mlawren/p5-Sys-Cmd/issues
   homepage: https://github.com/mlawren/p5-Sys-Cmd
   repository: ssh://git@github.com/mlawren/p5-Sys-Cmd.git
-version: v0.99.1
+version: v0.985.0
 x_serialization_backend: 'CPAN::Meta::YAML version 0.018'
