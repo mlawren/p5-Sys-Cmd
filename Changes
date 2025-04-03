@@ -1,3 +1,11 @@
+v0.985.1 (2025-04-03) TRIAL RELEASE
+
+    Packaging:
+        - Skip tests involving non-ascii characters under US-ASCII
+          locale.
+        - Ensure that the test info.pl script runs with the same perl
+          version as the calling test. Mismatch seen on cpantesters.
+
 0.985.0 (2025-03-31) (TRIAL RELEASE)
 
     Packaging:

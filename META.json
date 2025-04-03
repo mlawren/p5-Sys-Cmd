@@ -68,6 +68,6 @@
          "url" : "ssh://git@github.com/mlawren/p5-Sys-Cmd.git"
       }
    },
-   "version" : "v0.985.0",
+   "version" : "v0.985.1",
    "x_serialization_backend" : "JSON::PP version 4.07"
 }
