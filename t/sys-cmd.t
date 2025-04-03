@@ -16,7 +16,7 @@ diag "Test locale is '$ENCODING_LOCALE'";
 
 $ENV{TO_BE_DELETED} = 'LATER';
 
-my $no_wide = $ENCODING_LOCALE =~ m/(ANSI_X3|ascii)/;
+my $no_wide = $ENCODING_LOCALE =~ m/(ANSI_X3|ASCII)/i;
 my $dir     = abs_path( tempdir( CLEANUP => 1 ) );
 my $cwd     = cwd;
 my @info_pl = ( $^X, File::Spec->catfile( $cwd, 't', 'info.pl' ) );

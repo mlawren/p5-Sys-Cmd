@@ -19,6 +19,8 @@
         - None.
 
     Packaging:
+        - Skip tests involving non-ascii characters under US-ASCII
+          locale.
         - Ensure that the test info.pl script runs with the same perl
           version as the calling test. See here for an example of the
           two being different: https://www.cpantesters.org/cpan/report/71d788b8-0ff1-11f0-a275-c6286e8775ea
