@@ -13,7 +13,8 @@ v__NEXT__ (yyyy-mm-dd)
         - None.
 
     Code Maintenance
-        - None.
+        - Extract Sys::Cmd::Process into its own file
+        - Restructure and expand documentation
 
     Dependencies:
         - None.
