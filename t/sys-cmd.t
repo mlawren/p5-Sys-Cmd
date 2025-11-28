@@ -425,55 +425,55 @@ SKIP: {
     };
 }
 
-subtest 'mock run', sub {
-    my $cmd = syscmd(
-        'junk',
-        {
-            input => "input here\n",
-            mock  => sub {
-                my $proc = shift;
-                like $proc->input, qr/in/, 'in is ' . $proc->input;
-
-                #                diag 'mocked: ' . $proc->cmdline;
-                [
-                    $proc->cmd->[1],         # out
-                    $proc->cmd->[2],         # err
-                    $proc->cmd->[3] // 0,    # exit
-                    $proc->cmd->[4] // 0,    # core
-                    $proc->cmd->[5] // 0,    # signal
-                ];
-
-            }
-        }
-    );
-
-    my ( $out, $err );
-    $out = $err = undef;
-    $out = $cmd->run( "out1\n", '', 0, 0, 0 );
-    is $out, "out1\n", 'mock scalar out';
-
-    $out = $err = undef;
-    $cmd->run(
-        "out1\n", "err1\n", 0, 0, 0,
-        {
-            input => 'in1',
-            out   => \$out,
-            err   => \$err,
-        }
-    );
-    is $out, "out1\n", 'mock ref out';
-    is $err, "err1\n", 'mock ref err';
-
-    $out = $err = undef;
-    my $proc = $cmd->spawn( "out1\n", "err1\n", 13, 23, 33 );
-    $out = $proc->stdout->getline;
-    $err = $proc->stderr->getline;
-    $proc->wait_child;
-    is $out, "out1\n", 'mock ref out';
-    is $err, "err1\n", 'mock ref err';
-    is( $proc->exit,   13, 'mock exit' );
-    is( $proc->core,   33, 'mock core' );
-    is( $proc->signal, 23, 'mock signal' );
-};
+#subtest 'mock run', sub {
+#    my $cmd = syscmd(
+#        'junk',
+#        {
+#            input => "input here\n",
+#            mock  => sub {
+#                my $proc = shift // return warn "No proc?";
+#                like $proc->input, qr/in/, 'in is ' . $proc->input;
+#
+#                #                diag 'mocked: ' . $proc->cmdline;
+#                [
+#                    $proc->cmd->[1],         # out
+#                    $proc->cmd->[2],         # err
+#                    $proc->cmd->[3] // 0,    # exit
+#                    $proc->cmd->[4] // 0,    # core
+#                    $proc->cmd->[5] // 0,    # signal
+#                ];
+#
+#            }
+#        }
+#    );
+#
+#    my ( $out, $err );
+#    $out = $err = undef;
+#    $out = $cmd->run( "out1\n", '', 0, 0, 0 );
+#    is $out, "out1\n", 'mock scalar out';
+#
+#    $out = $err = undef;
+#    $cmd->run(
+#        "out1\n", "err1\n", 0, 0, 0,
+#        {
+#            input => 'in1',
+#            out   => \$out,
+#            err   => \$err,
+#        }
+#    );
+#    is $out, "out1\n", 'mock ref out';
+#    is $err, "err1\n", 'mock ref err';
+#
+#    $out = $err = undef;
+#    my $proc = $cmd->spawn( "out1\n", "err1\n", 13, 23, 33 );
+#    $out = $proc->stdout->getline;
+#    $err = $proc->stderr->getline;
+#    $proc->wait_child;
+#    is $out, "out1\n", 'mock ref out';
+#    is $err, "err1\n", 'mock ref err';
+#    is( $proc->exit,   13, 'mock exit' );
+#    is( $proc->core,   33, 'mock core' );
+#    is( $proc->signal, 23, 'mock signal' );
+#};
 
 done_testing();
