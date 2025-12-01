@@ -1,3 +1,12 @@
+v0.985.2 (2025-12-01) TRIAL RELEASE
+
+    Code Maintenance
+        - Extract Sys::Cmd::Process into its own file
+        - Restructure and expand documentation
+
+    Packaging:
+        - Fix *testing* of pre-existing wide characters in %ENV
+
 v0.985.1 (2025-04-03) TRIAL RELEASE
 
     Packaging:
