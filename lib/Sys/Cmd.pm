@@ -225,12 +225,11 @@ v0.0.0 (yyyy-mm-dd)
 =head1 DESCRIPTION
 
 B<Sys::Cmd> lets you run a system command and capture its output, or
-spawn and interact with a system process through its stdin, stdout and
-error handles.
+spawn and interact with a process through its stdin, stdout and error
+handles.
 
-It provides the following advantages over Perl's builtin "system",
-"qx//", "fork"+"exec", and "open" functions for dealing with external
-processes:
+It provides something of a superset of Perl's builtin external process
+functions ("system", "qx//", "fork"+"exec", and "open"):
 
 =over
 
@@ -255,34 +254,32 @@ processes:
 =head1 COMMAND PROCESSING
 
 All functions take a C<@cmd> list that specifies the command and its
-(standard) arguments. The first element of C<@cmd> determines what/how
-things are run:
+arguments. The first element of C<@cmd> determines what/how things are
+run:
 
 =over
 
 =item * If it has one or more path components (absolute or relative) it
-is executed as with L<Proc::FastSpawn>.
+is executed as is, with L<Proc::FastSpawn>.
 
 =item * If it is a CODE reference (subroutine) then a fork is performed
-before running it in a child process. Unsupported on Win32.
+before calling it in the child process. Unsupported on Win32.
 
 =item * Everything else is looked up using L<File::Which> and the
 result is executed with L<Proc::FastSpawn>.
 
 =back
 
-The remaining scalar elements of C<@cmd> are passed as arguments to the
-command (or subroutine).
+The remaining scalar elements of C<@cmd> are passed as arguments.
 
 =head1 OPTIONS
 
-B<Sys::Cmd> functions also take an optional C<\%opts> HASH reference to
-adjust aspects of the execution.
+The C<@cmd> list may also include an optional C<\%opts> HASH reference
+to adjust aspects of the execution.
 
-The core functionality of B<Sys::Cmd> is provided by the
-L<Sys::Cmd::Process> class.  The following configuration items (key
-=> default) are common to all B<Sys::Cmd> functions and are
-passed to the underlying objects at creation time:
+The following configuration items (key => default) are common to all
+B<Sys::Cmd> functions and are passed to the underlying
+L<Sys::Cmd::Process> objects at creation time:
 
 =over
 

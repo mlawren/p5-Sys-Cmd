@@ -35,12 +35,11 @@ SYNOPSIS
 
 DESCRIPTION
     Sys::Cmd lets you run a system command and capture its output, or
-    spawn and interact with a system process through its stdin, stdout
-    and error handles.
+    spawn and interact with a process through its stdin, stdout and
+    error handles.
 
-    It provides the following advantages over Perl's builtin "system",
-    "qx//", "fork"+"exec", and "open" functions for dealing with
-    external processes:
+    It provides something of a superset of Perl's builtin external
+    process functions ("system", "qx//", "fork"+"exec", and "open"):
 
     *   Command lookups using File::Which (run, spawn)
 
@@ -60,29 +59,27 @@ DESCRIPTION
 
 COMMAND PROCESSING
     All functions take a @cmd list that specifies the command and its
-    (standard) arguments. The first element of @cmd determines what/how
-    things are run:
+    arguments. The first element of @cmd determines what/how things are
+    run:
 
     *   If it has one or more path components (absolute or relative) it
-        is executed as with Proc::FastSpawn.
+        is executed as is, with Proc::FastSpawn.
 
     *   If it is a CODE reference (subroutine) then a fork is performed
-        before running it in a child process. Unsupported on Win32.
+        before calling it in the child process. Unsupported on Win32.
 
     *   Everything else is looked up using File::Which and the result is
         executed with Proc::FastSpawn.
 
-    The remaining scalar elements of @cmd are passed as arguments to the
-    command (or subroutine).
+    The remaining scalar elements of @cmd are passed as arguments.
 
 OPTIONS
-    Sys::Cmd functions also take an optional "\%opts" HASH reference to
-    adjust aspects of the execution.
+    The @cmd list may also include an optional "\%opts" HASH reference
+    to adjust aspects of the execution.
 
-    The core functionality of Sys::Cmd is provided by the
-    Sys::Cmd::Process class. The following configuration items (key =>
-    default) are common to all Sys::Cmd functions and are passed to the
-    underlying objects at creation time:
+    The following configuration items (key => default) are common to all
+    Sys::Cmd functions and are passed to the underlying
+    Sys::Cmd::Process objects at creation time:
 
     dir => $PWD
         The working directory the command will be run in. Note that if
