@@ -1,23 +1,8 @@
-v__NEXT__ (yyyy-mm-dd)
-
-    API / Behaviour Changes:
-        - None.
-
-    New Features:
-        - None.
-
-    Enhancements:
-        - None.
-
-    Bug Fixes:
-        - None.
+v0.985.2 (2025-12-01) TRIAL RELEASE
 
     Code Maintenance
         - Extract Sys::Cmd::Process into its own file
         - Restructure and expand documentation
-
-    Dependencies:
-        - None.
 
     Packaging:
         - Fix *testing* of pre-existing wide characters in %ENV

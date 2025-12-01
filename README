@@ -2,7 +2,7 @@ NAME
     Sys::Cmd - run a system command or spawn a system processes
 
 VERSION
-    v__NEXT__ (yyyy-mm-dd)
+    v0.985.2 (2025-12-01)
 
 SYNOPSIS
         use Sys::Cmd qw/run runsub spawn/;
