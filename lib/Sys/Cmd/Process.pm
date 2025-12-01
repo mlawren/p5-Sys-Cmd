@@ -192,46 +192,34 @@ sub BUILD {
     Carp::carp '"out" attribute ignored' if defined $self->out;
     Carp::carp '"err" attribute ignored' if defined $self->err;
 
-    if ( my $mock = $self->mock ) {
-        my $ref = $mock->($self);
-        my $out = shift @$ref // '';
-        my $err = shift @$ref // '';
-        open my $outfd, '<', \$out || die "open \$out: $!";
-        open my $errfd, '<', \$err || die "open \$err: $!";
-        $self->pid( -$$ );
-        $self->stdout($outfd);
-        $self->stderr($errfd);
-        $self->mock( sub { $ref } );
-        $log->debugf(
-            '[%d] %s [%s]',        $self->pid,
-            scalar $self->cmdline, $self->encoding
-        );
-        return;
-    }
+    {
+        my $dir = $self->dir;
+        require File::chdir if $dir;
 
-    my $dir = $self->dir;
-    require File::chdir if $dir;
+        no warnings 'once';
+        local $File::chdir::CWD = $dir if $dir;
 
-    no warnings 'once';
-    local $File::chdir::CWD = $dir if $dir;
-    use warnings 'once';
-
-    local %ENV = %ENV;
-
-    if ( defined( my $x = $self->env ) ) {
-        my $locale = $self->encoding;
-        while ( my ( $key, $val ) = each %$x ) {
-            my $keybytes = encode( $locale, $key, Encode::FB_CROAK );
-            if ( defined $val ) {
-                $ENV{$keybytes} = encode( $locale, $val, Encode::FB_CROAK );
-            }
-            else {
-                delete $ENV{$keybytes};
-            }
+        if ( my $mock = $self->mock ) {
+            my $ref = $mock->($self);
+            my $out = shift @$ref // '';
+            my $err = shift @$ref // '';
+            open my $outfd, '<', \$out || die "open \$out: $!";
+            open my $errfd, '<', \$err || die "open \$err: $!";
+            $self->pid( -$$ );
+            $self->stdout($outfd);
+            $self->stderr($errfd);
+            $self->mock( sub { $ref } );
+            $log->debugf(
+                '[%d] %s [%s]',        $self->pid,
+                scalar $self->cmdline, $self->encoding
+            );
+            return;
         }
+
+        local %ENV = $self->_env_merged;
+        $self->_coderef ? $self->_fork : $self->_spawn;
     }
 
-    $self->_coderef ? $self->_fork : $self->_spawn;
     $self->stdin->autoflush(1);
 
     my $enc = ':encoding(' . $self->encoding . ')';
@@ -257,6 +245,26 @@ sub BUILD {
     }
 
     return;
+}
+
+sub _env_merged {
+    my $self = shift;
+    my %env  = %ENV;
+
+    if ( defined( my $x = $self->env ) ) {
+        my $locale = $self->encoding;
+        while ( my ( $key, $val ) = each %$x ) {
+            my $keybytes = encode( $locale, $key, Encode::FB_CROAK );
+            if ( defined $val ) {
+                $env{$keybytes} = encode( $locale, $val, Encode::FB_CROAK );
+            }
+            else {
+                delete $env{$keybytes};
+            }
+        }
+    }
+
+    wantarray ? %env : \%env;
 }
 
 sub cmdline {

@@ -20,7 +20,7 @@ v__NEXT__ (yyyy-mm-dd)
         - None.
 
     Packaging:
-        - None.
+        - Fix *testing* of pre-existing wide characters in %ENV
 
 v0.985.1 (2025-04-03) TRIAL RELEASE
 
