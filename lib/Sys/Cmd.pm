@@ -14,7 +14,7 @@ use Exporter::Tidy _map => {
     spawnsub => sub { syscmd( undef, @_ )->spawnsub },
 };
 
-our $VERSION = 'v0.985.2';
+our $VERSION = 'v0.0.0';
 
 use Class::Inline {
     cmd => {
@@ -190,7 +190,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-v0.985.2 (2025-12-01)
+v0.0.0 (yyyy-mm-dd)
 
 =head1 SYNOPSIS
 
