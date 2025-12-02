@@ -310,30 +310,34 @@ subtest 'reaper', sub {
 
 SKIP: {
     skip "coderefs not supported on Win32", 1 if $^O eq 'MSWin32';
+    use Cwd 'abs_path';
+    my $tdir = abs_path('t');
 
     subtest 'coderef', sub {
 
         my $proc = spawn(
             sub {
+                my $d = cwd();
                 while ( my $line = <STDIN> ) {
-                    print STDOUT $line;
+                    print STDOUT $d . ': ' . $line;
                 }
                 exit 3;
-            }
+            },
+            { dir => $tdir },
         );
 
         foreach my $i ( 1 .. 10 ) {
             $proc->stdin->print( $i . "\n" );
             my $res = $proc->stdout->getline;
             chomp $res if defined $res;
-            is $res, $i, "coderef: echo $i";
+            is $res, "$tdir: $i", "coderef: echo $i";
         }
         unless ($no_wide) {
             my $i = 'Zürich';
             $proc->stdin->print( $i . "\n" );
             my $res = $proc->stdout->getline;
             chomp $res if defined $res;
-            is $res, $i, "coderef: echo $i";
+            is $res, "$tdir: $i", "coderef: echo $i";
         }
 
         $proc->close;
