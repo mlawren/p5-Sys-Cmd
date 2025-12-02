@@ -1,6 +1,5 @@
 blib/
 .direnv
-.envrc
 extlib/
 LICENSE
 Makefile
