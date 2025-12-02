@@ -16,7 +16,125 @@ use Exporter::Tidy _map => {
 
 our $VERSION = 'v0.0.0';
 
-use Class::Inline {
+### START Class::Inline ### v0.0.1 Tue Dec  2 10:53:28 2025
+require Carp;
+our ( @_CLASS, $_FIELDS, %_NEW );
+
+sub new {
+    my $class = shift;
+    my $CLASS = ref $class || $class;
+    $_NEW{$CLASS} //= do {
+        my ( %seen, @new, @build );
+        my @possible = ($CLASS);
+        while (@possible) {
+            my $c = shift @possible;
+            no strict 'refs';
+            push @new,   $c . '::_NEW'  if exists &{ $c . '::_NEW' };
+            push @build, $c . '::BUILD' if exists &{ $c . '::BUILD' };
+            $seen{$c}++;
+            if ( exists &{ $c . '::DOES' } ) {
+                push @possible, grep { not $seen{$_}++ } $c->DOES('*');
+            }
+            push @possible, grep { not $seen{$_}++ } @{ $c . '::ISA' };
+        }
+        [ [ reverse(@new) ], [ reverse(@build) ] ];
+    };
+    my $self = { @_ ? @_ > 1 ? @_ : %{ $_[0] } : () };
+    bless $self, $CLASS;
+    my $attrs = { map { ( $_ => 1 ) } keys %$self };
+    map { $self->$_($attrs) } @{ $_NEW{$CLASS}->[0] };
+    {
+        local $Carp::CarpLevel = 3;
+        Carp::carp("Sys::Cmd: unexpected argument '$_'") for keys %$attrs
+    }
+    map { $self->$_ } @{ $_NEW{$CLASS}->[1] };
+    $self;
+}
+
+sub _NEW {
+    CORE::state $fix_FIELDS = do {
+        $_FIELDS = { @_CLASS > 1 ? @_CLASS : %{ $_CLASS[0] } };
+        $_FIELDS = $_FIELDS->{'FIELDS'} if exists $_FIELDS->{'FIELDS'};
+    };
+    if ( my @missing = grep { not exists $_[0]->{$_} } 'cmd' ) {
+        Carp::croak( 'Sys::Cmd required initial argument(s): '
+              . join( ', ', @missing ) );
+    }
+    $_[0]{'cmd'} = eval { $_FIELDS->{'cmd'}->{'isa'}->( $_[0]{'cmd'} ) };
+    Carp::confess( 'Sys::Cmd cmd: ' . $@ ) if $@;
+    $_[0]{'dir'} = eval { $_FIELDS->{'dir'}->{'isa'}->( $_[0]{'dir'} ) }
+      if exists $_[0]{'dir'};
+    Carp::confess( 'Sys::Cmd dir: ' . $@ ) if $@;
+    $_[0]{'encoding'} =
+      eval { $_FIELDS->{'encoding'}->{'isa'}->( $_[0]{'encoding'} ) }
+      if exists $_[0]{'encoding'};
+    Carp::confess( 'Sys::Cmd encoding: ' . $@ ) if $@;
+    $_[0]{'env'} = eval { $_FIELDS->{'env'}->{'isa'}->( $_[0]{'env'} ) }
+      if exists $_[0]{'env'};
+    Carp::confess( 'Sys::Cmd env: ' . $@ ) if $@;
+    $_[0]{'mock'} = eval { $_FIELDS->{'mock'}->{'isa'}->( $_[0]{'mock'} ) }
+      if exists $_[0]{'mock'};
+    Carp::confess( 'Sys::Cmd mock: ' . $@ ) if $@;
+    map { delete $_[1]->{$_} } 'cmd', 'dir', 'encoding', 'env', 'err', 'input',
+      'mock', 'on_exit', 'out';
+}
+
+sub __RO {
+    my ( undef, undef, undef, $sub ) = caller(1);
+    Carp::confess("attribute $sub is read-only");
+}
+sub cmd { __RO() if @_ > 1; $_[0]{'cmd'} // undef }
+sub dir { __RO() if @_ > 1; $_[0]{'dir'} // undef }
+
+sub encoding {
+    __RO() if @_ > 1;
+    $_[0]{'encoding'} //= eval {
+        $_FIELDS->{'encoding'}->{'isa'}
+          ->( $_FIELDS->{'encoding'}->{'default'} );
+    };
+    Carp::confess( 'invalid (Sys::Cmd::encoding) default: ' . $@ ) if $@;
+    $_[0]{'encoding'};
+}
+sub env   { __RO() if @_ > 1; $_[0]{'env'}   // undef }
+sub err   { __RO() if @_ > 1; $_[0]{'err'}   // undef }
+sub input { __RO() if @_ > 1; $_[0]{'input'} // undef }
+
+sub mock {
+    if ( @_ > 1 ) {
+        $_[0]{'mock'} =
+          eval { $_FIELDS->{'mock'}->{'isa'}->( $_[0]{'mock'} // undef ) };
+        Carp::confess( 'invalid (Sys::Cmd::mock) value: ' . $@ ) if $@;
+    }
+    $_[0]{'mock'} // undef;
+}
+
+sub on_exit {
+    if ( @_ > 1 ) { $_[0]{'on_exit'} = $_[1] }
+    $_[0]{'on_exit'} // undef;
+}
+sub out { __RO() if @_ > 1; $_[0]{'out'} // undef }
+
+sub _dump {
+    my $self = shift;
+    my $x    = do {
+        require Data::Dumper;
+        no warnings 'once';
+        local $Data::Dumper::Indent   = 1;
+        local $Data::Dumper::Maxdepth = ( shift // 2 );
+        local $Data::Dumper::Sortkeys = 1;
+        Data::Dumper::Dumper($self);
+    };
+    $x =~ s/.*?{/{/;
+    $x =~ s/}.*?\n$/}/;
+    my $i = 0;
+    my @list;
+    do { @list = caller( $i++ ) } until $list[3] eq __PACKAGE__ . '::_dump';
+    wantarray
+      ? warn "$self $x at $list[1]:$list[2]\n"
+      : "$self $x at $list[1]:$list[2]\n";
+}
+@_CLASS = grep 1,    ### END Class::Inline ###
+  {
     cmd => {
         isa => sub {
             ref $_[0] eq 'ARRAY' || _croak("cmd must be ARRAYREF");
@@ -60,7 +178,7 @@ use Class::Inline {
         },
     },
     on_exit => { is => 'rw', },
-};
+  };
 
 sub _croak {
     local $Carp::CarpInternal{'Sys::Cmd'}          = 1;

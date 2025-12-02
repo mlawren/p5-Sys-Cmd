@@ -7,7 +7,117 @@ use Encode 'encode';
 use IO::Handle;
 use Log::Any qw/$log/;
 use Proc::FastSpawn;
-use Class::Inline {
+### START Class::Inline ### v0.0.1 Tue Dec  2 10:53:28 2025
+require Carp;
+our ( @_CLASS, $_FIELDS, %_NEW );
+
+sub new {
+    my $class = shift;
+    my $CLASS = ref $class || $class;
+    $_NEW{$CLASS} //= do {
+        my ( %seen, @new, @build );
+        my @possible = ($CLASS);
+        while (@possible) {
+            my $c = shift @possible;
+            no strict 'refs';
+            push @new,   $c . '::_NEW'  if exists &{ $c . '::_NEW' };
+            push @build, $c . '::BUILD' if exists &{ $c . '::BUILD' };
+            $seen{$c}++;
+            if ( exists &{ $c . '::DOES' } ) {
+                push @possible, grep { not $seen{$_}++ } $c->DOES('*');
+            }
+            push @possible, grep { not $seen{$_}++ } @{ $c . '::ISA' };
+        }
+        [ [ reverse(@new) ], [ reverse(@build) ] ];
+    };
+    my $self = { @_ ? @_ > 1 ? @_ : %{ $_[0] } : () };
+    bless $self, $CLASS;
+    my $attrs = { map { ( $_ => 1 ) } keys %$self };
+    map { $self->$_($attrs) } @{ $_NEW{$CLASS}->[0] };
+    {
+        local $Carp::CarpLevel = 3;
+        Carp::carp("Sys::Cmd::Process: unexpected argument '$_'")
+          for keys %$attrs
+    }
+    map { $self->$_ } @{ $_NEW{$CLASS}->[1] };
+    $self;
+}
+
+sub _NEW {
+    CORE::state $fix_FIELDS = do {
+        $_FIELDS = { @_CLASS > 1 ? @_CLASS : %{ $_CLASS[0] } };
+        $_FIELDS = $_FIELDS->{'FIELDS'} if exists $_FIELDS->{'FIELDS'};
+    };
+    map { delete $_[1]->{$_} } '_coderef';
+}
+
+sub __RO {
+    my ( undef, undef, undef, $sub ) = caller(1);
+    Carp::confess("attribute $sub is read-only");
+}
+
+sub _coderef {
+    __RO() if @_ > 1;
+    $_[0]{'_coderef'} //= $_FIELDS->{'_coderef'}->{'default'}->( $_[0] );
+}
+
+sub core {
+    if ( @_ > 1 ) { $_[0]{'core'} = $_[1] }
+    $_[0]{'core'} //= $_FIELDS->{'core'}->{'default'}->( $_[0] );
+}
+
+sub exit {
+    if ( @_ > 1 ) { $_[0]{'exit'} = $_[1] }
+    $_[0]{'exit'} //= $_FIELDS->{'exit'}->{'default'}->( $_[0] );
+}
+sub has_exit { exists $_[0]{'exit'} }
+
+sub pid {
+    if ( @_ > 1 ) { $_[0]{'pid'} = $_[1] }
+    $_[0]{'pid'} // undef;
+}
+
+sub signal {
+    if ( @_ > 1 ) { $_[0]{'signal'} = $_[1] }
+    $_[0]{'signal'} //= $_FIELDS->{'signal'}->{'default'}->( $_[0] );
+}
+
+sub stderr {
+    if ( @_ > 1 ) { $_[0]{'stderr'} = $_[1] }
+    $_[0]{'stderr'} //= $_FIELDS->{'stderr'}->{'default'}->( $_[0] );
+}
+
+sub stdin {
+    if ( @_ > 1 ) { $_[0]{'stdin'} = $_[1] }
+    $_[0]{'stdin'} //= $_FIELDS->{'stdin'}->{'default'}->( $_[0] );
+}
+
+sub stdout {
+    if ( @_ > 1 ) { $_[0]{'stdout'} = $_[1] }
+    $_[0]{'stdout'} //= $_FIELDS->{'stdout'}->{'default'}->( $_[0] );
+}
+
+sub _dump {
+    my $self = shift;
+    my $x    = do {
+        require Data::Dumper;
+        no warnings 'once';
+        local $Data::Dumper::Indent   = 1;
+        local $Data::Dumper::Maxdepth = ( shift // 2 );
+        local $Data::Dumper::Sortkeys = 1;
+        Data::Dumper::Dumper($self);
+    };
+    $x =~ s/.*?{/{/;
+    $x =~ s/}.*?\n$/}/;
+    my $i = 0;
+    my @list;
+    do { @list = caller( $i++ ) } until $list[3] eq __PACKAGE__ . '::_dump';
+    wantarray
+      ? warn "$self $x at $list[1]:$list[2]\n"
+      : "$self $x at $list[1]:$list[2]\n";
+}
+@_CLASS = grep 1,    ### END Class::Inline ###
+  {
     _coderef => {
         default => sub {
             my $c = $_[0]->cmd->[0];
@@ -58,7 +168,7 @@ use Class::Inline {
                 'Process status values invalid before wait_child()');
         },
     },
-};
+  };
 
 sub _spawn {
     my $self = shift;

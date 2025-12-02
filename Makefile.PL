@@ -11,8 +11,6 @@ WriteMakefile(
     VERSION_FROM     => 'lib/Sys/Cmd.pm',
     LICENSE          => 'gpl_3',
     test             => { RECURSIVE_TEST_FILES => 1, },
-    PM_FILTER        => 'class-inline',                              #CIFILTER#
-    dist             => { PREOP => 'class-inline $(DISTVNAME)' },    #CIFILTER#
     META_MERGE       => {
         'meta-spec' => { version => 2 },
         no_index    => {

@@ -416,7 +416,7 @@ SKIP: {
     subtest 'Sys::Cmd', sub {
         my ( $out, @out );
         @out = $ls->run();
-        is scalar @out, 2, 'ls in t';
+        is scalar @out, 3, 'ls in t';
 
         @out = ();
         $ls->run( '../lib', { out => \$out } );
