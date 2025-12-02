@@ -625,7 +625,7 @@ L<Git::Repository::Command> by Philippe Bruhat (BooK).
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2011-2025 Mark Lawrence <nomad@null.net>
+Copyright 2011-2025 Mark Lawrence <mark@rekudos.net>
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
