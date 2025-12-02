@@ -15,14 +15,15 @@ use constant MSWin32 => $^O eq 'MSWin32';
 
 diag "Test locale is '$ENCODING_LOCALE'";
 
-$ENV{TO_BE_DELETED} = 'LATER';
-$ENV{WIDE_CHAR}     = encode( locale => '✅' );
-
 my $no_wide = $ENCODING_LOCALE =~ m/(ANSI_X3|ASCII)/i;
 my $dir     = abs_path( tempdir( CLEANUP => 1 ) );
 my $cwd     = cwd;
 my @info_pl = ( $^X, File::Spec->catfile( $cwd, 't', 'info.pl' ) );
-my @tests   = (
+
+$ENV{TO_BE_DELETED} = 'LATER';
+$ENV{WIDE_CHAR}     = encode( locale => '✅' ) unless $no_wide;
+
+my @tests = (
     {
         test    => 'standard',
         cmdline => [@info_pl],
@@ -229,7 +230,7 @@ sub do_test {
     }
 
     my @argv = grep { !ref } @{ $t->{cmdline} };
-    is( [ $cmd->cmdline ], \@argv, $t->{test} . ': cmdline' );
+    is( [ $cmd->cmdline ], \@argv, $t->{test} . ': cmdline ' . "@argv" );
 
     # Set @argv to just the script arguments
     shift @argv;
@@ -343,7 +344,7 @@ SKIP: {
 
 subtest 'run', sub {
     my ( $out, $err, $info );
-    my $errstr = 'Parachute Please! ✈️';
+    my $errstr = 'Parachute Please! ' . ( $no_wide ? '' : '✈️' );
     $info = $out = $err = undef;
     $out  = run(@info_pl);
     eval $out;
@@ -363,7 +364,7 @@ subtest 'run', sub {
         eval $out;
         die $@ if $@;
         is ref($info), 'HASH', 'run() returned $info = { ... }';
-        like $err, qr/$errstr/, 'stderr raised as warnings';
+        like $err, qr/$errstr/, 'stderr raised warning ' . $errstr;
     }
 
     $info = $out = $err = undef;
@@ -391,7 +392,7 @@ subtest 'run', sub {
     eval $out;
     die $@ if $@;
     is ref($info), 'HASH',         'run() put $info into \$out';
-    is $err,       $errstr . "\n", '$err is set';
+    is $err,       $errstr . "\n", '$err is ' . $errstr;
 
     # Test early ->core. Cannot test ->exit here, as even on exception
     # $proc->{exit} jumps into existance, and wait_child uses

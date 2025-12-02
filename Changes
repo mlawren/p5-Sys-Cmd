@@ -19,7 +19,7 @@ v0.0.0 (yyyy-mm-dd)
         - None.
 
     Packaging:
-        - None.
+        - Fix tests on non UTF-8 locales
 
 v0.985.2 (2025-12-01) TRIAL RELEASE
 
