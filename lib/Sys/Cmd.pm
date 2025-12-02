@@ -14,9 +14,9 @@ use Exporter::Tidy _map => {
     spawnsub => sub { syscmd( undef, @_ )->spawnsub },
 };
 
-our $VERSION = 'v0.985.2';
+our $VERSION = 'v0.985.3';
 
-### START Class::Inline ### v0.0.1 Mon Dec  1 12:10:51 2025
+### START Class::Inline ### v0.0.1 Tue Dec  2 10:53:28 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -57,8 +57,8 @@ sub _NEW {
         $_FIELDS = $_FIELDS->{'FIELDS'} if exists $_FIELDS->{'FIELDS'};
     };
     if ( my @missing = grep { not exists $_[0]->{$_} } 'cmd' ) {
-        Carp::croak(
-'Sys::Cmd required initial argument(s): ' . join( ', ', @missing ) );
+        Carp::croak( 'Sys::Cmd required initial argument(s): '
+              . join( ', ', @missing ) );
     }
     $_[0]{'cmd'} = eval { $_FIELDS->{'cmd'}->{'isa'}->( $_[0]{'cmd'} ) };
     Carp::confess( 'Sys::Cmd cmd: ' . $@ ) if $@;
@@ -89,7 +89,8 @@ sub dir { __RO() if @_ > 1; $_[0]{'dir'} // undef }
 sub encoding {
     __RO() if @_ > 1;
     $_[0]{'encoding'} //= eval {
-        $_FIELDS->{'encoding'}->{'isa'}->( $_FIELDS->{'encoding'}->{'default'} );
+        $_FIELDS->{'encoding'}->{'isa'}
+          ->( $_FIELDS->{'encoding'}->{'default'} );
     };
     Carp::confess( 'invalid (Sys::Cmd::encoding) default: ' . $@ ) if $@;
     $_[0]{'encoding'};
@@ -307,7 +308,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-v0.985.2 (2025-12-01)
+v0.985.3 (2025-12-02)
 
 =head1 SYNOPSIS
 
@@ -342,12 +343,11 @@ v0.985.2 (2025-12-01)
 =head1 DESCRIPTION
 
 B<Sys::Cmd> lets you run a system command and capture its output, or
-spawn and interact with a system process through its stdin, stdout and
-error handles.
+spawn and interact with a process through its stdin, stdout and error
+handles.
 
-It provides the following advantages over Perl's builtin "system",
-"qx//", "fork"+"exec", and "open" functions for dealing with external
-processes:
+It provides something of a superset of Perl's builtin external process
+functions ("system", "qx//", "fork"+"exec", and "open"):
 
 =over
 
@@ -372,34 +372,32 @@ processes:
 =head1 COMMAND PROCESSING
 
 All functions take a C<@cmd> list that specifies the command and its
-(standard) arguments. The first element of C<@cmd> determines what/how
-things are run:
+arguments. The first element of C<@cmd> determines what/how things are
+run:
 
 =over
 
 =item * If it has one or more path components (absolute or relative) it
-is executed as with L<Proc::FastSpawn>.
+is executed as is, with L<Proc::FastSpawn>.
 
 =item * If it is a CODE reference (subroutine) then a fork is performed
-before running it in a child process. Unsupported on Win32.
+before calling it in the child process. Unsupported on Win32.
 
 =item * Everything else is looked up using L<File::Which> and the
 result is executed with L<Proc::FastSpawn>.
 
 =back
 
-The remaining scalar elements of C<@cmd> are passed as arguments to the
-command (or subroutine).
+The remaining scalar elements of C<@cmd> are passed as arguments.
 
 =head1 OPTIONS
 
-B<Sys::Cmd> functions also take an optional C<\%opts> HASH reference to
-adjust aspects of the execution.
+The C<@cmd> list may also include an optional C<\%opts> HASH reference
+to adjust aspects of the execution.
 
-The core functionality of B<Sys::Cmd> is provided by the
-L<Sys::Cmd::Process> class.  The following configuration items (key
-=> default) are common to all B<Sys::Cmd> functions and are
-passed to the underlying objects at creation time:
+The following configuration items (key => default) are common to all
+B<Sys::Cmd> functions and are passed to the underlying
+L<Sys::Cmd::Process> objects at creation time:
 
 =over
 

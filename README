@@ -2,7 +2,7 @@ NAME
     Sys::Cmd - run a system command or spawn a system processes
 
 VERSION
-    v0.985.2 (2025-12-01)
+    v0.985.3 (2025-12-02)
 
 SYNOPSIS
         use Sys::Cmd qw/run runsub spawn/;
@@ -35,12 +35,11 @@ SYNOPSIS
 
 DESCRIPTION
     Sys::Cmd lets you run a system command and capture its output, or
-    spawn and interact with a system process through its stdin, stdout
-    and error handles.
+    spawn and interact with a process through its stdin, stdout and
+    error handles.
 
-    It provides the following advantages over Perl's builtin "system",
-    "qx//", "fork"+"exec", and "open" functions for dealing with
-    external processes:
+    It provides something of a superset of Perl's builtin external
+    process functions ("system", "qx//", "fork"+"exec", and "open"):
 
     *   Command lookups using File::Which (run, spawn)
 
@@ -60,29 +59,27 @@ DESCRIPTION
 
 COMMAND PROCESSING
     All functions take a @cmd list that specifies the command and its
-    (standard) arguments. The first element of @cmd determines what/how
-    things are run:
+    arguments. The first element of @cmd determines what/how things are
+    run:
 
     *   If it has one or more path components (absolute or relative) it
-        is executed as with Proc::FastSpawn.
+        is executed as is, with Proc::FastSpawn.
 
     *   If it is a CODE reference (subroutine) then a fork is performed
-        before running it in a child process. Unsupported on Win32.
+        before calling it in the child process. Unsupported on Win32.
 
     *   Everything else is looked up using File::Which and the result is
         executed with Proc::FastSpawn.
 
-    The remaining scalar elements of @cmd are passed as arguments to the
-    command (or subroutine).
+    The remaining scalar elements of @cmd are passed as arguments.
 
 OPTIONS
-    Sys::Cmd functions also take an optional "\%opts" HASH reference to
-    adjust aspects of the execution.
+    The @cmd list may also include an optional "\%opts" HASH reference
+    to adjust aspects of the execution.
 
-    The core functionality of Sys::Cmd is provided by the
-    Sys::Cmd::Process class. The following configuration items (key =>
-    default) are common to all Sys::Cmd functions and are passed to the
-    underlying objects at creation time:
+    The following configuration items (key => default) are common to all
+    Sys::Cmd functions and are passed to the underlying
+    Sys::Cmd::Process objects at creation time:
 
     dir => $PWD
         The working directory the command will be run in. Note that if
@@ -126,17 +123,17 @@ FUNCTIONS
 
         out => undef
             A reference to a scalar which is populated with output. When
-            given "run()" returns nothing.
+            given run() returns nothing.
 
         err => undef
             A reference to a scalar which is populated with error
-            output. When given "run()" does not warn of errors.
+            output. When given run() does not warn of errors.
 
     spawn( @cmd, [\%opt] ) => Sys::Cmd::Process
         Returns a Sys::Cmd::Process object representing the process
         running @cmd. You can interrogate this and interact with the
-        process via "cmdline()", "stdin()", "stdout()", "stderr()",
-        "close()", "wait_child()", "exit()", "signal()", "core()", etc.
+        process via cmdline(), stdin(), stdout(), stderr(), close(),
+        wait_child(), exit(), signal(), core(), etc.
 
   Template Functions
     When repeatedly calling a command, possibly with only slightly
@@ -173,7 +170,7 @@ FUNCTIONS
                 }
             ));
 
-        (Equivalent to manually calling "syscmd(...)" below, followed by
+        (Equivalent to manually calling syscmd(...) below, followed by
         the "runsub" method).
 
     spawnsub( @cmd, [\%opt] ) => CODEref
@@ -192,15 +189,15 @@ FUNCTIONS
             print $_->pid . ': ' . $_->stdout->getlines for @kids;
             $_->wait_child for @kids;
 
-        (Equivalent to manually calling "syscmd(...)" below followed by
+        (Equivalent to manually calling syscmd(...) below followed by
         the "spawnsub" method).
 
     syscmd( @cmd, [\%opt] ) => Sys::Cmd
         Returns a Sys::Cmd object representing a *future* command (or
         coderef) to be executed in some way. You can then call multiple
-        "run()" or "spawn()" *methods* on the object for the actual
-        work. The methods work the same way in terms of input, output,
-        and return values as the exported package functions.
+        run() or spawn() *methods* on the object for the actual work.
+        The methods work the same way in terms of input, output, and
+        return values as the exported package functions.
 
         This function underlies the "runsub" and "spawnsub" functions,
         but the author finds it less attractive as an interface.

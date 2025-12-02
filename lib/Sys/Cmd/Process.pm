@@ -1,13 +1,13 @@
 package Sys::Cmd::Process;
 use v5.18;
-our $VERSION = 'v0.985.2';
+our $VERSION = 'v0.985.3';
 use warnings;
 use parent 'Sys::Cmd';
 use Encode 'encode';
 use IO::Handle;
 use Log::Any qw/$log/;
 use Proc::FastSpawn;
-### START Class::Inline ### v0.0.1 Mon Dec  1 12:10:52 2025
+### START Class::Inline ### v0.0.1 Tue Dec  2 10:53:28 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -503,7 +503,7 @@ Sys::Cmd::Process - spawn and interact with a process
 
 =head1 VERSION
 
-v0.985.2 (2025-12-01)
+v0.985.3 (2025-12-02)
 
 =head1 SYNOPSIS
 

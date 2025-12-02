@@ -1,3 +1,14 @@
+v0.985.3 (2025-12-02) TRIAL RELEASE
+
+    Enhancements:
+        - Minor documentation cleanups.
+
+    Code Maintenance
+        - Inlined all class code.
+
+    Packaging:
+        - Fix failing tests on non UTF-8 locales
+
 v0.985.2 (2025-12-01) TRIAL RELEASE
 
     Code Maintenance

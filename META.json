@@ -53,6 +53,8 @@
             "Data::Dumper" : "0",
             "File::Spec" : "0",
             "File::Temp" : "0",
+            "Test2::Require::AuthorTesting" : "0",
+            "Test2::Require::Module" : "0",
             "Test2::V0" : "0"
          }
       }
@@ -68,6 +70,6 @@
          "url" : "ssh://git@github.com/mlawren/p5-Sys-Cmd.git"
       }
    },
-   "version" : "v0.985.2",
+   "version" : "v0.985.3",
    "x_serialization_backend" : "JSON::PP version 4.16"
 }
