@@ -276,7 +276,7 @@ sub _fork {
           or print $child_err sprintf "[%d] open %s, %s: %s\n", $self->pid,
           $fh, $mode, $!;
 
-        binmode $fh, $enc;
+        binmode $fh, $enc or print $child_err $fh . 'binmode: ' . $!;
         $fh->autoflush(1) if $autoflush;
     }
 
