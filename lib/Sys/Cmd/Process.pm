@@ -1,6 +1,6 @@
 package Sys::Cmd::Process;
 use v5.18;
-our $VERSION = 'v0.985.3';
+our $VERSION = 'v0.986.0';
 use warnings;
 use parent 'Sys::Cmd';
 use Encode 'encode';
@@ -276,7 +276,7 @@ sub _fork {
           or print $child_err sprintf "[%d] open %s, %s: %s\n", $self->pid,
           $fh, $mode, $!;
 
-        binmode $fh, $enc;
+        binmode $fh, $enc or print $child_err $fh . 'binmode: ' . $!;
         $fh->autoflush(1) if $autoflush;
     }
 
@@ -503,7 +503,7 @@ Sys::Cmd::Process - spawn and interact with a process
 
 =head1 VERSION
 
-v0.985.3 (2025-12-02)
+v0.986.0 (2025-12-04)
 
 =head1 SYNOPSIS
 
@@ -755,7 +755,7 @@ L<Git::Repository::Command> by Philippe Bruhat (BooK).
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2011-2025 Mark Lawrence <nomad@null.net>
+Copyright 2011-2025 Mark Lawrence <mark@rekudos.net>
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the

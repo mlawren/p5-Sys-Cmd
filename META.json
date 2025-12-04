@@ -59,7 +59,7 @@
          }
       }
    },
-   "release_status" : "testing",
+   "release_status" : "stable",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/mlawren/p5-Sys-Cmd/issues"
@@ -70,6 +70,6 @@
          "url" : "ssh://git@github.com/mlawren/p5-Sys-Cmd.git"
       }
    },
-   "version" : "v0.985.3",
+   "version" : "v0.986.0",
    "x_serialization_backend" : "JSON::PP version 4.16"
 }

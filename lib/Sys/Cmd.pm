@@ -14,7 +14,7 @@ use Exporter::Tidy _map => {
     spawnsub => sub { syscmd( undef, @_ )->spawnsub },
 };
 
-our $VERSION = 'v0.985.3';
+our $VERSION = 'v0.986.0';
 
 ### START Class::Inline ### v0.0.1 Tue Dec  2 10:53:28 2025
 require Carp;
@@ -308,7 +308,7 @@ Sys::Cmd - run a system command or spawn a system processes
 
 =head1 VERSION
 
-v0.985.3 (2025-12-02)
+v0.986.0 (2025-12-04)
 
 =head1 SYNOPSIS
 
@@ -625,7 +625,7 @@ L<Git::Repository::Command> by Philippe Bruhat (BooK).
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright 2011-2025 Mark Lawrence <nomad@null.net>
+Copyright 2011-2025 Mark Lawrence <mark@rekudos.net>
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
