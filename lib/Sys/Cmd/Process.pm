@@ -7,7 +7,7 @@ use Encode 'encode';
 use IO::Handle;
 use Log::Any qw/$log/;
 use Proc::FastSpawn;
-### START Class::Inline ### v0.0.1 Tue Dec  2 10:53:28 2025
+### START Class::Inline ### v0.0.1 Thu Dec  4 15:15:02 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -95,26 +95,6 @@ sub stdin {
 sub stdout {
     if ( @_ > 1 ) { $_[0]{'stdout'} = $_[1] }
     $_[0]{'stdout'} //= $_FIELDS->{'stdout'}->{'default'}->( $_[0] );
-}
-
-sub _dump {
-    my $self = shift;
-    my $x    = do {
-        require Data::Dumper;
-        no warnings 'once';
-        local $Data::Dumper::Indent   = 1;
-        local $Data::Dumper::Maxdepth = ( shift // 2 );
-        local $Data::Dumper::Sortkeys = 1;
-        Data::Dumper::Dumper($self);
-    };
-    $x =~ s/.*?{/{/;
-    $x =~ s/}.*?\n$/}/;
-    my $i = 0;
-    my @list;
-    do { @list = caller( $i++ ) } until $list[3] eq __PACKAGE__ . '::_dump';
-    wantarray
-      ? warn "$self $x at $list[1]:$list[2]\n"
-      : "$self $x at $list[1]:$list[2]\n";
 }
 @_CLASS = grep 1,    ### END Class::Inline ###
   {

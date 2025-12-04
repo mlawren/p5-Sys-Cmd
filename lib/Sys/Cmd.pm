@@ -16,7 +16,7 @@ use Exporter::Tidy _map => {
 
 our $VERSION = 'v0.0.0';
 
-### START Class::Inline ### v0.0.1 Tue Dec  2 10:53:28 2025
+### START Class::Inline ### v0.0.1 Thu Dec  4 15:15:01 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -113,26 +113,6 @@ sub on_exit {
     $_[0]{'on_exit'} // undef;
 }
 sub out { __RO() if @_ > 1; $_[0]{'out'} // undef }
-
-sub _dump {
-    my $self = shift;
-    my $x    = do {
-        require Data::Dumper;
-        no warnings 'once';
-        local $Data::Dumper::Indent   = 1;
-        local $Data::Dumper::Maxdepth = ( shift // 2 );
-        local $Data::Dumper::Sortkeys = 1;
-        Data::Dumper::Dumper($self);
-    };
-    $x =~ s/.*?{/{/;
-    $x =~ s/}.*?\n$/}/;
-    my $i = 0;
-    my @list;
-    do { @list = caller( $i++ ) } until $list[3] eq __PACKAGE__ . '::_dump';
-    wantarray
-      ? warn "$self $x at $list[1]:$list[2]\n"
-      : "$self $x at $list[1]:$list[2]\n";
-}
 @_CLASS = grep 1,    ### END Class::Inline ###
   {
     cmd => {
