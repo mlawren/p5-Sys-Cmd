@@ -1,6 +1,6 @@
 package Sys::Cmd::Process;
 use v5.18;
-our $VERSION = 'v0.0.0';
+our $VERSION = 'v0.986.0';
 use warnings;
 use parent 'Sys::Cmd';
 use Encode 'encode';
@@ -503,7 +503,7 @@ Sys::Cmd::Process - spawn and interact with a process
 
 =head1 VERSION
 
-v0.0.0 (yyyy-mm-dd)
+v0.986.0 (2025-12-04)
 
 =head1 SYNOPSIS
 
