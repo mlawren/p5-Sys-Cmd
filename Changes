@@ -6,8 +6,8 @@ v0.0.0 (yyyy-mm-dd)
     New Features:
         - None.
 
-    Enhancements:
-        - None.
+    Improvements:
+        - *Really* Fix failing tests on non UTF-8 locales
 
     Bug Fixes:
         - None.
@@ -18,7 +18,7 @@ v0.0.0 (yyyy-mm-dd)
     Dependencies:
         - None.
 
-    Testing & Packaging:
+    Packaging:
         - None.
 
 v0.985.3 (2025-12-02) TRIAL RELEASE

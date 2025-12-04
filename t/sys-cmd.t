@@ -15,13 +15,13 @@ use constant MSWin32 => $^O eq 'MSWin32';
 
 diag "Test locale is '$ENCODING_LOCALE'";
 
-my $no_wide = $ENCODING_LOCALE =~ m/(ANSI_X3|ASCII)/i;
+my $no_utf8 = $ENCODING_LOCALE !~ m/UTF-8/;
 my $dir     = abs_path( tempdir( CLEANUP => 1 ) );
 my $cwd     = cwd;
 my @info_pl = ( $^X, File::Spec->catfile( $cwd, 't', 'info.pl' ) );
 
 $ENV{TO_BE_DELETED} = 'LATER';
-$ENV{WIDE_CHAR}     = encode( locale => '✅' ) unless $no_wide;
+$ENV{WIDE_CHAR}     = encode( locale => '✅' ) unless $no_utf8;
 
 my @tests = (
     {
@@ -31,7 +31,7 @@ my @tests = (
     },
     {
         test    => 'arguments UTF-8',
-        no_wide => $no_wide,
+        no_utf8 => $no_utf8,
         cmdline => [ @info_pl, 'ß' ],
         result  => {},
     },
@@ -53,7 +53,7 @@ my @tests = (
     },
     {
         test    => 'env UTF-8',
-        no_wide => $no_wide,
+        no_utf8 => $no_utf8,
         cmdline => [
             @info_pl,
             {
@@ -277,7 +277,7 @@ sub do_test {
 
 for my $t ( @tests, @fail ) {
   SKIP: {
-        skip $t->{test} . ' skipped under this locale' if $t->{no_wide};
+        skip $t->{test} . ' skipped under this locale' if $t->{no_utf8};
         subtest $t->{test}, \&do_test, $t;
     }
 }
@@ -332,7 +332,7 @@ SKIP: {
             chomp $res if defined $res;
             is $res, "$tdir: $i", "coderef: echo $i";
         }
-        unless ($no_wide) {
+        unless ($no_utf8) {
             my $i = 'Zürich';
             $proc->stdin->print( $i . "\n" );
             my $res = $proc->stdout->getline;
@@ -348,7 +348,7 @@ SKIP: {
 
 subtest 'run', sub {
     my ( $out, $err, $info );
-    my $errstr = 'Parachute Please! ' . ( $no_wide ? '' : '✈️' );
+    my $errstr = 'Parachute Please! ' . ( $no_utf8 ? '' : '✈️' );
     $info = $out = $err = undef;
     $out  = run(@info_pl);
     eval $out;
