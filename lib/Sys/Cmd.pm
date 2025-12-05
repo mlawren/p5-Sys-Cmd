@@ -216,15 +216,19 @@ my sub new_proc {
 }
 
 sub run {
-    my $opts    = merge_args(@_);
-    my $ref_out = delete $opts->{out};
-    my $ref_err = delete $opts->{err};
-    my $proc    = new_proc($opts);
-    my @err     = $proc->stderr->getlines;
-    my @out     = $proc->stdout->getlines;
+    my $opts     = merge_args(@_);
+    my $ref_out  = delete $opts->{out};
+    my $ref_err  = delete $opts->{err};
+    my $ref_exit = delete $opts->{exit};
+    my $proc     = new_proc($opts);
+    my @err      = $proc->stderr->getlines;
+    my @out      = $proc->stdout->getlines;
     $proc->wait_child;
 
-    if ( $proc->signal != 0 ) {
+    if ($ref_exit) {
+        $$ref_exit = $proc->exit;
+    }
+    elsif ( $proc->signal != 0 ) {
         _croak(
             sprintf(
                 '%s[%d] %s [signal: %d core: %d]',
@@ -294,29 +298,47 @@ v0.0.0 (yyyy-mm-dd)
 
     use Sys::Cmd qw/run runsub spawn/;
 
-    my $output   = run( 'ls', '--long' );    # /usr/bin/ls --long
-    my @numbered = run( 'cat', '-n',         # /usr/bin/cat -n <<EOF
-        {                                    # > X
-            input => "X\nY\nZ\n",            # > Y
-        }                                    # > Z
-    );                                       # EOF
+The following catches normal command output, warning on anything sent
+to stderr, and raises an exception when exit is non-zero:
 
-    my $ls = runsub( 'ls',                   # Does nothing... yet
+    my $output = run( 'ls', '--long' );
+
+Commands can be fed input from Perl and return separate lines in in
+array context:
+
+    my @XYZ = run( 'cat', '-n', { input => "X\nY\nZ\n", } );
+
+Output streams and exit values can be individually captured, in which
+case no warnings or exceptions are triggered:
+
+    my ($out, $err, $exit);
+    run( 'ls', 'FILE_NOT_FOUND', {
+        out => \$out,
+        err => \$err,
+        exit => \$exit,
+    });
+
+A type of templating exists for multiple calls to the same command with
+pre-defined defaults:
+
+    my $ls = runsub( 'ls',        # Returns a subref
         {
             dir => '/tmp',
-            out => \$output,
+            out => \$out,
         }
     );
-    $ls->( 'here' );                         # Runs in /tmp and puts
-    $ls->( '-l', 'there');                   # (long) output in $output
+    $ls->()                       &&  print $out;
+    $ls->({ dir => '/elsewhere'}) &&  print $out;
 
-    # Spawn a process for asynchronous interaction
+For asynchronous interaction with the process use C<spawn>:
+
     my $proc = spawn( @cmd, { encoding => 'iso-8859-3' } );
-    while ( my $line = $proc->stdout->getline ) {
+    printf "pid %d\n", $proc->pid;
+
+    while ( defined ( my $line = $proc->stdout->getline ) ) {
         $proc->stdin->print("thanks\n");
     }
     warn $proc->stderr->getlines;
-
     $proc->close();    # Finished talking to file handles
     $proc->wait_child && die "Non-zero exit!: " . $proc->exit;
 
@@ -339,17 +361,17 @@ functions ("system", "qx//", "fork"+"exec", and "open"):
 
 =item * Raise exception on failure (run)
 
-=item * Capture output and error separately (run, spawn)
+=item * Capture output, error and exit separately (run, spawn)
 
-=item * Asynchronous interaction through file handles (spawn)
-
-=item * Sensible exit values (spawn)
+=item * Sensible exit values (run, spawn)
 
 =item * Template functions for repeated calls (runsub, spawnsub)
 
+=item * Asynchronous interaction through file handles (spawn)
+
 =back
 
-=head1 COMMAND PROCESSING
+=head2 Command Path
 
 All functions take a C<@cmd> list that specifies the command and its
 arguments. The first element of C<@cmd> determines what/how things are
@@ -370,21 +392,19 @@ result is executed with L<Proc::FastSpawn>.
 
 The remaining scalar elements of C<@cmd> are passed as arguments.
 
-=head1 OPTIONS
+=head2 Common Options
 
-The C<@cmd> list may also include an optional C<\%opts> HASH reference
-to adjust aspects of the execution.
-
-The following configuration items (key => default) are common to all
-B<Sys::Cmd> functions and are passed to the underlying
-L<Sys::Cmd::Process> objects at creation time:
+A function's C<@cmd> list may also include an optional C<\%opts> HASH
+reference to adjust aspects of the execution.  The following
+configuration items (key => default) are common to all B<Sys::Cmd>
+functions.
 
 =over
 
-=item dir => $PWD
+=item dir => $CWD
 
-The working directory the command will be run in. Note that if C<@cmd>
-is a relative path, it may not be found from the new location.
+The working directory the command will be run in. Note that a relative
+command path might not be valid if the current directory changes.
 
 =item encoding => $Encode::Locale::ENCODING_LOCALE
 
@@ -439,24 +459,32 @@ string. Accepts the following additional configuration keys:
 
 =over
 
-=item out => undef
+=item out => \$scalar
 
 A reference to a scalar which is populated with output. When given
 C<run()> returns nothing.
 
-=item err => undef
+=item err => \$scalar
 
 A reference to a scalar which is populated with error output. When
 given C<run()> does not warn of errors.
+
+=item exit => \$scalar
+
+A reference to a scalar which is populated with the exit value. When
+given C<run()> does not raise an exception on a non-zero exit.
 
 =back
 
 =item spawn( @cmd, [\%opt] ) => Sys::Cmd::Process
 
-Returns a L<Sys::Cmd::Process> object representing the process running
-C<@cmd>. You can interrogate this and interact with the process via
-C<cmdline()>, C<stdin()>, C<stdout()>, C<stderr()>, C<close()>,
-C<wait_child()>, C<exit()>, C<signal()>, C<core()>, etc.
+Return an object representing the process running according to C<@cmd>
+and C<\%opt>. This is the core mechanism underlying C<run>.
+
+You can interact with the process object via its C<cmdline()>,
+C<stdin()>, C<stdout()>, C<stderr()>, C<close()>, C<wait_child()>,
+C<exit()>, C<signal()>, C<core()> attributes and handles. See
+L<Sys::Cmd::Process> for details.
 
 =back
 
@@ -467,8 +495,17 @@ different arguments or environments, a kind of "templating" mechanism
 can be useful, to avoid repeating full configuration values and wearing
 a path lookup penalty each call.
 
-The B<Sys::Cmd> class itself provides this functionality, exposed as
-follows:
+=begin comment
+
+=item syscmd( @cmd, [\%opt] ) => Sys::Cmd
+
+Return a B<Sys::Cmd> object representing a I<future> command (or
+coderef) to be executed in some way. You can then call multiple
+C<run()> or C<spawn()> I<methods> on the object for the actual work.
+The methods work the same way in terms of input, output, and return
+values as the exported package functions below.
+
+=end comment
 
 =over
 
@@ -498,9 +535,6 @@ When called, additional arguments and options are I<merged>:
         }
     ));
 
-(Equivalent to manually calling C<syscmd(...)> below, followed by the
-C<runsub> method).
-
 =item spawnsub( @cmd, [\%opt] ) => CODEref
 
 Returns a subroutine reference representing a I<future> process to be
@@ -516,20 +550,6 @@ When called, additional arguments and options are I<merged>.
     }
     print $_->pid . ': ' . $_->stdout->getlines for @kids;
     $_->wait_child for @kids;
-
-(Equivalent to manually calling C<syscmd(...)> below followed by the
-C<spawnsub> method).
-
-=item syscmd( @cmd, [\%opt] ) => Sys::Cmd
-
-Returns a B<Sys::Cmd> object representing a I<future> command (or
-coderef) to be executed in some way. You can then call multiple
-C<run()> or C<spawn()> I<methods> on the object for the actual work.
-The methods work the same way in terms of input, output, and return
-values as the exported package functions.
-
-This function underlies the "runsub" and "spawnsub" functions, but the
-author finds it less attractive as an interface.
 
 =back
 

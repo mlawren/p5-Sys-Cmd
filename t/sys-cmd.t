@@ -347,70 +347,111 @@ SKIP: {
 }
 
 subtest 'run', sub {
-    my ( $out, $err, $info );
+    my ( $out, $err, $info, $exit );
     my $errstr = 'Parachute Please! ' . ( $no_utf8 ? '' : '✈️' );
-    $info = $out = $err = undef;
-    $out  = run(@info_pl);
-    eval $out;
-    die $@ if $@;
-    is ref($info), 'HASH', 'run() returned $info = { ... }';
 
-    {
-        local $SIG{__WARN__} = sub {
-            $err = shift;
-        };
-        run(
-            @info_pl,
-            {
-                env => { SYS_CMD_ERR => $errstr },
-            }
-        );
+    subtest 'return out', sub {
+        $info = $out = $err = $exit = undef;
+        no_warnings { $out = run(@info_pl) };
         eval $out;
         die $@ if $@;
         is ref($info), 'HASH', 'run() returned $info = { ... }';
+    };
+
+    subtest 'warn on stderr', sub {
+        $info = $out = $err = $exit = undef;
+        $err =
+          warning { run( @info_pl, { env => { SYS_CMD_ERR => $errstr }, } ) };
         like $err, qr/$errstr/, 'stderr raised warning ' . $errstr;
-    }
+    };
 
-    $info = $out = $err = undef;
-    run(
-        @info_pl,
-        {
-            out => \$out,
-            err => \$err,
-        }
-    );
-    eval $out;
-    die $@ if $@;
-    is ref($info), 'HASH', 'run() put $info into \$out';
-    is $err,       '',     'run() $err empty on zero warnings';
+    subtest 'catch out, err and exit in vars', sub {
+        $info = $out = $err = $exit = undef;
+        ok(
+            no_warnings {
+                run(
+                    @info_pl,
+                    {
+                        out  => \$out,
+                        err  => \$err,
+                        exit => \$exit,
+                    }
+                )
+            },
+            'no warnings'
+        );
+        eval $out;
+        die $@ if $@;
+        is ref($info), 'HASH', 'run() put $info into \$out';
+        is $err,       '',     'run() $err empty on zero warnings';
+        is $exit,      0,      'run() $exit set 0';
 
-    $info = $out = $err = undef;
-    run(
-        @info_pl,
-        {
-            out => \$out,
-            err => \$err,
-            env => { SYS_CMD_ERR => $errstr },
-        }
-    );
-    eval $out;
-    die $@ if $@;
-    is ref($info), 'HASH',         'run() put $info into \$out';
-    is $err,       $errstr . "\n", '$err is ' . $errstr;
+        $info = $out = $err = $exit = undef;
+        ok(
+            no_warnings {
+                run(
+                    @info_pl,
+                    {
+                        out  => \$out,
+                        err  => \$err,
+                        env  => { SYS_CMD_ERR => $errstr },
+                        exit => \$exit,
+                    }
+                )
+            },
+            'no warnings'
+        );
+        eval $out;
+        die $@ if $@;
+        is ref($info), 'HASH',         'run() put $info into \$out';
+        is $err,       $errstr . "\n", '$err is ' . $errstr;
+        is $exit,      0,              'run() $exit set 0';
+
+        $info = $out = $err = $exit = undef;
+        ok(
+            no_warnings {
+                ok(
+                    lives {
+                        run(
+                            @info_pl,
+                            {
+                                out => \$out,
+                                err => \$err,
+                                env => {
+                                    SYS_CMD_ERR  => $errstr,
+                                    SYS_CMD_EXIT => 2,
+                                },
+                                exit => \$exit,
+                            }
+                        )
+                    },
+                    'no exception'
+                )
+            },
+            'no warnings'
+        );
+        eval $out;
+        die $@ if $@;
+
+        is ref($info), 'HASH',         'run() put $info into \$out';
+        is $err,       $errstr . "\n", '$err is ' . $errstr;
+        is $exit,      2,              "exit is $exit";
+    };
 
     # Test early ->core. Cannot test ->exit here, as even on exception
     # $proc->{exit} jumps into existance, and wait_child uses
     # ->has_exit.
-    $info = $out = $err = undef;
+    $info = $out = $err = $exit = undef;
     my $proc = spawn(@info_pl);
-    eval { $proc->core };
+
     like(
-        $@,
+        dies { $proc->core },
         qr/before wait_child/,
         'exit,core,signal only valid after wait_child'
     );
     $proc->wait_child;
     is $proc->core, 0, 'core status 0';
+
 };
 
 SKIP: {
