@@ -1,7 +1,8 @@
 v0.0.0 (yyyy-mm-dd)
 
     API / Behaviour Changes:
-        - None.
+        - Deprecate the "subcmd" function and remove all documentation
+          references to the Sys::Cmd object.
 
     Bug Fixes:
         - None.
@@ -11,6 +12,8 @@ v0.0.0 (yyyy-mm-dd)
 
     Improvements:
         - run: new optional \$exit ref for capturing the exit value
+        - Simplify Sys::Cmd::Process by refactoring much of it into
+          Sys::Cmd.
 
     Packaging/Dependencies:
         - None.

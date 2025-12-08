@@ -1,22 +1,35 @@
 package Sys::Cmd;
 use v5.18;
+
 use warnings;
 no warnings "experimental::lexical_subs";
 use feature 'lexical_subs';
-use Carp           ();
-use Encode::Locale ();    # Creates the 'locale' alias
-use Encode 'resolve_alias';
+
+use Carp            qw[];
+use Cwd             qw[getcwd];
+use Encode::Locale  qw[$ENCODING_LOCALE];      # Also Creates the 'locale' alias
+use Encode          qw[encode resolve_alias];
+use IO::Handle      qw[];
+use Log::Any        qw[$log];
+use Proc::FastSpawn qw[];
+use Sys::Cmd::Process;
 use Exporter::Tidy _map => {
-    run      => sub { run( undef, @_ ) },
-    spawn    => sub { spawn( undef, @_ ) },
-    syscmd   => sub { syscmd( undef, @_ ) },
-    runsub   => sub { syscmd( undef, @_ )->runsub },
-    spawnsub => sub { syscmd( undef, @_ )->spawnsub },
+    run    => sub { _syscmd( undef, @_ )->_run },
+    spawn  => sub { _syscmd( undef, @_ )->_spawn },
+    syscmd => sub { _syscmd( undef, @_ ) },
+    runsub => sub {
+        my $cmd = _syscmd( undef, @_ );
+        sub { @_ ? _syscmd( $cmd, @_ )->_run : $cmd->_run }
+    },
+    spawnsub => sub {
+        my $cmd = syscmd( undef, @_ );
+        sub { @_ ? _syscmd( $cmd, @_ )->_spawn : $cmd->_spawn }
+    },
 };
 
 our $VERSION = 'v0.0.0';
 
-### START Class::Inline ### v0.0.1 Thu Dec  4 15:15:01 2025
+### START Class::Inline ### v0.0.1 Tue Dec  9 15:41:03 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -61,27 +74,33 @@ sub _NEW {
               . join( ', ', @missing ) );
     }
     $_[0]{'cmd'} = eval { $_FIELDS->{'cmd'}->{'isa'}->( $_[0]{'cmd'} ) };
-    Carp::confess( 'Sys::Cmd cmd: ' . $@ ) if $@;
+    delete $_[0]{'cmd'} || Carp::confess( 'Sys::Cmd cmd: ' . $@ ) if $@;
     $_[0]{'dir'} = eval { $_FIELDS->{'dir'}->{'isa'}->( $_[0]{'dir'} ) }
       if exists $_[0]{'dir'};
-    Carp::confess( 'Sys::Cmd dir: ' . $@ ) if $@;
+    delete $_[0]{'dir'} || Carp::confess( 'Sys::Cmd dir: ' . $@ ) if $@;
     $_[0]{'encoding'} =
       eval { $_FIELDS->{'encoding'}->{'isa'}->( $_[0]{'encoding'} ) }
       if exists $_[0]{'encoding'};
-    Carp::confess( 'Sys::Cmd encoding: ' . $@ ) if $@;
+    delete $_[0]{'encoding'} || Carp::confess( 'Sys::Cmd encoding: ' . $@ )
+      if $@;
     $_[0]{'env'} = eval { $_FIELDS->{'env'}->{'isa'}->( $_[0]{'env'} ) }
       if exists $_[0]{'env'};
-    Carp::confess( 'Sys::Cmd env: ' . $@ ) if $@;
+    delete $_[0]{'env'} || Carp::confess( 'Sys::Cmd env: ' . $@ ) if $@;
     $_[0]{'mock'} = eval { $_FIELDS->{'mock'}->{'isa'}->( $_[0]{'mock'} ) }
       if exists $_[0]{'mock'};
-    Carp::confess( 'Sys::Cmd mock: ' . $@ ) if $@;
-    map { delete $_[1]->{$_} } 'cmd', 'dir', 'encoding', 'env', 'err', 'input',
-      'mock', 'on_exit', 'out';
+    delete $_[0]{'mock'} || Carp::confess( 'Sys::Cmd mock: ' . $@ ) if $@;
+    map { delete $_[1]->{$_} } '_coderef', 'cmd', 'dir', 'encoding', 'env',
+      'err', 'exit', 'input', 'log_any', 'mock', 'on_exit', 'out';
 }
 
 sub __RO {
     my ( undef, undef, undef, $sub ) = caller(1);
     Carp::confess("attribute $sub is read-only");
+}
+
+sub _coderef {
+    __RO() if @_ > 1;
+    $_[0]{'_coderef'} //= $_FIELDS->{'_coderef'}->{'default'}->( $_[0] );
 }
 sub cmd { __RO() if @_ > 1; $_[0]{'cmd'} // undef }
 sub dir { __RO() if @_ > 1; $_[0]{'dir'} // undef }
@@ -92,18 +111,23 @@ sub encoding {
         $_FIELDS->{'encoding'}->{'isa'}
           ->( $_FIELDS->{'encoding'}->{'default'} );
     };
-    Carp::confess( 'invalid (Sys::Cmd::encoding) default: ' . $@ ) if $@;
+    delete $_[0]{'encoding'}
+      || Carp::confess( 'invalid (Sys::Cmd::encoding) default: ' . $@ )
+      if $@;
     $_[0]{'encoding'};
 }
-sub env   { __RO() if @_ > 1; $_[0]{'env'}   // undef }
-sub err   { __RO() if @_ > 1; $_[0]{'err'}   // undef }
-sub input { __RO() if @_ > 1; $_[0]{'input'} // undef }
+sub env     { __RO() if @_ > 1; $_[0]{'env'}     // undef }
+sub err     { __RO() if @_ > 1; $_[0]{'err'}     // undef }
+sub exit    { __RO() if @_ > 1; $_[0]{'exit'}    // undef }
+sub input   { __RO() if @_ > 1; $_[0]{'input'}   // undef }
+sub log_any { __RO() if @_ > 1; $_[0]{'log_any'} // undef }
 
 sub mock {
     if ( @_ > 1 ) {
-        $_[0]{'mock'} =
-          eval { $_FIELDS->{'mock'}->{'isa'}->( $_[0]{'mock'} // undef ) };
-        Carp::confess( 'invalid (Sys::Cmd::mock) value: ' . $@ ) if $@;
+        $_[0]{'mock'} = eval { $_FIELDS->{'mock'}->{'isa'}->( $_[1] ) };
+        delete $_[0]{'mock'}
+          || Carp::confess( 'invalid (Sys::Cmd::mock) value: ' . $@ )
+          if $@;
     }
     $_[0]{'mock'} // undef;
 }
@@ -126,12 +150,18 @@ sub out { __RO() if @_ > 1; $_[0]{'out'} // undef }
         },
         required => 1,
     },
+    _coderef => {
+        default => sub {
+            my $c = $_[0]->cmd->[0];
+            ref($c) eq 'CODE' ? $c : undef;
+        },
+    },
     encoding => {
-        default => 'locale',
+        default => $ENCODING_LOCALE,
         isa     => sub {
-            my $e = resolve_alias( $_[0] )
+            resolve_alias( $_[0] )
               || _croak("Unknown Encoding: $_[0]");
-            $e;
+            $_[0];
         },
     },
     env => {
@@ -146,10 +176,12 @@ sub out { __RO() if @_ > 1; $_[0]{'out'} // undef }
             $_[0];
         },
     },
-    input => {},
-    out   => {},
-    err   => {},
-    mock  => {
+    input   => {},
+    log_any => {},
+    out     => {},
+    err     => {},
+    exit    => {},
+    mock    => {
         is  => 'rw',
         isa => sub {
             ( ( not defined $_[0] ) || 'CODE' eq ref $_[0] )
@@ -166,7 +198,7 @@ sub _croak {
     Carp::croak(@_);
 }
 
-my sub merge_args {
+sub _syscmd {
     my $template = shift;
 
     my ( @cmd, $opts );
@@ -188,7 +220,7 @@ my sub merge_args {
             my %env = ( each %{ $template->env }, each %{ $opts->{env} } );
             $opts->{env} = \%env;
         }
-        return { %$template, %$opts };
+        return Sys::Cmd->new( { %$template, %$opts } );
     }
 
     _croak('$cmd must be defined') unless @cmd && defined $cmd[0];
@@ -207,56 +239,244 @@ my sub merge_args {
         }
     }
     $opts->{cmd} = \@cmd;
-    $opts;
+    Sys::Cmd->new($opts);
 }
 
-my sub new_proc {
-    require Sys::Cmd::Process;
-    Sys::Cmd::Process->new(@_);
+my sub _fastspawn {
+    my @cmd = @_;
+
+    # Backup the original 0,1,2 file descriptors
+    open my $old_fd0, '<&', 0;
+    open my $old_fd1, '>&', 1;
+    open my $old_fd2, '>&', 2;
+
+    # Get new handles to descriptors 0,1,2
+    my $fd0 = IO::Handle->new_from_fd( 0, 'r' );
+    my $fd1 = IO::Handle->new_from_fd( 1, 'w' );
+    my $fd2 = IO::Handle->new_from_fd( 2, 'w' );
+
+    # New handles for the child
+    my $stdin  = IO::Handle->new;
+    my $stdout = IO::Handle->new;
+    my $stderr = IO::Handle->new;
+
+    # Pipe our filehandles to new child filehandles
+    pipe( my $child_in, $stdin )        || die "pipe: $!";
+    pipe( $stdout,      my $child_out ) || die "pipe: $!";
+    pipe( $stderr,      my $child_err ) || die "pipe: $!";
+
+    # Make sure that 0,1,2 are inherited (probably are anyway)
+    Proc::FastSpawn::fd_inherit( $_, 1 ) for 0, 1, 2;
+
+    # But don't inherit the rest
+    Proc::FastSpawn::fd_inherit( fileno($_), 0 )
+      for $old_fd0, $old_fd1, $old_fd2,
+      $child_in, $child_out, $child_err,
+      $stdin,    $stdout,    $stderr;
+
+    # Re-open 0,1,2 by duping the child pipe ends
+    open $fd0, '<&', fileno($child_in)  || die "open: $!";
+    open $fd1, '>&', fileno($child_out) || die "open: $!";
+    open $fd2, '>&', fileno($child_err) || die "open: $!";
+
+    # Kick off the new process
+    my $pid = eval {
+        Proc::FastSpawn::spawn(
+            $cmd[0],
+            \@cmd,
+            [
+                map { $_ . '=' . ( defined $ENV{$_} ? $ENV{$_} : '' ) }
+                  keys %ENV
+            ]
+        );
+    };
+    my $err = $@;
+
+    # Restore our local 0,1,2 to the originals
+    open $fd0, '<&', fileno($old_fd0) || die "open: $!";
+    open $fd1, '>&', fileno($old_fd1) || die "open: $!";
+    open $fd2, '>&', fileno($old_fd2) || die "open: $!";
+
+    # Parent doesn't need to see the child or backup descriptors anymore
+    close($_) || die "close: $!"
+      for $old_fd0,
+      $old_fd1,
+      $old_fd2,
+      $child_in,
+      $child_out,
+      $child_err;
+
+    # Complain if the spawn failed for some reason
+    _croak($err) if $err;
+    _croak('Unable to spawn child') unless defined $pid;
+
+    (
+        pid    => $pid,
+        stdin  => $stdin,
+        stdout => $stdout,
+        stderr => $stderr
+    );
 }
 
-sub run {
-    my $opts     = merge_args(@_);
-    my $ref_out  = delete $opts->{out};
-    my $ref_err  = delete $opts->{err};
-    my $ref_exit = delete $opts->{exit};
-    my $proc     = new_proc($opts);
-    my @err      = $proc->stderr->getlines;
-    my @out      = $proc->stdout->getlines;
+my sub _fork {
+    my $encoding = shift // die 'need encoding';
+    my $code     = shift // die 'need code';
+    my @args     = @_;
+    my ( $stdin, $stdout, $stderr ) =
+      ( IO::Handle->new, IO::Handle->new, IO::Handle->new, );
+
+    pipe( my $child_in, $stdin )        || die "pipe: $!";
+    pipe( $stdout,      my $child_out ) || die "pipe: $!";
+    pipe( $stderr,      my $child_err ) || die "pipe: $!";
+
+    my $pid = fork();
+    if ( !defined $pid ) {
+        my $why = $!;
+        die "fork: $why";
+    }
+
+    if ( $pid > 0 ) {    # parent
+        close($_) for
+          $child_in,
+          $child_out,
+          $child_err;
+
+        return (
+            pid    => $pid,
+            stdin  => $stdin,
+            stdout => $stdout,
+            stderr => $stderr
+        );
+    }
+
+    # Child
+    $child_err->autoflush(1);
+
+    foreach my $quad (
+        [ \*STDERR, '>&=', fileno($child_err), 1 ],
+        [ \*STDOUT, '>&=', fileno($child_out), 1 ],
+        [ \*STDIN,  '<&=', fileno($child_in),  0 ],
+      )
+    {
+        my ( $fh, $mode, $fileno, $autoflush ) = @$quad;
+
+        open( $fh, $mode, $fileno )
+          or print $child_err sprintf "[%d] open %s, %s: %s\n", $pid,
+          $fh, $mode, $!;
+
+        binmode $fh, ':encoding(' . $encoding . ')'
+          or warn sprintf "[%d] binmode %d(%s) %s: %s", $pid,
+          $fileno, $mode, $encoding, $!;
+
+        $fh->autoflush(1) if $autoflush;
+    }
+
+    close($_) for
+      $stdin,
+      $stdout,
+      $stderr,
+      $child_in,
+      $child_out,
+      $child_err;
+
+    $code->(@args);
+    _exit(0);
+
+    #    exec( @{ $self->cmd } );
+    #    die "exec: $!";
+}
+
+sub _spawn {
+    my $self = shift;
+    my $dir  = $self->dir;
+    my $cwd  = getcwd if defined $dir;
+
+    my $proc = eval {
+        local %ENV = %ENV;
+        my $locale = $self->encoding;
+        while ( my ( $key, $val ) = each %{ $self->env // {} } ) {
+            my $keybytes = encode( $locale, $key, Encode::FB_CROAK );
+            if ( defined $val ) {
+                $ENV{$keybytes} = encode( $locale, $val, Encode::FB_CROAK );
+            }
+            else {
+                delete $ENV{$keybytes};
+            }
+        }
+
+        chdir $dir or die "chdir: $!" if defined $dir;
+        my $oe = $self->on_exit;
+
+        Sys::Cmd::Process->new(
+            cmd => $self->cmd,
+            $oe ? ( on_exit => $oe ) : (),
+            $self->_coderef
+            ? _fork( $self->encoding, @{ $self->cmd } )
+            : _fastspawn(
+                map {
+                    encode(
+                        $locale => $_,
+                        Encode::FB_CROAK | Encode::LEAVE_SRC
+                    )
+                } @{ $self->cmd }
+            )
+        );
+    };
+    my $err = $@;
+    chdir $cwd if defined $dir;
+    die $err   if $err;
+
+    my $enc = ':encoding(' . $self->encoding . ')';
+    binmode( $proc->stdin,  $enc ) or warn "binmode stdin: $!";
+    binmode( $proc->stdout, $enc ) or warn "binmode stdout: $!";
+    binmode( $proc->stderr, $enc ) or warn "binmode stderr: $!";
+
+    $proc->stdin->autoflush(1);
+
+    # some input was provided
+    if ( defined( my $input = $self->input ) ) {
+        local $SIG{PIPE} =
+          sub { warn "Broken pipe when writing to:" . $proc->cmdline };
+
+        if ( ( 'ARRAY' eq ref $input ) && @$input ) {
+            $proc->stdin->print(@$input);
+        }
+        elsif ( length $input ) {
+            $proc->stdin->print($input);
+        }
+
+        $proc->stdin->close;
+    }
+
+    $proc;
+}
+
+sub _run {
+    my $self = shift;
+    my $proc = $self->_spawn;
+
+    my @err = $proc->stderr->getlines;
+    my @out = $proc->stdout->getlines;
+
     $proc->wait_child;
 
-    if ($ref_exit) {
-        $$ref_exit = $proc->exit;
+    if ( my $ref = $self->exit ) {
+        $$ref = $proc->exit;
     }
-    elsif ( $proc->signal != 0 ) {
-        _croak(
-            sprintf(
-                '%s[%d] %s [signal: %d core: %d]',
-                join( '', @err ), $proc->pid, scalar $proc->cmdline,
-                $proc->signal,    $proc->core
-            )
-        );
-    }
-    elsif ( $proc->exit != 0 ) {
-        _croak(
-            sprintf(
-                '%s[%d] %s [exit: %d]',
-                join( '', @err ),      $proc->pid,
-                scalar $proc->cmdline, $proc->exit
-            )
-        );
+    elsif ( my $e = $proc->abnormal ) {
+        _croak( join( '', @err ) . $e );
     }
 
-    if ($ref_err) {
-        $$ref_err = join '', @err;
+    if ( my $ref = $self->err ) {
+        $$ref = join '', @err;
     }
     elsif (@err) {
         local @Carp::CARP_NOT = (__PACKAGE__);
         Carp::carp @err;
     }
 
-    if ($ref_out) {
-        $$ref_out = join '', @out;
+    if ( my $ref = $self->out ) {
+        $$ref = join '', @out;
     }
     elsif ( defined( my $wa = wantarray ) ) {
         return @out if $wa;
@@ -264,23 +484,9 @@ sub run {
     }
 }
 
-sub spawn {
-    new_proc( merge_args(@_) );
-}
-
-sub syscmd {
-    Sys::Cmd->new( merge_args(@_) );
-}
-
-sub runsub {
-    my $self = shift;
-    sub { $self->run(@_) };
-}
-
-sub spawnsub {
-    my $self = shift;
-    sub { $self->spawn(@_) };
-}
+# Legacy object interface, undocumented.
+sub run   { _syscmd(@_)->_run }
+sub spawn { _syscmd(@_)->_spawn }
 
 1;
 

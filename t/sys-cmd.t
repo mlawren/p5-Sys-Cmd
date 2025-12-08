@@ -202,45 +202,49 @@ my @fail = (
 );
 
 sub do_test {
-    my $t = shift;
+    my $t     = shift;
+    my @argv  = grep { !ref } @{ $t->{cmdline} };
+    my ($opt) = grep { ref } @{ $t->{cmdline} };
 
     # run the command
-    my $cmd = eval { spawn( @{ $t->{cmdline} } ) };
+
+    my $proc = eval { spawn( @{ $t->{cmdline} } ) };
     if ( $t->{fail} ) {
-        ok( !$cmd,
-            $t->{test} . ': command failed: ' . ( defined $cmd ? $cmd : '' ) );
+        ok( !$proc,
+                $t->{test}
+              . ': command failed: '
+              . ( defined $proc ? $proc : '' ) );
         like( $@, $t->{fail}, $t->{test} . ': expected error message' );
         return;
     }
     die $@ if $@;
 
-    isa_ok( $cmd, 'Sys::Cmd' );
+    isa_ok( $proc, 'Sys::Cmd::Process' );
 
     # test the handles
     for my $handle (qw( stdin stdout stderr )) {
-        isa_ok( $cmd->$handle, 'IO::Handle' );
+        isa_ok( $proc->$handle, 'IO::Handle' );
         if ( $handle eq 'stdin' ) {
             my $opened = !exists $t->{result}{input};
-            is( $cmd->$handle->opened, $opened,
-                "$t->{test}: $handle @{[ !$opened && 'not ']}opened" );
+            is( $proc->$handle->opened,
+                $opened, "$t->{test}: $handle @{[ !$opened && 'not ']}opened" );
         }
         else {
-            ok( $cmd->$handle->opened, "$t->{test}: $handle opened" );
+            ok( $proc->$handle->opened, "$t->{test}: $handle opened" );
         }
     }
 
-    my @argv = grep { !ref } @{ $t->{cmdline} };
-    is( [ $cmd->cmdline ], \@argv, $t->{test} . ': cmdline ' . "@argv" );
+    is( [ $proc->cmdline ], \@argv, $t->{test} . ': cmdline ' . "@argv" );
 
     # Set @argv to just the script arguments
     shift @argv;
     shift @argv;
 
     # get the outputs
-    my $errput = join '', $cmd->stderr->getlines();
+    my $errput = join '', $proc->stderr->getlines();
     is( $errput, $t->{result}->{err} // '', $t->{test} . ': stderr match' );
 
-    my $output = join '', $cmd->stdout->getlines();
+    my $output = join '', $proc->stdout->getlines();
     ok( !!$output, $t->{test} . ': stdout returned something' ) || return;
 
     my $info;
@@ -248,19 +252,33 @@ sub do_test {
     die $@ if $@;
     ok( !!$info, $t->{test} . ': output parses to $info' );
 
-    my $env = $cmd->_env_merged;
-    if ( exists $t->{result}->{dir} and $^O eq 'MSWin32' ) {
-        $env->{PWD} = $t->{result}->{dir};
+    is( $info->{argv}, \@argv, $t->{test} . ": argument match @argv" );
+
+    {
+        local %ENV = %ENV;
+        while ( my ( $key, $val ) = each %{ $opt->{env} // {} } ) {
+            my $keybytes = encode( $ENCODING_LOCALE, $key, Encode::FB_CROAK );
+            if ( defined $val ) {
+                $ENV{$keybytes} =
+                  encode( $ENCODING_LOCALE, $val, Encode::FB_CROAK );
+            }
+            else {
+                delete $ENV{$keybytes};
+            }
+        }
+        if ( exists $t->{result}->{dir} and $^O eq 'MSWin32' ) {
+            $ENV{PWD} = $t->{result}->{dir};
+        }
+
+        is( $info->{env}, \%ENV, $t->{test} . ': environments match' );
     }
 
-    is( $info->{argv}, \@argv, $t->{test} . ": argument match @argv" );
-    is( $info->{env},  $env,   $t->{test} . ': environment match' );
     is(
         $info->{input},
         $t->{result}{input} || '',
         $t->{test} . ': input match'
     );
-    is( $info->{pid}, $cmd->pid, $t->{test} . ': pid match' );
+    is( $info->{pid}, $proc->pid, $t->{test} . ': pid match' );
     is(
         $info->{cwd},
         fc( $t->{result}{dir} || $cwd ),
@@ -268,11 +286,11 @@ sub do_test {
     );
 
     # close and check
-    $cmd->close();
-    $cmd->wait_child();
-    is( $cmd->exit,   0,               $t->{test} . ': exit 0' );
-    is( $cmd->signal, 0,               $t->{test} . ': no signal received' );
-    is( $cmd->core,   $t->{core} || 0, $t->{test} . ': no core dumped' );
+    $proc->close();
+    $proc->wait_child();
+    is( $proc->exit,   0,               $t->{test} . ': exit 0' );
+    is( $proc->signal, 0,               $t->{test} . ': no signal received' );
+    is( $proc->core,   $t->{core} || 0, $t->{test} . ': no core dumped' );
 }
 
 for my $t ( @tests, @fail ) {
@@ -461,7 +479,7 @@ SKIP: {
     subtest 'Sys::Cmd', sub {
         my ( $out, @out );
         @out = $ls->run();
-        is scalar @out, 3, 'ls in t';
+        is scalar @out, 4, 'ls t/';
 
         @out = ();
         $ls->run( '../lib', { out => \$out } );
