@@ -13,14 +13,7 @@ WriteMakefile(
     test             => { RECURSIVE_TEST_FILES => 1, },
     META_MERGE       => {
         'meta-spec' => { version => 2 },
-        no_index    => {
-            package => [
-                qw/
-                  Sys::Cmd::Process
-                  /
-            ],
-        },
-        resources => {
+        resources   => {
             bugtracker =>
               { web => 'https://github.com/mlawren/p5-Sys-Cmd/issues' },
             homepage   => 'https://github.com/mlawren/p5-Sys-Cmd',
@@ -30,6 +23,6 @@ WriteMakefile(
                 web  => 'https//github.com/mlawren/p5-Sys-Cmd',
             }
         },
-        release_status => 'stable',
+        release_status => 'testing',
     },
 );

@@ -17,9 +17,6 @@
       "directory" : [
          "t",
          "inc"
-      ],
-      "package" : [
-         "Sys::Cmd::Process"
       ]
    },
    "prereqs" : {
@@ -59,7 +56,7 @@
          }
       }
    },
-   "release_status" : "stable",
+   "release_status" : "testing",
    "resources" : {
       "bugtracker" : {
          "web" : "https://github.com/mlawren/p5-Sys-Cmd/issues"
@@ -70,6 +67,6 @@
          "url" : "ssh://git@github.com/mlawren/p5-Sys-Cmd.git"
       }
    },
-   "version" : "v0.986.0",
+   "version" : "v0.986.1",
    "x_serialization_backend" : "JSON::PP version 4.16"
 }
