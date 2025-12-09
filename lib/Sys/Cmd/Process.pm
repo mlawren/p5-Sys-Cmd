@@ -4,7 +4,7 @@ use warnings;
 use Carp     qw[];
 use Log::Any qw[$log];
 
-our $VERSION = 'v0.0.0';
+our $VERSION = 'v0.986.1';
 
 ### START Class::Inline ### v0.0.1 Tue Dec  9 15:41:03 2025
 require Carp;
@@ -305,7 +305,7 @@ Sys::Cmd::Process - process interaction object for Sys::Cmd
 
 =head1 VERSION
 
-v0.0.0 (yyyy-mm-dd)
+v0.986.1 (2025-12-09)
 
 =head1 SYNOPSIS
 
