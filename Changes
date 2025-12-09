@@ -14,6 +14,7 @@ v0.0.0 (yyyy-mm-dd)
         - run: new optional \$exit ref for capturing the exit value
         - Simplify Sys::Cmd::Process by refactoring much of it into
           Sys::Cmd.
+        - Capture stdout and stderr using IO::Select to avoid blocking
 
     Packaging/Dependencies:
         - None.

@@ -452,12 +452,31 @@ sub _spawn {
 }
 
 sub _run {
-    my $self = shift;
-    my $proc = $self->_spawn;
+    my $self   = shift;
+    my $proc   = $self->_spawn;
+    my $stderr = $proc->stderr;
+    my $stdout = $proc->stdout;
 
-    my @err = $proc->stderr->getlines;
-    my @out = $proc->stdout->getlines;
+    # Select idea borrowed from System::Command
+    require IO::Select;
+    my $select = IO::Select->new( $stdout, $stderr );
+    my @err;
+    my @out;
 
+    while ( my @ready = $select->can_read ) {
+        for my $fh (@ready) {
+            my $dest = $fh == $stdout ? \@out : \@err;
+            if ( defined( my $line = <$fh> ) ) {
+                push @$dest, $line;
+            }
+            else {
+                $select->remove($fh);
+                $fh->close;
+            }
+        }
+    }
+
+    $proc->stdin->close;
     $proc->wait_child;
 
     if ( my $ref = $self->exit ) {
