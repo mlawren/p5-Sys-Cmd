@@ -178,10 +178,16 @@ sub stdout { __RO() if @_ > 1; $_[0]{'stdout'} // undef }
     },
     status => {
         is      => 'rw',
-        default => 'Running',
+        default => 'Started',
     },
     on_exit => { is => 'rw', },
   };
+
+sub BUILD {
+    my $self = shift;
+    $log->info( $self->status, { cmd => $self->cmd, pid => $self->pid } );
+
+}
 
 sub cmdline {
     my $self = shift;
@@ -285,7 +291,12 @@ sub wait_child {
                 );
             }
             else {
-                'Terminated';
+                $log->info(
+                    'Terminated',
+                    {
+                        pid => $self->pid,
+                    }
+                );
             }
         }
     );
@@ -415,7 +426,7 @@ string starting with one of the following:
 
 =over
 
-=item * Running - set at creation time
+=item * Started - set at creation time
 
 =item * Terminated - normal process exit
 
@@ -425,8 +436,8 @@ string starting with one of the following:
 
 =back
 
-This attribute can be set by the caller if desired, but note that
-C<wait_child()> overwrites it.
+This attribute can be set at run time by the caller if desired, but
+note that C<wait_child()> overwrites it.
 
 =back
 
