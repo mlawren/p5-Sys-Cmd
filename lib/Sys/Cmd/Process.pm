@@ -313,10 +313,10 @@ v0.0.0 (yyyy-mm-dd)
 
     my $proc = spawn(
         '/usr/bin/cat', '--number',
-		{
+        {
             dir   => '/',
             input => "x\ny\nz\n",
-		}
+        }
     );
 
     while ( my $line = $proc->stdout->getline ) {
@@ -420,8 +420,8 @@ The signal number (if any) that terminated the command.
 
 =item abnormal() -> $str | ''
 
-An error string which is only generated when the process was killed by
-a signal or had a non-zero exit value.
+A possible error string which is only non-empty when the process was
+killed by a signal or had a non-zero exit value.
 
 =back
 

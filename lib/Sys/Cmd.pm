@@ -557,7 +557,7 @@ pre-defined defaults:
 
 For asynchronous interaction with the process use C<spawn>:
 
-    my $proc = spawn( @cmd, { encoding => 'iso-8859-3' } );
+    my $proc = spawn( @cmd );
     printf "pid %d\n", $proc->pid;
 
     while ( defined ( my $line = $proc->stdout->getline ) ) {
