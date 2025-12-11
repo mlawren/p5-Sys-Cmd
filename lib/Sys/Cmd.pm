@@ -29,7 +29,7 @@ use Exporter::Tidy _map => {
 
 our $VERSION = 'v0.0.0';
 
-### START Class::Inline ### v0.0.1 Tue Dec  9 15:41:03 2025
+### START Class::Inline ### v0.0.1 Thu Dec 11 13:24:56 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -477,13 +477,13 @@ sub _run {
     }
 
     $proc->stdin->close;
-    $proc->wait_child;
+    my $ok = $proc->wait_child;
 
     if ( my $ref = $self->exit ) {
         $$ref = $proc->exit;
     }
-    elsif ( my $e = $proc->abnormal ) {
-        _croak( join( '', @err ) . $e );
+    elsif ( !$ok ) {
+        _croak( join( '', @err ) . $proc->status );
     }
 
     if ( my $ref = $self->err ) {
