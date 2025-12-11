@@ -27,7 +27,7 @@ use Exporter::Tidy _map => {
     },
 };
 
-our $VERSION = 'v0.0.0';
+our $VERSION = 'v0.986.3';
 
 ### START Class::Inline ### v0.0.1 Thu Dec 11 13:24:56 2025
 require Carp;
@@ -517,7 +517,7 @@ Sys::Cmd - Run a system command or spawn a process
 
 =head1 VERSION
 
-v0.0.0 (yyyy-mm-dd)
+v0.986.3 (2025-12-11)
 
 =head1 SYNOPSIS
 
