@@ -4,7 +4,7 @@ use warnings;
 use Carp     qw[];
 use Log::Any qw[$log];
 
-our $VERSION = 'v0.986.1';
+our $VERSION = 'v0.986.2';
 
 ### START Class::Inline ### v0.0.1 Tue Dec  9 15:41:03 2025
 require Carp;
@@ -305,7 +305,7 @@ Sys::Cmd::Process - process interaction object for Sys::Cmd
 
 =head1 VERSION
 
-v0.986.1 (2025-12-09)
+v0.986.2 (2025-12-11)
 
 =head1 SYNOPSIS
 
@@ -313,10 +313,10 @@ v0.986.1 (2025-12-09)
 
     my $proc = spawn(
         '/usr/bin/cat', '--number',
-		{
+        {
             dir   => '/',
             input => "x\ny\nz\n",
-		}
+        }
     );
 
     while ( my $line = $proc->stdout->getline ) {
@@ -420,8 +420,8 @@ The signal number (if any) that terminated the command.
 
 =item abnormal() -> $str | ''
 
-An error string which is only generated when the process was killed by
-a signal or had a non-zero exit value.
+A possible error string which is only non-empty when the process was
+killed by a signal or had a non-zero exit value.
 
 =back
 
