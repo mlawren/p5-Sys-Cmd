@@ -4,9 +4,9 @@ use warnings;
 use Carp     qw[];
 use Log::Any qw[$log];
 
-our $VERSION = 'v0.986.2';
+our $VERSION = 'v0.986.3';
 
-### START Class::Inline ### v0.0.1 Tue Dec  9 15:41:03 2025
+### START Class::Inline ### v0.0.1 Thu Dec 11 13:24:57 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -60,7 +60,7 @@ sub _NEW {
     $_[0]{'cmd'} = eval { $_FIELDS->{'cmd'}->{'isa'}->( $_[0]{'cmd'} ) };
     delete $_[0]{'cmd'} || Carp::confess( 'Sys::Cmd::Process cmd: ' . $@ )
       if $@;
-    map { delete $_[1]->{$_} } 'abnormal', 'cmd', 'on_exit', 'pid', 'stderr',
+    map { delete $_[1]->{$_} } 'cmd', 'on_exit', 'pid', 'status', 'stderr',
       'stdin', 'stdout';
 }
 
@@ -86,12 +86,7 @@ sub _ret {
     $_[0]{'_ret'};
 }
 sub has__ret { exists $_[0]{'_ret'} }
-
-sub abnormal {
-    __RO() if @_ > 1;
-    $_[0]{'abnormal'} //= $_FIELDS->{'abnormal'}->{'default'}->( $_[0] );
-}
-sub cmd { __RO() if @_ > 1; $_[0]{'cmd'} // undef }
+sub cmd      { __RO() if @_ > 1; $_[0]{'cmd'} // undef }
 
 sub core {
     __RO() if @_ > 1;
@@ -113,6 +108,11 @@ sub pid { __RO() if @_ > 1; $_[0]{'pid'} // undef }
 sub signal {
     __RO() if @_ > 1;
     $_[0]{'signal'} //= $_FIELDS->{'signal'}->{'default'}->( $_[0] );
+}
+
+sub status {
+    if ( @_ > 1 ) { $_[0]{'status'} = $_[1] }
+    $_[0]{'status'} //= $_FIELDS->{'status'}->{'default'};
 }
 sub stderr { __RO() if @_ > 1; $_[0]{'stderr'} // undef }
 sub stdin  { __RO() if @_ > 1; $_[0]{'stdin'}  // undef }
@@ -176,32 +176,9 @@ sub stdout { __RO() if @_ > 1; $_[0]{'stdout'} // undef }
         init_arg => undef,
         default  => sub { $_[0]->_ret & 128 },
     },
-    abnormal => {
-        default => sub {
-            my $self = shift;
-            if ( $self->signal != 0 ) {
-                $log->warn(
-                    'Killed',
-                    {
-                        pid    => $self->pid,
-                        signal => $self->signal,
-                        core   => $self->core
-                    }
-                );
-            }
-            elsif ( $self->exit != 0 ) {
-                $log->warn(
-                    'Non-zero exit',
-                    {
-                        pid  => $self->pid,
-                        exit => $self->exit
-                    }
-                );
-            }
-            else {
-                '';
-            }
-        },
+    status => {
+        is      => 'rw',
+        default => 'Running',
     },
     on_exit => { is => 'rw', },
   };
@@ -286,7 +263,34 @@ sub wait_child {
         $subref->($self);
     }
 
-    $self->exit;
+    $self->status(
+        do {
+            if ( $self->signal != 0 ) {
+                $log->warn(
+                    'Killed',
+                    {
+                        pid    => $self->pid,
+                        signal => $self->signal,
+                        core   => $self->core
+                    }
+                );
+            }
+            elsif ( $self->exit != 0 ) {
+                $log->warn(
+                    'Non-zero exit',
+                    {
+                        pid  => $self->pid,
+                        exit => $self->exit
+                    }
+                );
+            }
+            else {
+                'Terminated';
+            }
+        }
+    );
+
+    not( $self->exit or $self->signal );
 }
 
 sub DESTROY {
@@ -305,7 +309,7 @@ Sys::Cmd::Process - process interaction object for Sys::Cmd
 
 =head1 VERSION
 
-v0.986.2 (2025-12-11)
+v0.986.3 (2025-12-11)
 
 =head1 SYNOPSIS
 
@@ -324,12 +328,7 @@ v0.986.2 (2025-12-11)
     }
 
     my @errors = $proc->stderr->getlines;
-    $proc->wait_child();    # Cleanup
-
-    # Get loud if necessary
-    if (my $err = $proc->abnormal) {
-        die $err;
-    }
+    $proc->wait_child() or warn $proc->status;
 
     # Or manually read process termination information
     $proc->exit();          # exit status
@@ -341,21 +340,19 @@ v0.986.2 (2025-12-11)
 
 The B<Sys::Cmd::Process> class is used by L<Sys::Cmd> to represent a
 running process. It holds Input/Output file handles and a few methods
-for waiting on the process and obtaining exit information.
+for finalising the process and obtaining exit information.
 
-This class is not user-instantiated; A process object is only created
-by L<Sys::Cmd> and passed along. It comes with the following read-only
-attributes:
+Process objects come with the following read-only attributes:
 
 =over
 
-=item cmdline() -> @list | $scalar
+=item cmdline() -> @list | $string
 
 In array context returns a list of the command and its arguments.  In
 scalar context returns a string of the command and its arguments joined
 together by spaces.
 
-=item pid => $int
+=item pid() -> $int
 
 The command's process ID.
 
@@ -384,20 +381,13 @@ methods are used for cleanup:
 
 =item close()
 
-Close all filehandles to the child process.
+Close the remaining open filehandles to the child process.
 
-=item wait_child()
+=item wait_child() -> $bool
 
-Wait for the child to exit using
+Wait for the child process to finish using
 L<waitpid|http://perldoc.perl.org/functions/waitpid.html> and collect
-the exit status.
-
-=begin comment
-
-and return it. Note that the exit status may be zero even when the
-ended process due to a signal.
-
-=end comment
+the exit status. Returns true if the child terminated normally.
 
 =back
 
@@ -406,22 +396,37 @@ valid:
 
 =over
 
-=item core() -> 0|1
+=item core() -> $bool
 
 A boolean indicating if the process core was dumped.
 
-=item exit() -> $exit
+=item exit() -> $int
 
 The command's exit value.
 
-=item signal() -> $signum
+=item signal() -> $int
 
 The signal number (if any) that terminated the command.
 
-=item abnormal() -> $str | ''
+=item status() -> $str
 
-A possible error string which is only non-empty when the process was
-killed by a signal or had a non-zero exit value.
+A description of the process state. B<Sys::Cmd::Process> sets it to a
+string starting with one of the following:
+
+=over
+
+=item * Running - set at creation time
+
+=item * Terminated - normal process exit
+
+=item * Non-zero exit - unusual process exit
+
+=item * Killed - termination via signal
+
+=back
+
+This attribute can be set by the caller if desired, but note that
+C<wait_child()> overwrites it.
 
 =back
 

@@ -27,9 +27,9 @@ use Exporter::Tidy _map => {
     },
 };
 
-our $VERSION = 'v0.986.2';
+our $VERSION = 'v0.986.3';
 
-### START Class::Inline ### v0.0.1 Tue Dec  9 15:41:03 2025
+### START Class::Inline ### v0.0.1 Thu Dec 11 13:24:56 2025
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -477,13 +477,13 @@ sub _run {
     }
 
     $proc->stdin->close;
-    $proc->wait_child;
+    my $ok = $proc->wait_child;
 
     if ( my $ref = $self->exit ) {
         $$ref = $proc->exit;
     }
-    elsif ( my $e = $proc->abnormal ) {
-        _croak( join( '', @err ) . $e );
+    elsif ( !$ok ) {
+        _croak( join( '', @err ) . $proc->status );
     }
 
     if ( my $ref = $self->err ) {
@@ -513,18 +513,18 @@ __END__
 
 =head1 NAME
 
-Sys::Cmd - run a system command or spawn a system processes
+Sys::Cmd - Run a system command or spawn a process
 
 =head1 VERSION
 
-v0.986.2 (2025-12-11)
+v0.986.3 (2025-12-11)
 
 =head1 SYNOPSIS
 
     use Sys::Cmd qw/run runsub spawn/;
 
-The following catches normal command output, warning on anything sent
-to stderr, and raises an exception when exit is non-zero:
+Catch a command's standard output, warning on anything sent to stderr,
+raise an exception on abnormal exit:
 
     my $output = run( 'ls', '--long' );
 
@@ -533,8 +533,8 @@ array context:
 
     my @XYZ = run( 'cat', '-n', { input => "X\nY\nZ\n", } );
 
-Output streams and exit values can be individually captured, in which
-case no warnings or exceptions are triggered:
+Put outputs and exit value directly into scalars, in which case no
+warnings or exceptions are triggered:
 
     my ($out, $err, $exit);
     run( 'ls', 'FILE_NOT_FOUND', {
@@ -555,7 +555,7 @@ pre-defined defaults:
     $ls->()                       &&  print $out;
     $ls->({ dir => '/elsewhere'}) &&  print $out;
 
-For asynchronous interaction with the process use C<spawn>:
+Use C<spawn> for asynchronous interaction:
 
     my $proc = spawn( @cmd );
     printf "pid %d\n", $proc->pid;
@@ -564,14 +564,14 @@ For asynchronous interaction with the process use C<spawn>:
         $proc->stdin->print("thanks\n");
     }
     warn $proc->stderr->getlines;
-    $proc->close();    # Finished talking to file handles
-    $proc->wait_child && die "Non-zero exit!: " . $proc->exit;
+
+    $proc->wait_child || warn $proc->status;
 
 =head1 DESCRIPTION
 
 B<Sys::Cmd> lets you run a system command and capture its output, or
-spawn and interact with a process through its stdin, stdout and error
-handles.
+spawn and interact with a process through its C<stdin>, C<stdout> and
+C<stderr> handles.
 
 It provides something of a superset of Perl's builtin external process
 functions ("system", "qx//", "fork"+"exec", and "open"):
@@ -588,11 +588,11 @@ functions ("system", "qx//", "fork"+"exec", and "open"):
 
 =item * Capture output, error and exit separately (run, spawn)
 
-=item * Sensible exit values (run, spawn)
-
-=item * Template functions for repeated calls (runsub, spawnsub)
+=item * Sensible exit and signal values
 
 =item * Asynchronous interaction through file handles (spawn)
+
+=item * Template functions for repeated calls (runsub, spawnsub)
 
 =back
 

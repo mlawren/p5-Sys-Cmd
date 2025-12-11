@@ -1,14 +1,14 @@
 NAME
-    Sys::Cmd - run a system command or spawn a system processes
+    Sys::Cmd - Run a system command or spawn a process
 
 VERSION
-    v0.986.2 (2025-12-11)
+    v0.986.3 (2025-12-11)
 
 SYNOPSIS
         use Sys::Cmd qw/run runsub spawn/;
 
-    The following catches normal command output, warning on anything
-    sent to stderr, and raises an exception when exit is non-zero:
+    Catch a command's standard output, warning on anything sent to
+    stderr, raise an exception on abnormal exit:
 
         my $output = run( 'ls', '--long' );
 
@@ -17,8 +17,8 @@ SYNOPSIS
 
         my @XYZ = run( 'cat', '-n', { input => "X\nY\nZ\n", } );
 
-    Output streams and exit values can be individually captured, in
-    which case no warnings or exceptions are triggered:
+    Put outputs and exit value directly into scalars, in which case no
+    warnings or exceptions are triggered:
 
         my ($out, $err, $exit);
         run( 'ls', 'FILE_NOT_FOUND', {
@@ -39,7 +39,7 @@ SYNOPSIS
         $ls->()                       &&  print $out;
         $ls->({ dir => '/elsewhere'}) &&  print $out;
 
-    For asynchronous interaction with the process use "spawn":
+    Use "spawn" for asynchronous interaction:
 
         my $proc = spawn( @cmd );
         printf "pid %d\n", $proc->pid;
@@ -48,13 +48,13 @@ SYNOPSIS
             $proc->stdin->print("thanks\n");
         }
         warn $proc->stderr->getlines;
-        $proc->close();    # Finished talking to file handles
-        $proc->wait_child && die "Non-zero exit!: " . $proc->exit;
+
+        $proc->wait_child || warn $proc->status;
 
 DESCRIPTION
     Sys::Cmd lets you run a system command and capture its output, or
-    spawn and interact with a process through its stdin, stdout and
-    error handles.
+    spawn and interact with a process through its "stdin", "stdout" and
+    "stderr" handles.
 
     It provides something of a superset of Perl's builtin external
     process functions ("system", "qx//", "fork"+"exec", and "open"):
@@ -69,11 +69,11 @@ DESCRIPTION
 
     *   Capture output, error and exit separately (run, spawn)
 
-    *   Sensible exit values (run, spawn)
-
-    *   Template functions for repeated calls (runsub, spawnsub)
+    *   Sensible exit and signal values
 
     *   Asynchronous interaction through file handles (spawn)
+
+    *   Template functions for repeated calls (runsub, spawnsub)
 
   Command Path
     All functions take a @cmd list that specifies the command and its
