@@ -341,21 +341,19 @@ v0.0.0 (yyyy-mm-dd)
 
 The B<Sys::Cmd::Process> class is used by L<Sys::Cmd> to represent a
 running process. It holds Input/Output file handles and a few methods
-for waiting on the process and obtaining exit information.
+for finalising the process and obtaining exit information.
 
-This class is not user-instantiated; A process object is only created
-by L<Sys::Cmd> and passed along. It comes with the following read-only
-attributes:
+Process objects come with the following read-only attributes:
 
 =over
 
-=item cmdline() -> @list | $scalar
+=item cmdline() -> @list | $string
 
 In array context returns a list of the command and its arguments.  In
 scalar context returns a string of the command and its arguments joined
 together by spaces.
 
-=item pid => $int
+=item pid() -> $int
 
 The command's process ID.
 
@@ -384,11 +382,11 @@ methods are used for cleanup:
 
 =item close()
 
-Close all filehandles to the child process.
+Close the remaining open filehandles to the child process.
 
 =item wait_child()
 
-Wait for the child to exit using
+Wait for the child process to finish using
 L<waitpid|http://perldoc.perl.org/functions/waitpid.html> and collect
 the exit status.
 
