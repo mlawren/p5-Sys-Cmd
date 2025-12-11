@@ -513,7 +513,7 @@ __END__
 
 =head1 NAME
 
-Sys::Cmd - run a system command or spawn a system processes
+Sys::Cmd - Run a system command or spawn a process
 
 =head1 VERSION
 
