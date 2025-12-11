@@ -23,6 +23,6 @@ WriteMakefile(
                 web  => 'https//github.com/mlawren/p5-Sys-Cmd',
             }
         },
-        release_status => 'stable',
+        release_status => 'testing',
     },
 );
