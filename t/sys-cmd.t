@@ -27,13 +27,13 @@ my @tests = (
     {
         test    => 'standard',
         cmdline => [@info_pl],
-        result  => {},
+        result  => { status => qr/Terminated/ },
     },
     {
         test    => 'arguments UTF-8',
         no_utf8 => $no_utf8,
         cmdline => [ @info_pl, 'ß' ],
-        result  => {},
+        result  => { status => qr/Terminated/ },
     },
     {
         test    => 'env',
@@ -43,12 +43,13 @@ my @tests = (
                 env => {
                     SYS_CMD => 'Sys::Cmd',
                 }
-            }
+            },
         ],
         result => {
             env => {
                 SYS_CMD => 'Sys::Cmd',
-            }
+            },
+            status => qr/Terminated/,
         },
     },
     {
@@ -65,7 +66,8 @@ my @tests = (
         result => {
             env => {
                 UTF8_CHECK => 'Défaut',
-            }
+            },
+            status => qr/Terminated/,
         },
     },
     {
@@ -73,8 +75,9 @@ my @tests = (
         cmdline =>
           [ @info_pl, { dir => $dir, env => { SYS_CMD => 'Sys::Cmd' } }, ],
         result => {
-            env => { SYS_CMD => 'Sys::Cmd' },
-            dir => $dir,
+            env    => { SYS_CMD => 'Sys::Cmd' },
+            dir    => $dir,
+            status => qr/Terminated/,
         },
     },
     {
@@ -94,7 +97,8 @@ my @tests = (
                 OTHER_ENV     => 'something else',
                 SYS_CMD       => 'Sys::Cmd',
                 TO_BE_DELETED => undef,
-            }
+            },
+            status => qr/Terminated/,
         },
     },
     {
@@ -114,7 +118,8 @@ my @tests = (
                 'SYS_CMD_INPUT' => 1,
                 'TO_BE_DELETED' => undef,
             },
-            input => ''
+            input  => '',
+            status => qr/Terminated/,
         }
     },
     {
@@ -123,8 +128,9 @@ my @tests = (
             @info_pl, { env => { 'SYS_CMD_INPUT' => 1 }, input => 'test input' }
         ],
         result => {
-            env   => { 'SYS_CMD_INPUT' => 1 },
-            input => 'test input',
+            env    => { 'SYS_CMD_INPUT' => 1 },
+            input  => 'test input',
+            status => qr/Terminated/,
         }
     },
     {
@@ -137,14 +143,18 @@ my @tests = (
             }
         ],
         result => {
-            env   => { 'SYS_CMD_INPUT' => 1 },
-            input => "line1\nline2\n",
+            env    => { 'SYS_CMD_INPUT' => 1 },
+            input  => "line1\nline2\n",
+            status => qr/Terminated/,
         }
     },
     {
         test    => 'error output',
         cmdline => [ @info_pl, { env => { SYS_CMD_ERR => 'Meh!' } } ],
-        result  => { err => "Meh!\n" },
+        result  => {
+            err    => "Meh!\n",
+            status => qr/Terminated/,
+        },
     },
     {
         test    => 'kitchen sink',
@@ -167,8 +177,9 @@ my @tests = (
                 'SYS_CMD_INPUT' => 1,
                 TO_BE_DELETED   => undef,
             },
-            err   => "Meh!\n",
-            input => 'test input',
+            err    => "Meh!\n",
+            input  => 'test input',
+            status => qr/Terminated/,
         }
     },
 );
@@ -288,9 +299,15 @@ sub do_test {
     # close and check
     $proc->close();
     $proc->wait_child();
-    is( $proc->exit,   0,               $t->{test} . ': exit 0' );
-    is( $proc->signal, 0,               $t->{test} . ': no signal received' );
-    is( $proc->core,   $t->{core} || 0, $t->{test} . ': no core dumped' );
+    is( $proc->exit,   0, $t->{test} . ': exit 0' );
+    is( $proc->signal, 0, $t->{test} . ': no signal received' );
+    is(
+        $proc->core,
+        $t->{result}->{core} || 0,
+        $t->{test} . ': no core dumped'
+    );
+    like $proc->status, $t->{result}->{status},
+      $t->{test} . ': status ' . $proc->status;
 }
 
 for my $t ( @tests, @fail ) {
@@ -322,6 +339,8 @@ subtest 'reaper', sub {
 
         is $proc->signal,  9, 'matching signal PID ' . $proc->pid;
         is $proc2->signal, 9, 'matching signal PID ' . $proc2->pid;
+        like $proc->status,  qr/Killed/, 'status ' . $proc->status;
+        like $proc2->status, qr/Killed/, 'status ' . $proc->status;
     }
 
 };
@@ -361,6 +380,7 @@ SKIP: {
         $proc->close;
         $proc->wait_child;
         is $proc->exit, 3, 'coderef: exit 3';
+        like $proc->status, qr/Non-zero/, 'coderef: status ' . $proc->status;
     };
 }
 
