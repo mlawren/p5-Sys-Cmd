@@ -36,8 +36,8 @@ SYNOPSIS
                 out => \$out,
             }
         );
-        $ls->()                       &&  print $out;
-        $ls->({ dir => '/elsewhere'}) &&  print $out;
+        $ls->('--long')                 &&  print $out;
+        $ls->({ dir => '/elsewhere'})   &&  print $out;
 
     Use "spawn" for asynchronous interaction:
 
@@ -94,25 +94,25 @@ DESCRIPTION
   Common Options
     A function's @cmd list may also include an optional "\%opts" HASH
     reference to adjust aspects of the execution. The following
-    configuration items (key => default) are common to all Sys::Cmd
+    configuration items (key -> default) are common to all Sys::Cmd
     functions.
 
-    dir => $CWD
+    dir -> $CWD
         The working directory the command will be run in. Note that a
         relative command path might not be valid if the current
         directory changes.
 
-    encoding => $Encode::Locale::ENCODING_LOCALE
+    encoding -> $Encode::Locale::ENCODING_LOCALE
         A string value identifying the encoding that applies to
         input/output file-handles, command arguments, and environment
         variables. Defaults to the 'locale' alias from Encode::Locale.
 
-    env => {}
+    env -> {}
         A hashref containing key/values to be added to the current
         environment at run-time. If a key has an undefined value then
         the key is removed from the environment altogether.
 
-    input => undef
+    input -> undef
         A scalar (string), or ARRAY reference, which is fed to the
         command via its standard input, which is then closed. An empty
         value ('') or empty list will close the command's standard input
@@ -137,20 +137,20 @@ FUNCTIONS
         lines instead of a scalar string. Accepts the following
         additional configuration keys:
 
-        out => \$scalar
+        out -> \$scalar
             A reference to a scalar which is populated with output. When
             given run() returns nothing.
 
-        err => \$scalar
+        err -> \$scalar
             A reference to a scalar which is populated with error
             output. When given run() does not warn of errors.
 
-        exit => \$scalar
+        exit -> \$scalar
             A reference to a scalar which is populated with the exit
             value. When given run() does not raise an exception on a
             non-zero exit.
 
-    spawn( @cmd, [\%opt] ) => Sys::Cmd::Process
+    spawn( @cmd, [\%opt] ) -> Sys::Cmd::Process
         Return an object representing the process running according to
         @cmd and "\%opt". This is the core mechanism underlying "run".
 
@@ -165,7 +165,7 @@ FUNCTIONS
     mechanism can be useful, to avoid repeating full configuration
     values and wearing a path lookup penalty each call.
 
-    runsub( @cmd, [\%opt] ) => CODEref
+    runsub( @cmd, [\%opt] ) -> CODEref
         Returns a subroutine reference representing a *future* command
         to be executed in the style of "run", with default arguments and
         options. When called, additional arguments and options are
@@ -191,7 +191,7 @@ FUNCTIONS
                 }
             ));
 
-    spawnsub( @cmd, [\%opt] ) => CODEref
+    spawnsub( @cmd, [\%opt] ) -> CODEref
         Returns a subroutine reference representing a *future* process
         to be created in the style of "spawn", with default arguments
         and options. When called, additional arguments and options are

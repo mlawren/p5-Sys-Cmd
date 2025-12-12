@@ -552,8 +552,8 @@ pre-defined defaults:
             out => \$out,
         }
     );
-    $ls->()                       &&  print $out;
-    $ls->({ dir => '/elsewhere'}) &&  print $out;
+    $ls->('--long')                 &&  print $out;
+    $ls->({ dir => '/elsewhere'})   &&  print $out;
 
 Use C<spawn> for asynchronous interaction:
 
@@ -621,29 +621,29 @@ The remaining scalar elements of C<@cmd> are passed as arguments.
 
 A function's C<@cmd> list may also include an optional C<\%opts> HASH
 reference to adjust aspects of the execution.  The following
-configuration items (key => default) are common to all B<Sys::Cmd>
+configuration items (key -> default) are common to all B<Sys::Cmd>
 functions.
 
 =over
 
-=item dir => $CWD
+=item dir -> $CWD
 
 The working directory the command will be run in. Note that a relative
 command path might not be valid if the current directory changes.
 
-=item encoding => $Encode::Locale::ENCODING_LOCALE
+=item encoding -> $Encode::Locale::ENCODING_LOCALE
 
 A string value identifying the encoding that applies to input/output
 file-handles, command arguments, and environment variables.  Defaults
 to the 'locale' alias from L<Encode::Locale>.
 
-=item env => {}
+=item env -> {}
 
 A hashref containing key/values to be added to the current environment
 at run-time. If a key has an undefined value then the key is removed
 from the environment altogether.
 
-=item input => undef
+=item input -> undef
 
 A scalar (string), or ARRAY reference, which is fed to the command via
 its standard input, which is then closed.  An empty value ('') or empty
@@ -684,24 +684,24 @@ string. Accepts the following additional configuration keys:
 
 =over
 
-=item out => \$scalar
+=item out -> \$scalar
 
 A reference to a scalar which is populated with output. When given
 C<run()> returns nothing.
 
-=item err => \$scalar
+=item err -> \$scalar
 
 A reference to a scalar which is populated with error output. When
 given C<run()> does not warn of errors.
 
-=item exit => \$scalar
+=item exit -> \$scalar
 
 A reference to a scalar which is populated with the exit value. When
 given C<run()> does not raise an exception on a non-zero exit.
 
 =back
 
-=item spawn( @cmd, [\%opt] ) => Sys::Cmd::Process
+=item spawn( @cmd, [\%opt] ) -> Sys::Cmd::Process
 
 Return an object representing the process running according to C<@cmd>
 and C<\%opt>. This is the core mechanism underlying C<run>.
@@ -722,7 +722,7 @@ a path lookup penalty each call.
 
 =begin comment
 
-=item syscmd( @cmd, [\%opt] ) => Sys::Cmd
+=item syscmd( @cmd, [\%opt] ) -> Sys::Cmd
 
 Return a B<Sys::Cmd> object representing a I<future> command (or
 coderef) to be executed in some way. You can then call multiple
@@ -734,7 +734,7 @@ values as the exported package functions below.
 
 =over
 
-=item runsub( @cmd, [\%opt] ) => CODEref
+=item runsub( @cmd, [\%opt] ) -> CODEref
 
 Returns a subroutine reference representing a I<future> command to be
 executed in the style of "run", with default arguments and options.
@@ -760,7 +760,7 @@ When called, additional arguments and options are I<merged>:
         }
     ));
 
-=item spawnsub( @cmd, [\%opt] ) => CODEref
+=item spawnsub( @cmd, [\%opt] ) -> CODEref
 
 Returns a subroutine reference representing a I<future> process to be
 created in the style of "spawn", with default arguments and options.
