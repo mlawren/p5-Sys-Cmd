@@ -237,6 +237,8 @@ sub _syscmd {
         if ( !-x $cmd[0] ) {
             _croak( 'command not executable: ' . $cmd[0] );
         }
+
+        $cmd[0] = "$cmd[0]" if ref $cmd[0];    # Clear out Path::Tiny
     }
     $opts->{cmd} = \@cmd;
     Sys::Cmd->new($opts);
