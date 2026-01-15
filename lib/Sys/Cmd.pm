@@ -814,9 +814,9 @@ Don't use it anywhere you can't deal with breakage!
 =head1 ALTERNATIVES
 
 L<AnyEvent::Run>, L<AnyEvent::Util>, L<Argv>, L<Capture::Tiny>,
-L<Child>, L<Forks::Super>, L<IO::Pipe>, L<IPC::Capture>, L<IPC::Cmd>,
-L<IPC::Command::Multiplex>, L<IPC::Exe>, L<IPC::Open3>,
-L<IPC::Open3::Simple>, L<IPC::Run>, L<IPC::Run3>,
+L<Child>, L<Command::Run>, L<Forks::Super>, L<IO::Pipe>,
+L<IPC::Capture>, L<IPC::Cmd>, L<IPC::Command::Multiplex>, L<IPC::Exe>,
+L<IPC::Open3>, L<IPC::Open3::Simple>, L<IPC::Run>, L<IPC::Run3>,
 L<IPC::RunSession::Simple>, L<IPC::ShellCmd>, L<IPC::System::Simple>,
 L<POE::Pipe::TwoWay>, L<Proc::Background>, L<Proc::Fork>,
 L<Proc::FastSpawn>, L<Spawn::Safe>, L<System::Command>

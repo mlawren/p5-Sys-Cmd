@@ -205,7 +205,7 @@ FUNCTIONS
 
 ALTERNATIVES
     AnyEvent::Run, AnyEvent::Util, Argv, Capture::Tiny, Child,
-    Forks::Super, IO::Pipe, IPC::Capture, IPC::Cmd,
+    Command::Run, Forks::Super, IO::Pipe, IPC::Capture, IPC::Cmd,
     IPC::Command::Multiplex, IPC::Exe, IPC::Open3, IPC::Open3::Simple,
     IPC::Run, IPC::Run3, IPC::RunSession::Simple, IPC::ShellCmd,
     IPC::System::Simple, POE::Pipe::TwoWay, Proc::Background,
