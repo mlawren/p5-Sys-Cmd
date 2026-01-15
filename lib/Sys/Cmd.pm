@@ -29,7 +29,7 @@ use Exporter::Tidy _map => {
 
 our $VERSION = 'v0.0.0';
 
-### START Class::Inline ### v0.0.1 Thu Dec 11 13:24:56 2025
+### START Class::Inline ### v0.0.1 Thu Jan 15 15:34:07 2026
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -90,7 +90,7 @@ sub _NEW {
       if exists $_[0]{'mock'};
     delete $_[0]{'mock'} || Carp::confess( 'Sys::Cmd mock: ' . $@ ) if $@;
     map { delete $_[1]->{$_} } '_coderef', 'cmd', 'dir', 'encoding', 'env',
-      'err', 'exit', 'input', 'log_any', 'mock', 'on_exit', 'out';
+      'err', 'exit', 'input', 'log_any', 'mock', 'out';
 }
 
 sub __RO {
@@ -130,11 +130,6 @@ sub mock {
           if $@;
     }
     $_[0]{'mock'} // undef;
-}
-
-sub on_exit {
-    if ( @_ > 1 ) { $_[0]{'on_exit'} = $_[1] }
-    $_[0]{'on_exit'} // undef;
 }
 sub out { __RO() if @_ > 1; $_[0]{'out'} // undef }
 @_CLASS = grep 1,    ### END Class::Inline ###
@@ -189,7 +184,6 @@ sub out { __RO() if @_ > 1; $_[0]{'out'} // undef }
             $_[0];
         },
     },
-    on_exit => { is => 'rw', },
   };
 
 sub _croak {
@@ -407,11 +401,9 @@ sub _spawn {
         }
 
         chdir $dir or die "chdir $dir: $!" if defined $dir;
-        my $oe = $self->on_exit;
 
         Sys::Cmd::Process->new(
             cmd => $self->cmd,
-            $oe ? ( on_exit => $oe ) : (),
             $self->_coderef
             ? _fork( $self->encoding, @{ $self->cmd } )
             : _fastspawn(
@@ -666,10 +658,6 @@ provides the fake outputs and exit values. See L</"MOCKING"> below for
 details.
 
 =end comment
-
-=item on_exit
-
-A subref to be called at the time that process termination is detected.
 
 =back
 

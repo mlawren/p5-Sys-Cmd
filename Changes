@@ -1,7 +1,7 @@
 v0.0.0 (yyyy-mm-dd)
 
     API / Behaviour Changes:
-        - None.
+        - Remove the "on_exit" feature
 
     Bug Fixes:
         - Make spawnsub actually callable.

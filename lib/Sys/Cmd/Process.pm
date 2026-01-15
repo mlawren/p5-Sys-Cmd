@@ -6,7 +6,7 @@ use Log::Any qw[$log];
 
 our $VERSION = 'v0.0.0';
 
-### START Class::Inline ### v0.0.1 Thu Dec 11 13:24:57 2025
+### START Class::Inline ### v0.0.1 Thu Jan 15 15:34:08 2026
 require Carp;
 our ( @_CLASS, $_FIELDS, %_NEW );
 
@@ -60,8 +60,8 @@ sub _NEW {
     $_[0]{'cmd'} = eval { $_FIELDS->{'cmd'}->{'isa'}->( $_[0]{'cmd'} ) };
     delete $_[0]{'cmd'} || Carp::confess( 'Sys::Cmd::Process cmd: ' . $@ )
       if $@;
-    map { delete $_[1]->{$_} } 'cmd', 'on_exit', 'pid', 'status', 'stderr',
-      'stdin', 'stdout';
+    map { delete $_[1]->{$_} } 'cmd', 'pid', 'status', 'stderr', 'stdin',
+      'stdout';
 }
 
 sub __RO {
@@ -98,12 +98,7 @@ sub exit {
     $_[0]{'exit'} //= $_FIELDS->{'exit'}->{'default'}->( $_[0] );
 }
 sub has_exit { exists $_[0]{'exit'} }
-
-sub on_exit {
-    if ( @_ > 1 ) { $_[0]{'on_exit'} = $_[1] }
-    $_[0]{'on_exit'} // undef;
-}
-sub pid { __RO() if @_ > 1; $_[0]{'pid'} // undef }
+sub pid      { __RO() if @_ > 1; $_[0]{'pid'} // undef }
 
 sub signal {
     __RO() if @_ > 1;
@@ -180,7 +175,6 @@ sub stdout { __RO() if @_ > 1; $_[0]{'stdout'} // undef }
         is      => 'rw',
         default => 'Started',
     },
-    on_exit => { is => 'rw', },
   };
 
 sub BUILD {
@@ -264,10 +258,6 @@ sub wait_child {
     }
 
     $self->_ret($ret);
-
-    if ( my $subref = $self->on_exit ) {
-        $subref->($self);
-    }
 
     $self->status(
         do {

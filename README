@@ -123,10 +123,6 @@ DESCRIPTION
         causes a SIGPIPE when trying to write to it, for which Sys::Cmd
         will warn.
 
-    on_exit
-        A subref to be called at the time that process termination is
-        detected.
-
 FUNCTIONS
     The following functions are exportable from Sys::Cmd:
 

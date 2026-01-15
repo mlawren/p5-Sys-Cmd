@@ -317,30 +317,18 @@ for my $t ( @tests, @fail ) {
     }
 }
 
-subtest 'reaper', sub {
-    my $proc2 = spawn($^X);
-    my $proc  = spawn(
-        $^X,
-        {
-            on_exit => sub { kill 9, $proc2->pid }
-        }
-    );
+subtest 'signal', sub {
+    my $proc = spawn($^X);
 
     kill 9, $proc->pid;
-    $proc->wait_child;
-    $proc2->wait_child;
-
-    ok( ( defined $proc2->exit ),
-        'reaper: reaper worked on PID ' . $proc2->pid );
-    ok( ( defined $proc->exit ), 'reaper: reaper worked on PID ' . $proc->pid );
+    is $proc->wait_child, !1, 'wait_child false';
+    is $proc->exit,       0,  'exit is zero...';
 
   SKIP: {
         skip 'signals do not work on Win32', 1 if $^O eq 'MSWin32';
 
-        is $proc->signal,  9, 'matching signal PID ' . $proc->pid;
-        is $proc2->signal, 9, 'matching signal PID ' . $proc2->pid;
-        like $proc->status,  qr/Killed/, 'status ' . $proc->status;
-        like $proc2->status, qr/Killed/, 'status ' . $proc->status;
+        is $proc->signal, 9, 'matching signal 9';
+        like $proc->status, qr/Killed/, 'status ' . $proc->status;
     }
 
 };
