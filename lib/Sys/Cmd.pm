@@ -406,7 +406,7 @@ sub _spawn {
             }
         }
 
-        chdir $dir or die "chdir: $!" if defined $dir;
+        chdir $dir or die "chdir $dir: $!" if defined $dir;
         my $oe = $self->on_exit;
 
         Sys::Cmd::Process->new(
@@ -425,8 +425,10 @@ sub _spawn {
         );
     };
     my $err = $@;
-    chdir $cwd if defined $dir;
-    die $err   if $err;
+    if ( defined $dir ) {
+        chdir $cwd or warn "chdir $cwd: $!";
+    }
+    die $err if $err;
 
     my $enc = ':encoding(' . $self->encoding . ')';
     binmode( $proc->stdin,  $enc ) or warn "binmode stdin: $!";
