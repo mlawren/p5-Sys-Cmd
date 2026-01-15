@@ -508,6 +508,26 @@ SKIP: {
     };
 }
 
+SKIP: {
+    my $cat =
+      eval { spawnsub( 'cat', { dir => 't', env => { STUFF => 'stuff', }, } ) };
+    skip "No cat?: $@", 1 if $@;
+
+    subtest 'spawnsub', sub {
+        my @kids;
+        foreach my $i ( 0 .. 4 ) {
+            $kids[$i] = $cat->();
+        }
+        foreach my $i ( 0 .. 4 ) {
+            $kids[$i]->stdin->print( sprintf "Hello %d\n", $kids[$i]->pid );
+            $kids[$i]->stdin->close;
+        }
+        like $_->stdout->getline, qr/Hello \d+/, 'Hello from PID ' . $_->pid
+          for @kids;
+        ok $_->wait_child, 'wait_child' for @kids;
+    };
+}
+
 #subtest 'mock run', sub {
 #    my $cmd = syscmd(
 #        'junk',

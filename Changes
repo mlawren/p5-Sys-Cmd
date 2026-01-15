@@ -4,7 +4,7 @@ v0.0.0 (yyyy-mm-dd)
         - None.
 
     Bug Fixes:
-        - None.
+        - Make spawnsub actually callable.
 
     New Features:
         - None.

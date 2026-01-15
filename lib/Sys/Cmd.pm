@@ -22,7 +22,7 @@ use Exporter::Tidy _map => {
         sub { @_ ? _syscmd( $cmd, @_ )->_run : $cmd->_run }
     },
     spawnsub => sub {
-        my $cmd = syscmd( undef, @_ );
+        my $cmd = _syscmd( undef, @_ );
         sub { @_ ? _syscmd( $cmd, @_ )->_spawn : $cmd->_spawn }
     },
 };
