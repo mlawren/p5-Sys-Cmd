@@ -220,7 +220,7 @@ sub close {
 sub wait_child {
     my $self = shift;
     my $pid  = $self->pid // return;
-    return $self->exit if $self->has__ret;
+    return not( $self->exit or $self->signal ) if $self->has__ret;
 
     my $ret = -1;    # default means: bad execution for some reasons
 
