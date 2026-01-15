@@ -238,8 +238,8 @@ sub _syscmd {
     Sys::Cmd->new($opts);
 }
 
-my sub _fastspawn {
-    my @cmd = @_;
+sub _fastspawn {
+    my $self = shift;
 
     # Backup the original 0,1,2 file descriptors
     open my $old_fd0, '<&', 0;
@@ -275,6 +275,12 @@ my sub _fastspawn {
     open $fd1, '>&', fileno($child_out) || die "open: $!";
     open $fd2, '>&', fileno($child_err) || die "open: $!";
 
+    # Convert command line
+    my $enc = $self->encoding;
+    my @cmd =
+      map { encode( $enc => $_, Encode::FB_CROAK | Encode::LEAVE_SRC ) }
+      @{ $self->cmd };
+
     # Kick off the new process
     my $pid = eval {
         Proc::FastSpawn::spawn(
@@ -306,7 +312,8 @@ my sub _fastspawn {
     _croak($err) if $err;
     _croak('Unable to spawn child') unless defined $pid;
 
-    (
+    Sys::Cmd::Process->new(
+        cmd    => $self->cmd,
         pid    => $pid,
         stdin  => $stdin,
         stdout => $stdout,
@@ -314,10 +321,8 @@ my sub _fastspawn {
     );
 }
 
-my sub _fork {
-    my $encoding = shift // die 'need encoding';
-    my $code     = shift // die 'need code';
-    my @args     = @_;
+sub _fork {
+    my $self = shift;
     my ( $stdin, $stdout, $stderr ) =
       ( IO::Handle->new, IO::Handle->new, IO::Handle->new, );
 
@@ -337,7 +342,8 @@ my sub _fork {
           $child_out,
           $child_err;
 
-        return (
+        return Sys::Cmd::Process->new(
+            cmd    => $self->cmd,
             pid    => $pid,
             stdin  => $stdin,
             stdout => $stdout,
@@ -348,6 +354,7 @@ my sub _fork {
     # Child
     $child_err->autoflush(1);
 
+    my $encoding = $self->encoding;
     foreach my $quad (
         [ \*STDERR, '>&=', fileno($child_err), 1 ],
         [ \*STDOUT, '>&=', fileno($child_out), 1 ],
@@ -375,6 +382,8 @@ my sub _fork {
       $child_out,
       $child_err;
 
+    my @args = @{ $self->cmd };
+    my $code = shift @args;
     $code->(@args);
     _exit(0);
 
@@ -389,11 +398,11 @@ sub _spawn {
 
     my $proc = eval {
         local %ENV = %ENV;
-        my $locale = $self->encoding;
+        my $enc = $self->encoding;
         while ( my ( $key, $val ) = each %{ $self->env // {} } ) {
-            my $keybytes = encode( $locale, $key, Encode::FB_CROAK );
+            my $keybytes = encode( $enc, $key, Encode::FB_CROAK );
             if ( defined $val ) {
-                $ENV{$keybytes} = encode( $locale, $val, Encode::FB_CROAK );
+                $ENV{$keybytes} = encode( $enc, $val, Encode::FB_CROAK );
             }
             else {
                 delete $ENV{$keybytes};
@@ -402,20 +411,11 @@ sub _spawn {
 
         chdir $dir or die "chdir $dir: $!" if defined $dir;
 
-        Sys::Cmd::Process->new(
-            cmd => $self->cmd,
-            $self->_coderef
-            ? _fork( $self->encoding, @{ $self->cmd } )
-            : _fastspawn(
-                map {
-                    encode(
-                        $locale => $_,
-                        Encode::FB_CROAK | Encode::LEAVE_SRC
-                    )
-                } @{ $self->cmd }
-            )
-        );
+        $self->_coderef
+          ? $self->_fork()
+          : $self->_fastspawn();
     };
+
     my $err = $@;
     if ( defined $dir ) {
         chdir $cwd or warn "chdir $cwd: $!";
