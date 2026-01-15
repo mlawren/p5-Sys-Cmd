@@ -493,16 +493,17 @@ subtest 'run', sub {
 };
 
 SKIP: {
-    my $ls = eval { syscmd( 'ls', { dir => 't' } ) };
+    my $ls =
+      eval { runsub( 'ls', { dir => 't', env => { STUFF => 'stuff', }, } ) };
     skip "No ls?: $@", 1 if $@;
 
-    subtest 'Sys::Cmd', sub {
+    subtest 'runsub', sub {
         my ( $out, @out );
-        @out = $ls->run();
+        @out = $ls->();
         is scalar @out, 4, 'ls t/';
 
         @out = ();
-        $ls->run( '../lib', { out => \$out } );
+        $ls->( '../lib', { out => \$out } );
         @out = split /\n/, $out;
         is scalar @out, 1, 'ls ../lib -> $out';
     };

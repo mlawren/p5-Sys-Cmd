@@ -12,6 +12,7 @@ v0.0.0 (yyyy-mm-dd)
         - None.
 
     Improvements:
+        - New tests for runsub and spawnsub.
         - Log normal start and stop events with Log::Any (abnormal
           events were already logged).
 
